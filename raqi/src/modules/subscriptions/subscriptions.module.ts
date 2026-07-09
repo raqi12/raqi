@@ -1,0 +1,34 @@
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { BinsModule } from '../bins/bins.module';
+import { CustomersModule } from '../customers/customers.module';
+import { PlansModule } from '../plans/plans.module';
+import { WalletsModule } from '../wallets/wallets.module';
+import {
+  Subscription,
+  SubscriptionSchema,
+} from './schemas/subscription.schema';
+import {
+  AdminSubscriptionsController,
+  CustomerSubscriptionsController,
+} from './subscriptions.controller';
+import { SubscriptionsService } from './subscriptions.service';
+
+@Module({
+  imports: [
+    MongooseModule.forFeature([
+      { name: Subscription.name, schema: SubscriptionSchema },
+    ]),
+    CustomersModule,
+    PlansModule,
+    BinsModule,
+    WalletsModule,
+  ],
+  controllers: [
+    AdminSubscriptionsController,
+    CustomerSubscriptionsController,
+  ],
+  providers: [SubscriptionsService],
+  exports: [SubscriptionsService],
+})
+export class SubscriptionsModule {}
