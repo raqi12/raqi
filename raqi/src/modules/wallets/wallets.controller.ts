@@ -14,13 +14,32 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentUser } from '../../common/current-user.decorator';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { RolesGuard } from '../../common/roles.guard';
 import { Roles } from '../../common/roles.decorator';
 import { Role } from '../../common/roles.enum';
 import type { AuthUser } from '../../common/auth-user.interface';
+import {
+  ApiAdminAuth,
+  ApiMongoIdParam,
+  ApiOkDataResponse,
+  ApiOptionalQuery,
+  ApiStandardErrorResponses,
+} from '../../common/swagger/decorators';
+import {
+  BankAccountSettingsDto,
+  DepositRequestDto,
+  WalletDto,
+} from '../../common/swagger/schemas/entity.schemas';
+import { DepositEvidenceUploadDto } from '../../common/swagger/schemas/upload.schemas';
 import { CustomersService } from '../customers/customers.service';
 import { BankAccountSettingsService } from './bank-account-settings.service';
 import { DepositRequestsService } from './deposit-requests.service';
@@ -38,7 +57,8 @@ import {
 } from './upload.config';
 
 @ApiTags('Customer - Wallet')
-@ApiBearerAuth()
+@ApiBearerAuth('access-token')
+@ApiStandardErrorResponses()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.Customer)
 @Controller('customer')
@@ -62,6 +82,11 @@ export class CustomerWalletController {
   }
 
   @Get('wallet')
+  @ApiOperation({
+    summary: 'Get wallet balance',
+    description: 'Returns the authenticated customer wallet, creating one if needed.',
+  })
+  @ApiOkDataResponse(WalletDto, 'Wallet details')
   async getWallet(@CurrentUser() user?: AuthUser) {
     const customerId = await this.resolveCustomerId(user);
     const wallet = await this.walletsService.ensureWallet(customerId);
@@ -69,6 +94,11 @@ export class CustomerWalletController {
   }
 
   @Get('bank-account')
+  @ApiOperation({
+    summary: 'Get active bank account',
+    description: 'Returns bank transfer details for wallet deposits.',
+  })
+  @ApiOkDataResponse(BankAccountSettingsDto, 'Active bank account settings')
   async getBankAccount() {
     const settings = await this.bankAccountSettingsService.getActive();
     if (!settings) {
@@ -78,7 +108,14 @@ export class CustomerWalletController {
   }
 
   @Post('deposit-requests')
+  @ApiOperation({
+    summary: 'Submit deposit request',
+    description:
+      'Uploads transfer evidence and creates a pending deposit request for admin review.',
+  })
   @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: DepositEvidenceUploadDto })
+  @ApiOkDataResponse(DepositRequestDto, 'Deposit request created', { status: 201 })
   @UseInterceptors(
     FileInterceptor('evidence', {
       storage: depositEvidenceStorage,
@@ -113,6 +150,11 @@ export class CustomerWalletController {
   }
 
   @Get('deposit-requests')
+  @ApiOperation({
+    summary: 'List deposit requests',
+    description: 'Returns deposit requests submitted by the authenticated customer.',
+  })
+  @ApiOkDataResponse(DepositRequestDto, 'Deposit request list', { isArray: true })
   async listDepositRequests(@CurrentUser() user?: AuthUser) {
     const customerId = await this.resolveCustomerId(user);
     return { data: await this.depositRequestsService.findByCustomer(customerId) };
@@ -120,7 +162,7 @@ export class CustomerWalletController {
 }
 
 @ApiTags('Admin - Wallet Settings')
-@ApiBearerAuth()
+@ApiAdminAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.Admin)
 @Controller('admin')
@@ -131,21 +173,47 @@ export class AdminWalletSettingsController {
   ) {}
 
   @Get('settings/bank-account')
+  @ApiOperation({
+    summary: 'Get bank account settings',
+    description: 'Returns configured bank account details, or null if not yet set up.',
+  })
+  @ApiOkDataResponse(BankAccountSettingsDto, 'Bank account settings (may be null)')
   async getBankAccount() {
     return { data: await this.bankAccountSettingsService.getOrEmpty() };
   }
 
   @Patch('settings/bank-account')
+  @ApiOperation({
+    summary: 'Update bank account settings',
+    description: 'Creates or updates the bank account used for customer wallet deposits.',
+  })
+  @ApiBody({ type: UpdateBankAccountDto })
+  @ApiOkDataResponse(BankAccountSettingsDto, 'Bank account settings updated')
   async updateBankAccount(@Body() body: UpdateBankAccountDto) {
     return { data: await this.bankAccountSettingsService.upsert(body) };
   }
 
   @Get('deposit-requests')
+  @ApiOperation({
+    summary: 'List deposit requests',
+    description: 'Returns all deposit requests, optionally filtered by status.',
+  })
+  @ApiOptionalQuery('status', 'Filter by deposit status', {
+    enum: ['pending', 'approved', 'rejected'],
+    example: 'pending',
+  })
+  @ApiOkDataResponse(DepositRequestDto, 'Deposit request list', { isArray: true })
   async listDepositRequests(@Query() query: ListDepositRequestsQueryDto) {
     return { data: await this.depositRequestsService.findAll(query.status) };
   }
 
   @Patch('deposit-requests/:id/approve')
+  @ApiOperation({
+    summary: 'Approve deposit request',
+    description: 'Approves a pending deposit and credits the customer wallet.',
+  })
+  @ApiMongoIdParam('id', 'Deposit request MongoDB ID')
+  @ApiOkDataResponse(DepositRequestDto, 'Deposit request approved')
   async approveDepositRequest(
     @Param('id') id: string,
     @CurrentUser() user?: AuthUser,
@@ -159,6 +227,13 @@ export class AdminWalletSettingsController {
   }
 
   @Patch('deposit-requests/:id/reject')
+  @ApiOperation({
+    summary: 'Reject deposit request',
+    description: 'Rejects a pending deposit request with an optional reason.',
+  })
+  @ApiMongoIdParam('id', 'Deposit request MongoDB ID')
+  @ApiBody({ type: RejectDepositRequestDto })
+  @ApiOkDataResponse(DepositRequestDto, 'Deposit request rejected')
   async rejectDepositRequest(
     @Param('id') id: string,
     @Body() body: RejectDepositRequestDto,

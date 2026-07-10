@@ -9,11 +9,17 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { RolesGuard } from '../../common/roles.guard';
 import { Roles } from '../../common/roles.decorator';
 import { Role } from '../../common/roles.enum';
+import {
+  ApiAdminAuth,
+  ApiMongoIdParam,
+  ApiOkDataResponse,
+} from '../../common/swagger/decorators';
+import { DriverDto } from '../../common/swagger/schemas/entity.schemas';
 import { UsersService } from '../users/users.service';
 import { DriversService } from './drivers.service';
 import {
@@ -23,7 +29,7 @@ import {
 } from './dto/driver.dto';
 
 @ApiTags('Admin - Drivers')
-@ApiBearerAuth()
+@ApiAdminAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.Admin)
 @Controller('admin/drivers')
@@ -34,11 +40,23 @@ export class DriversController {
   ) {}
 
   @Get()
+  @ApiOperation({
+    summary: 'List drivers',
+    description: 'Returns all driver profiles with linked user accounts. Admin role required.',
+  })
+  @ApiOkDataResponse(DriverDto, 'Driver list', { isArray: true })
   async list() {
     return { data: await this.driversService.findAll() };
   }
 
   @Post()
+  @ApiOperation({
+    summary: 'Create driver',
+    description:
+      'Creates a driver user account and linked driver profile with vehicle number.',
+  })
+  @ApiBody({ type: CreateDriverDto })
+  @ApiOkDataResponse(DriverDto, 'Driver created', { status: 201 })
   async create(@Body() body: CreateDriverDto) {
     const existing = await this.usersService.findByEmail(body.email);
     if (existing) {
@@ -58,6 +76,9 @@ export class DriversController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get driver by ID' })
+  @ApiMongoIdParam('id', 'Driver MongoDB ID')
+  @ApiOkDataResponse(DriverDto, 'Driver details')
   async get(@Param('id') id: string) {
     const driver = await this.driversService.findById(id);
     if (!driver) {
@@ -67,6 +88,10 @@ export class DriversController {
   }
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Update driver profile' })
+  @ApiMongoIdParam('id', 'Driver MongoDB ID')
+  @ApiBody({ type: UpdateDriverDto })
+  @ApiOkDataResponse(DriverDto, 'Driver updated')
   async update(@Param('id') id: string, @Body() body: UpdateDriverDto) {
     const driver = await this.driversService.update(id, body);
     if (!driver) {
@@ -76,6 +101,13 @@ export class DriversController {
   }
 
   @Patch(':id/status')
+  @ApiOperation({
+    summary: 'Update driver status',
+    description: 'Activate or deactivate a driver account.',
+  })
+  @ApiMongoIdParam('id', 'Driver MongoDB ID')
+  @ApiBody({ type: UpdateDriverStatusDto })
+  @ApiOkDataResponse(DriverDto, 'Driver status updated')
   async updateStatus(
     @Param('id') id: string,
     @Body() body: UpdateDriverStatusDto,

@@ -9,19 +9,27 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/current-user.decorator';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { RolesGuard } from '../../common/roles.guard';
 import { Roles } from '../../common/roles.decorator';
 import { Role } from '../../common/roles.enum';
 import type { AuthUser } from '../../common/auth-user.interface';
+import {
+  ApiAdminAuth,
+  ApiMongoIdParam,
+  ApiOkDataResponse,
+  ApiStandardErrorResponses,
+} from '../../common/swagger/decorators';
+import { ComplaintDto } from '../../common/swagger/schemas/entity.schemas';
 import { CustomersService } from '../customers/customers.service';
 import { ComplaintsService } from './complaints.service';
 import { CreateComplaintDto, UpdateComplaintDto } from './dto/complaint.dto';
 
 @ApiTags('Customer - Complaints')
-@ApiBearerAuth()
+@ApiBearerAuth('access-token')
+@ApiStandardErrorResponses()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.Customer)
 @Controller('customer/complaints')
@@ -32,6 +40,12 @@ export class CustomerComplaintsController {
   ) {}
 
   @Post()
+  @ApiOperation({
+    summary: 'Submit complaint',
+    description: 'Creates a new complaint for the authenticated customer.',
+  })
+  @ApiBody({ type: CreateComplaintDto })
+  @ApiOkDataResponse(ComplaintDto, 'Complaint submitted', { status: 201 })
   async create(
     @Body() body: CreateComplaintDto,
     @CurrentUser() user?: AuthUser,
@@ -54,7 +68,7 @@ export class CustomerComplaintsController {
 }
 
 @ApiTags('Admin - Complaints')
-@ApiBearerAuth()
+@ApiAdminAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.Admin)
 @Controller('admin/complaints')
@@ -62,11 +76,23 @@ export class AdminComplaintsController {
   constructor(private readonly complaintsService: ComplaintsService) {}
 
   @Get()
+  @ApiOperation({
+    summary: 'List all complaints',
+    description: 'Returns complaints across all customers for admin review.',
+  })
+  @ApiOkDataResponse(ComplaintDto, 'Complaint list', { isArray: true })
   async list() {
     return { data: await this.complaintsService.findAll() };
   }
 
   @Patch(':id')
+  @ApiOperation({
+    summary: 'Update complaint',
+    description: 'Updates complaint status and/or assignee.',
+  })
+  @ApiMongoIdParam('id', 'Complaint MongoDB ID')
+  @ApiBody({ type: UpdateComplaintDto })
+  @ApiOkDataResponse(ComplaintDto, 'Complaint updated')
   async update(@Param('id') id: string, @Body() body: UpdateComplaintDto) {
     const complaint = await this.complaintsService.update(id, body);
     if (!complaint) {
