@@ -118,7 +118,7 @@ jobs:
           ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
             "ln -sf /etc/nginx/sites-available/raqi /etc/nginx/sites-enabled/raqi && \
              rm -f /etc/nginx/sites-enabled/default && \
-             /usr/sbin/nginx -t && systemctl enable nginx && systemctl restart nginx"
+             /usr/sbin/nginx -t && systemctl enable nginx && systemctl reload nginx"
 
       - name: Rsync static files to VPS
         run: |

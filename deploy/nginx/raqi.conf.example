@@ -1,4 +1,5 @@
 # Deployed to /etc/nginx/sites-available/raqi on the VPS by GitHub Actions.
+# SSL certs are issued by Certbot (Let's Encrypt) on the server.
 
 upstream raqi_api {
   server 127.0.0.1:3000;
@@ -8,6 +9,17 @@ upstream raqi_api {
 server {
   listen 80;
   server_name api.raqii.com.ly;
+  return 301 https://$host$request_uri;
+}
+
+server {
+  listen 443 ssl;
+  server_name api.raqii.com.ly;
+
+  ssl_certificate /etc/letsencrypt/live/api.raqii.com.ly/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/api.raqii.com.ly/privkey.pem;
+  include /etc/letsencrypt/options-ssl-nginx.conf;
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
   location / {
     proxy_pass http://raqi_api;
@@ -23,6 +35,17 @@ server {
 server {
   listen 80;
   server_name dashboard.raqii.com.ly;
+  return 301 https://$host$request_uri;
+}
+
+server {
+  listen 443 ssl;
+  server_name dashboard.raqii.com.ly;
+
+  ssl_certificate /etc/letsencrypt/live/api.raqii.com.ly/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/api.raqii.com.ly/privkey.pem;
+  include /etc/letsencrypt/options-ssl-nginx.conf;
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
   root /var/www/raqi/admin;
   index index.html;
