@@ -36,7 +36,7 @@ export function UsersPage({ users, onCreate, onUpdate, onSetStatus }: UsersPageP
   return (
     <>
       <section className="panel">
-        <h2>Create User</h2>
+        <h2>إنشاء مستخدم</h2>
         <form className="row-form" onSubmit={submitCreate}>
           <input placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -51,7 +51,7 @@ export function UsersPage({ users, onCreate, onUpdate, onSetStatus }: UsersPageP
         </form>
       </section>
       <DataTable
-        title={`Users (${users.length})`}
+        title={`المستخدمون (${users.length})`}
         rows={users}
         onSelect={setSelected}
         columns={[
@@ -158,7 +158,7 @@ export function CustomersPage({
   return (
     <>
       <section className="panel">
-        <h2>Create Customer</h2>
+        <h2>إنشاء عميل</h2>
         <form className="row-form" onSubmit={(e) => {
           e.preventDefault();
           void onCreate(form).then(() => setForm({ email: '', name: '', password: '', type: 'home' }));
@@ -174,7 +174,7 @@ export function CustomersPage({
           <button>Create</button>
         </form>
       </section>
-      <DataTable title={`Customers (${customers.length})`} rows={customers} onSelect={setSelected} columns={[
+      <DataTable title={`العملاء (${customers.length})`} rows={customers} onSelect={setSelected} columns={[
         { key: 'id', label: 'ID', render: (r) => getId(r) },
         { key: 'userId', label: 'User ID' },
         { key: 'type', label: 'Type' },
@@ -306,7 +306,7 @@ export function DriversPage({ drivers, onCreate, onUpdate, onSetStatus }: Driver
   return (
     <>
       <section className="panel">
-        <h2>Create Driver</h2>
+        <h2>إنشاء سائق</h2>
         <form className="row-form" onSubmit={(e) => {
           e.preventDefault();
           void onCreate(form).then(() => setForm({ email: '', name: '', password: '', vehicleNumber: '' }));
@@ -318,7 +318,7 @@ export function DriversPage({ drivers, onCreate, onUpdate, onSetStatus }: Driver
           <button>Create</button>
         </form>
       </section>
-      <DataTable title={`Drivers (${drivers.length})`} rows={drivers} onSelect={setSelected} columns={[
+      <DataTable title={`السائقون (${drivers.length})`} rows={drivers} onSelect={setSelected} columns={[
         { key: 'id', label: 'ID', render: (r) => getId(r) },
         { key: 'userId', label: 'User ID' },
         { key: 'vehicleNumber', label: 'Vehicle' },
@@ -362,7 +362,7 @@ export function TasksPage({ tasks, areas, drivers, onGenerate, onAssign }: Tasks
   return (
     <>
       <section className="panel">
-        <h2>Generate Tasks</h2>
+        <h2>توليد المهام</h2>
         <form className="row-form" onSubmit={(e) => {
           e.preventDefault();
           void onGenerate(date, areaId);
@@ -379,7 +379,7 @@ export function TasksPage({ tasks, areas, drivers, onGenerate, onAssign }: Tasks
           <button>Generate</button>
         </form>
       </section>
-      <DataTable title={`Tasks (${tasks.length})`} rows={tasks} onSelect={setSelected} columns={[
+      <DataTable title={`المهام (${tasks.length})`} rows={tasks} onSelect={setSelected} columns={[
         { key: 'id', label: 'ID', render: (r) => getId(r) },
         { key: 'status', label: 'Status' },
         { key: 'date', label: 'Date', render: (r) => r.date?.slice(0, 10) ?? '-' },
@@ -443,7 +443,7 @@ export function PlansPage({ plans, onCreate, onUpdate }: PlansPageProps) {
   return (
     <>
       <section className="panel">
-        <h2>Create Plan</h2>
+        <h2>إنشاء خطة</h2>
         <form
           className="row-form"
           onSubmit={(e) => {
@@ -498,7 +498,7 @@ export function PlansPage({ plans, onCreate, onUpdate }: PlansPageProps) {
         </form>
       </section>
       <DataTable
-        title={`Plans (${plans.length})`}
+        title={`الخطط (${plans.length})`}
         rows={plans}
         onSelect={setSelected}
         columns={[
@@ -615,7 +615,7 @@ export function SubscriptionsPage(props: SubscriptionsPageProps) {
   return (
     <>
       <section className="panel">
-        <h2>Create Subscription</h2>
+        <h2>إنشاء اشتراك</h2>
         <form className="row-form" onSubmit={(e) => {
           e.preventDefault();
           void props.onCreate({
@@ -674,7 +674,7 @@ export function SubscriptionsPage(props: SubscriptionsPageProps) {
           <button>Create</button>
         </form>
       </section>
-      <DataTable title={`Subscriptions (${props.subscriptions.length})`} rows={props.subscriptions} onSelect={setSelected} columns={[
+      <DataTable title={`الاشتراكات (${props.subscriptions.length})`} rows={props.subscriptions} onSelect={setSelected} columns={[
         { key: 'id', label: 'ID', render: (r) => getId(r) },
         { key: 'customerId', label: 'Customer ID' },
         { key: 'planId', label: 'Plan ID' },
@@ -711,7 +711,7 @@ export function BinsPage({ bins, customers, onCreate, onUpdate, onAssign, onUnas
   return (
     <>
       <section className="panel">
-        <h2>Create Bin</h2>
+        <h2>إنشاء صندوق</h2>
         <form className="row-form" onSubmit={(e) => {
           e.preventDefault();
           void onCreate({
@@ -726,7 +726,7 @@ export function BinsPage({ bins, customers, onCreate, onUpdate, onAssign, onUnas
           <button>Create</button>
         </form>
       </section>
-      <DataTable title={`Bins (${bins.length})`} rows={bins} onSelect={setSelected} columns={[
+      <DataTable title={`الصناديق (${bins.length})`} rows={bins} onSelect={setSelected} columns={[
         { key: 'id', label: 'ID', render: (r) => getId(r) },
         { key: 'code', label: 'Code' },
         { key: 'capacity', label: 'Capacity', render: (r) => String(r.capacity ?? '-') },
@@ -793,7 +793,7 @@ export function AreasPage({ areas, onCreate }: AreasPageProps) {
   return (
     <>
       <section className="panel">
-        <h2>Create Area</h2>
+        <h2>إنشاء منطقة</h2>
         <form className="row-form" onSubmit={(e) => {
           e.preventDefault();
           void onCreate(form).then(() => setForm({ name: '', city: '' }));
@@ -803,7 +803,7 @@ export function AreasPage({ areas, onCreate }: AreasPageProps) {
           <button>Create</button>
         </form>
       </section>
-      <DataTable title={`Areas (${areas.length})`} rows={areas} columns={[
+      <DataTable title={`المناطق (${areas.length})`} rows={areas} columns={[
         { key: 'id', label: 'ID', render: (r) => getId(r) },
         { key: 'name', label: 'Name' },
         { key: 'city', label: 'City' },
@@ -823,7 +823,7 @@ export function RoutesPage({ routes, areas, onCreate }: RoutesPageProps) {
   return (
     <>
       <section className="panel">
-        <h2>Create Route</h2>
+        <h2>إنشاء مسار</h2>
         <form className="row-form" onSubmit={(e) => {
           e.preventDefault();
           const stops = form.stops
@@ -849,7 +849,7 @@ export function RoutesPage({ routes, areas, onCreate }: RoutesPageProps) {
           <button>Create</button>
         </form>
       </section>
-      <DataTable title={`Routes (${routes.length})`} rows={routes} columns={[
+      <DataTable title={`المسارات (${routes.length})`} rows={routes} columns={[
         { key: 'id', label: 'ID', render: (r) => getId(r) },
         { key: 'name', label: 'Name' },
         { key: 'areaId', label: 'Area ID' },
@@ -874,7 +874,7 @@ export function PaymentsPage({ payments, onCreate }: PaymentsPageProps) {
   return (
     <>
       <section className="panel">
-        <h2>Create Payment</h2>
+        <h2>إنشاء دفعة</h2>
         <form className="row-form" onSubmit={(e) => {
           e.preventDefault();
           void onCreate({
@@ -894,7 +894,7 @@ export function PaymentsPage({ payments, onCreate }: PaymentsPageProps) {
           <button>Create</button>
         </form>
       </section>
-      <DataTable title={`Payments (${payments.length})`} rows={payments} columns={[
+      <DataTable title={`المدفوعات (${payments.length})`} rows={payments} columns={[
         { key: 'id', label: 'ID', render: (r) => getId(r) },
         { key: 'customerId', label: 'Customer ID' },
         { key: 'amount', label: 'Amount', render: (r) => String(r.amount ?? '-') },
@@ -917,7 +917,7 @@ export function ComplaintsPage({ complaints, onUpdate }: ComplaintsPageProps) {
   const [selected, setSelected] = useState<Complaint | null>(null);
   return (
     <>
-      <DataTable title={`Complaints (${complaints.length})`} rows={complaints} onSelect={setSelected} columns={[
+      <DataTable title={`الشكاوى (${complaints.length})`} rows={complaints} onSelect={setSelected} columns={[
         { key: 'id', label: 'ID', render: (r) => getId(r) },
         { key: 'subject', label: 'Subject' },
         { key: 'status', label: 'Status' },
@@ -978,7 +978,7 @@ export function BankAccountPage({ bankAccount, onUpdate }: BankAccountPageProps)
 
   return (
     <section className="panel">
-      <h2>Bank Account Settings</h2>
+      <h2>إعدادات الحساب البنكي</h2>
       <p className="muted">Customers use these details to transfer wallet deposits.</p>
       <form
         className="row-form"
@@ -1022,7 +1022,7 @@ export function DepositRequestsPage({ depositRequests, onApprove, onReject }: De
   return (
     <>
       <DataTable
-        title={`Deposit Requests (${depositRequests.length})`}
+        title={`طلبات الإيداع (${depositRequests.length})`}
         rows={depositRequests}
         onSelect={setSelected}
         columns={[

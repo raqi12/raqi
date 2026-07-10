@@ -3,6 +3,10 @@ import { login, loadStoredSession, refresh, storeSession } from './api/auth';
 import { setRefreshHandler, setSessionTokens } from './api/http';
 import { AdminApi } from './api/modules';
 import { Toast } from './components/Toast';
+import { Sidebar, type SidebarTab } from './components/Sidebar';
+import { TopBar } from './components/TopBar';
+import { SearchProvider } from './contexts/SearchContext';
+import { useTheme } from './hooks/useTheme';
 import { usePolling } from './hooks/usePolling';
 import { OverviewPage } from './pages/OverviewPage';
 import { LoginPage } from './pages/LoginPage';
@@ -58,7 +62,7 @@ const tabs = [
   'bank-account',
   'deposit-requests',
   'complaints',
-] as const;
+] as const satisfies readonly SidebarTab[];
 type Tab = (typeof tabs)[number];
 
 function useActivityLog() {
@@ -79,6 +83,10 @@ export function App() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const { theme, toggleTheme } = useTheme();
 
   const [overview, setOverview] = useState<Overview | null>(null);
   const [users, setUsers] = useState<User[]>([]);
@@ -201,6 +209,13 @@ export function App() {
     setRefreshHandler(session ? refreshAccessToken : null);
   }, [refreshAccessToken, session]);
 
+  useEffect(() => {
+    if (window.innerWidth <= 900) {
+      setSidebarCollapsed(true);
+      setMobileNavOpen(false);
+    }
+  }, []);
+
   usePolling(loadAll, Boolean(session?.accessToken && isAdmin), POLL_MS);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
@@ -266,30 +281,48 @@ export function App() {
     );
   }
 
+  const pendingDeposits = depositRequests.filter((r) => r.status === 'pending').length;
+  const syncSubtitle = `تحديث تلقائي كل ${POLL_MS / 1000} ثانية${lastSync ? ` • آخر مزامنة ${lastSync}` : ''}`;
+
   return (
-    <main className="container dashboard">
-      <header className="header">
-        <div>
-          <h1>رقي — لوحة الإدارة</h1>
-          <p>الدور: <strong>{session.user.role}</strong> ({session.user.email})</p>
-        </div>
-        <div className="actions">
-          <button onClick={() => void loadAll()} disabled={loading}>{loading ? 'جاري التحديث...' : 'تحديث الآن'}</button>
-          <button className="ghost" onClick={logout}>تسجيل الخروج</button>
-        </div>
-      </header>
+    <SearchProvider query={searchQuery} setQuery={setSearchQuery}>
+      <div className="app-shell">
+        <Sidebar
+          activeTab={activeTab}
+          onSelect={(tab) => {
+            setActiveTab(tab);
+            setSearchQuery('');
+            if (window.innerWidth <= 900) {
+              setMobileNavOpen(false);
+            }
+          }}
+          userEmail={session.user.email}
+          pendingDeposits={pendingDeposits}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+          onLogout={logout}
+          mobileOpen={mobileNavOpen}
+          onCloseMobile={() => setMobileNavOpen(false)}
+        />
 
-      <nav className="tabbar">
-        {tabs.map((tab) => (
-          <button key={tab} className={tab === activeTab ? 'active' : 'ghost'} onClick={() => setActiveTab(tab)}>
-            {TAB_LABELS[tab]}
-          </button>
-        ))}
-      </nav>
+        <div className="main-area">
+          <TopBar
+            title={TAB_LABELS[activeTab]}
+            subtitle={syncSubtitle}
+            search={searchQuery}
+            onSearchChange={setSearchQuery}
+            loading={loading}
+            onRefresh={() => void loadAll()}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            userEmail={session.user.email}
+            onOpenMenu={() => setMobileNavOpen(true)}
+          />
 
-      {error ? <p className="error">{error}</p> : null}
-      <p className="muted">تحديث تلقائي كل {POLL_MS / 1000} ثانية{lastSync ? ` • آخر مزامنة ${lastSync}` : ''}</p>
+          <main className="content">
+            {error ? <p className="error">{error}</p> : null}
 
+            <div className="page-stack">
       {activeTab === 'overview' ? <OverviewPage
         overview={overview}
         usersCount={users.length}
@@ -300,7 +333,8 @@ export function App() {
         paymentsCount={payments.length}
         complaintsCount={complaints.length}
         binsStats={binsStats}
-        pendingDeposits={depositRequests.filter((r) => r.status === 'pending').length}
+        pendingDeposits={pendingDeposits}
+        activityItems={activity.items}
       /> : null}
 
       {activeTab === 'users' ? <UsersPage
@@ -408,15 +442,12 @@ export function App() {
         complaints={complaints}
         onUpdate={(id, body) => runMutation(() => AdminApi.complaints.update(id, body), 'Complaint updated')}
       /> : null}
+            </div>
 
-      <section className="panel">
-        <h3>آخر نشاط إداري</h3>
-        <ul>
-          {activity.items.map((item) => <li key={item}>{item}</li>)}
-        </ul>
-      </section>
-
-      <Toast message={toast?.message ?? null} type={toast?.type} onClose={() => setToast(null)} />
-    </main>
+            <Toast message={toast?.message ?? null} type={toast?.type} onClose={() => setToast(null)} />
+          </main>
+        </div>
+      </div>
+    </SearchProvider>
   );
 }

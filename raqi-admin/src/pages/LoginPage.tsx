@@ -1,4 +1,6 @@
 import { FormEvent, useState } from 'react';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 
 type LoginPageProps = {
   email: string;
@@ -22,49 +24,40 @@ export function LoginPage({
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div className="login-page">
-      <div className="login-page__glow login-page__glow--one" />
-      <div className="login-page__glow login-page__glow--two" />
-
-      <main className="login-shell">
-        <section className="login-brand">
-          <div className="login-brand__badge">رقي</div>
-          <h1>لوحة تحكم الإدارة</h1>
+    <div className="auth-layout">
+      <main className="auth-shell">
+        <section className="auth-intro">
+          <div className="auth-intro__mark">رقي</div>
+          <h1>منصة إدارة العمليات</h1>
           <p>
-            منصة متكاملة لإدارة العمليات، الاشتراكات، الصناديق، والمدفوعات
-            بكفاءة وأمان.
+            لوحة تحكم عربية لإدارة العملاء والاشتراكات والمهام والمدفوعات بكفاءة
+            واحترافية.
           </p>
-          <ul className="login-brand__features">
-            <li>متابعة مباشرة للمؤشرات والعمليات</li>
-            <li>إدارة العملاء والاشتراكات والمحافظ</li>
-            <li>تحكم كامل في الصناديق والمهام</li>
-          </ul>
         </section>
 
-        <section className="login-card panel">
-          <header className="login-card__header">
+        <section className="auth-card">
+          <header className="auth-card__header">
             <h2>تسجيل الدخول</h2>
-            <p>أدخل بيانات حساب المدير للمتابعة</p>
+            <p>استخدم حساب المدير للوصول إلى لوحة التحكم</p>
           </header>
 
-          <form className="login-form" onSubmit={onSubmit}>
-            <label className="field">
-              <span className="field__label">البريد الإلكتروني</span>
-              <input
-                type="email"
-                dir="ltr"
-                autoComplete="email"
-                placeholder="admin@raqi.local"
-                value={email}
-                onChange={(e) => onEmailChange(e.target.value)}
-                required
-              />
-            </label>
+          <form className="auth-form" onSubmit={onSubmit}>
+            <Input
+              label="البريد الإلكتروني"
+              type="email"
+              dir="ltr"
+              autoComplete="email"
+              placeholder="admin@raqi.local"
+              value={email}
+              onChange={(e) => onEmailChange(e.target.value)}
+              required
+            />
 
             <label className="field">
               <span className="field__label">كلمة المرور</span>
-              <div className="field__password">
+              <div className="field__inline">
                 <input
+                  className="input"
                   type={showPassword ? 'text' : 'password'}
                   dir="ltr"
                   autoComplete="current-password"
@@ -73,35 +66,27 @@ export function LoginPage({
                   onChange={(e) => onPasswordChange(e.target.value)}
                   required
                 />
-                <button
+                <Button
                   type="button"
-                  className="field__toggle ghost"
+                  variant="ghost"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                 >
                   {showPassword ? 'إخفاء' : 'إظهار'}
-                </button>
+                </Button>
               </div>
             </label>
 
             {error ? (
-              <div className="login-alert" role="alert">
+              <div className="alert alert--danger" role="alert">
                 <strong>تعذر تسجيل الدخول</strong>
                 <p>{error}</p>
               </div>
             ) : null}
 
-            <button type="submit" className="login-submit" disabled={loading}>
-              {loading ? 'جاري تسجيل الدخول...' : 'دخول إلى اللوحة'}
-            </button>
+            <Button type="submit" className="auth-form__submit" disabled={loading}>
+              {loading ? 'جاري تسجيل الدخول...' : 'دخول'}
+            </Button>
           </form>
-
-          <footer className="login-card__footer">
-            <p className="muted">
-              للوصول تحتاج صلاحية <strong>مدير</strong>. إذا ظهر خطأ اتصال، شغّل
-              الخادم ثم أعد المحاولة.
-            </p>
-          </footer>
         </section>
       </main>
     </div>

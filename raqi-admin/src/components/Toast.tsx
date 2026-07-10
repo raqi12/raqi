@@ -1,3 +1,5 @@
+import { Button } from './ui/Button';
+
 type ToastProps = {
   message: string | null;
   type?: 'success' | 'error';
@@ -7,11 +9,11 @@ type ToastProps = {
 export function Toast({ message, type = 'success', onClose }: ToastProps) {
   if (!message) return null;
   return (
-    <div className={`toast ${type}`}>
+    <div className={`toast ${type}`} role="status" aria-live="polite">
       <span>{message}</span>
-      <button className="ghost" onClick={onClose}>
-        x
-      </button>
+      <Button type="button" variant="ghost" onClick={onClose} aria-label="إغلاق">
+        ×
+      </Button>
     </div>
   );
 }

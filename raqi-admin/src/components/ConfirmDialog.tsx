@@ -1,3 +1,5 @@
+import { Button } from './ui/Button';
+
 type ConfirmDialogProps = {
   open: boolean;
   title: string;
@@ -15,15 +17,23 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   if (!open) return null;
   return (
-    <div className="overlay">
-      <div className="modal">
-        <h3>{title}</h3>
+    <div className="overlay" role="presentation" onClick={onCancel}>
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 id="confirm-title">{title}</h3>
         <p>{description}</p>
         <div className="modal-actions">
-          <button className="ghost" onClick={onCancel}>
-            Cancel
-          </button>
-          <button onClick={onConfirm}>Confirm</button>
+          <Button type="button" variant="ghost" onClick={onCancel}>
+            إلغاء
+          </Button>
+          <Button type="button" variant="primary" onClick={onConfirm}>
+            تأكيد
+          </Button>
         </div>
       </div>
     </div>

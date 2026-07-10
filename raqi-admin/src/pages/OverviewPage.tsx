@@ -1,3 +1,5 @@
+import { KpiStat } from '../components/ui/KpiStat';
+import { PageSection } from '../components/ui/PageSection';
 import type { BinStats, Overview } from '../types';
 
 type OverviewPageProps = {
@@ -11,34 +13,70 @@ type OverviewPageProps = {
   complaintsCount: number;
   binsStats: BinStats | null;
   pendingDeposits: number;
+  activityItems: string[];
 };
 
 export function OverviewPage(props: OverviewPageProps) {
-  const cards = [
-    { label: 'الاشتراكات النشطة', value: props.overview?.activeSubscriptions ?? '-' },
-    { label: 'المهام المكتملة', value: props.overview?.completedTasks ?? '-' },
-    { label: 'إجمالي الإيرادات', value: props.overview?.totalRevenue ?? '-' },
-    { label: 'طلبات إيداع معلقة', value: props.pendingDeposits },
-    { label: 'المستخدمون', value: props.usersCount },
+  const primary = [
+    {
+      label: 'الاشتراكات النشطة',
+      value: props.overview?.activeSubscriptions ?? '—',
+      hint: 'اشتراكات فعّالة حاليًا',
+    },
+    {
+      label: 'إجمالي الإيرادات',
+      value: props.overview?.totalRevenue ?? '—',
+      hint: 'إجمالي المدفوعات المسجلة',
+    },
+    {
+      label: 'طلبات إيداع معلقة',
+      value: props.pendingDeposits,
+      hint: 'بانتظار المراجعة',
+      tone: props.pendingDeposits > 0 ? ('warning' as const) : ('default' as const),
+    },
+    {
+      label: 'المهام المكتملة',
+      value: props.overview?.completedTasks ?? '—',
+      hint: 'منذ بداية التشغيل',
+    },
+  ];
+
+  const secondary = [
     { label: 'العملاء', value: props.customersCount },
     { label: 'السائقون', value: props.driversCount },
-    { label: 'المهام', value: props.tasksCount },
-    { label: 'الاشتراكات', value: props.subscriptionsCount },
-    { label: 'المدفوعات', value: props.paymentsCount },
-    { label: 'الشكاوى', value: props.complaintsCount },
-    { label: 'الصناديق', value: props.binsStats?.totalBins ?? '-' },
-    { label: 'سعة الصناديق', value: props.binsStats?.totalCapacity ?? '-' },
-    { label: 'صناديق متاحة', value: props.binsStats?.availableBins ?? '-' },
+    { label: 'الصناديق المتاحة', value: props.binsStats?.availableBins ?? '—' },
+    { label: 'الشكاوى المفتوحة', value: props.complaintsCount },
   ];
 
   return (
-    <section className="grid">
-      {cards.map((card) => (
-        <article key={card.label} className="card">
-          <h3>{card.label}</h3>
-          <p className="kpi">{card.value}</p>
-        </article>
-      ))}
-    </section>
+    <div className="page-stack">
+      <section className="kpi-grid kpi-grid--primary" aria-label="المؤشرات الرئيسية">
+        {primary.map((item) => (
+          <KpiStat
+            key={item.label}
+            label={item.label}
+            value={item.value}
+            hint={item.hint}
+            tone={item.tone}
+          />
+        ))}
+      </section>
+
+      <section className="kpi-grid kpi-grid--secondary" aria-label="مؤشرات تشغيلية">
+        {secondary.map((item) => (
+          <KpiStat key={item.label} label={item.label} value={item.value} />
+        ))}
+      </section>
+
+      {props.activityItems.length > 0 ? (
+        <PageSection title="آخر النشاط" description="أحدث العمليات الإدارية">
+          <ul className="activity-list">
+            {props.activityItems.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </PageSection>
+      ) : null}
+    </div>
   );
 }
