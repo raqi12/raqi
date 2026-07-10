@@ -1,8 +1,9 @@
 import { TAB_LABELS } from '../i18n/ar';
+import { ROUTE_PATHS, type SidebarTab } from '../navigation/routes';
 import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
 
-export type SidebarTab = keyof typeof TAB_LABELS;
+export type { SidebarTab };
 
 type NavGroup = {
   title: string;
@@ -18,7 +19,7 @@ const NAV_GROUPS: NavGroup[] = [
 
 type SidebarProps = {
   activeTab: SidebarTab;
-  onSelect: (tab: SidebarTab) => void;
+  onNavigate: (path: string) => void;
   userEmail: string;
   collapsed: boolean;
   onToggleCollapse: () => void;
@@ -30,7 +31,7 @@ type SidebarProps = {
 
 export function Sidebar({
   activeTab,
-  onSelect,
+  onNavigate,
   userEmail,
   collapsed,
   onToggleCollapse,
@@ -79,12 +80,16 @@ export function Sidebar({
               <ul>
                 {group.items.map((tab) => {
                   const active = activeTab === tab;
+                  const path = ROUTE_PATHS[tab];
                   return (
                     <li key={tab}>
-                      <button
-                        type="button"
+                      <a
+                        href={path}
                         className={`sidebar__link ${active ? 'sidebar__link--active' : ''}`}
-                        onClick={() => onSelect(tab)}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          onNavigate(path);
+                        }}
                         title={TAB_LABELS[tab]}
                         aria-current={active ? 'page' : undefined}
                       >
@@ -93,7 +98,7 @@ export function Sidebar({
                         {tab === 'deposit-requests' && pendingDeposits > 0 ? (
                           <Badge tone="danger">{pendingDeposits}</Badge>
                         ) : null}
-                      </button>
+                      </a>
                     </li>
                   );
                 })}

@@ -1,5 +1,8 @@
 import { Button } from './ui/Button';
 import { SearchInput } from './ui/SearchInput';
+import { TAB_LABELS } from '../i18n/ar';
+import { tabFromPathname } from '../navigation/routes';
+import { useLocation } from 'react-router-dom';
 
 type TopBarProps = {
   title: string;
@@ -26,6 +29,9 @@ export function TopBar({
   userEmail,
   onOpenMenu,
 }: TopBarProps) {
+  const location = useLocation();
+  const currentTab = tabFromPathname(location.pathname);
+
   return (
     <header className="topbar">
       <div className="topbar__start">
@@ -35,6 +41,11 @@ export function TopBar({
           </Button>
         ) : null}
         <div>
+          <nav className="topbar__breadcrumb" aria-label="مسار الصفحة">
+            <span>رقي</span>
+            <span aria-hidden="true">/</span>
+            <span>{TAB_LABELS[currentTab]}</span>
+          </nav>
           <h1 className="topbar__title">{title}</h1>
           {subtitle ? <p className="topbar__subtitle">{subtitle}</p> : null}
         </div>

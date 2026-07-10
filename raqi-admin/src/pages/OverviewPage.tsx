@@ -1,6 +1,7 @@
+import type { Overview } from '../types';
 import { KpiStat } from '../components/ui/KpiStat';
+import { KpiSkeleton } from '../components/ui/Skeleton';
 import { PageSection } from '../components/ui/PageSection';
-import type { BinStats, Overview } from '../types';
 
 type OverviewPageProps = {
   overview: Overview | null;
@@ -11,72 +12,102 @@ type OverviewPageProps = {
   subscriptionsCount: number;
   paymentsCount: number;
   complaintsCount: number;
-  binsStats: BinStats | null;
+  binsStats: { availableBins?: number } | null;
   pendingDeposits: number;
   activityItems: string[];
+  loading?: boolean;
 };
 
-export function OverviewPage(props: OverviewPageProps) {
+export function OverviewPage({
+  overview,
+  customersCount,
+  driversCount,
+  complaintsCount,
+  binsStats,
+  pendingDeposits,
+  activityItems,
+  loading = false,
+}: OverviewPageProps) {
   const primary = [
     {
       label: 'الاشتراكات النشطة',
-      value: props.overview?.activeSubscriptions ?? '—',
+      value: overview?.activeSubscriptions ?? '—',
       hint: 'اشتراكات فعّالة حاليًا',
+      trend: overview ? '+نشط' : undefined,
+      trendDirection: 'up' as const,
     },
     {
       label: 'إجمالي الإيرادات',
-      value: props.overview?.totalRevenue ?? '—',
+      value: overview?.totalRevenue ?? '—',
       hint: 'إجمالي المدفوعات المسجلة',
+      trend: overview ? 'إجمالي' : undefined,
+      trendDirection: 'neutral' as const,
     },
     {
       label: 'طلبات إيداع معلقة',
-      value: props.pendingDeposits,
+      value: pendingDeposits,
       hint: 'بانتظار المراجعة',
-      tone: props.pendingDeposits > 0 ? ('warning' as const) : ('default' as const),
+      tone: pendingDeposits > 0 ? ('warning' as const) : ('default' as const),
+      trend: pendingDeposits > 0 ? 'يتطلب إجراء' : 'لا يوجد',
+      trendDirection: pendingDeposits > 0 ? ('down' as const) : ('neutral' as const),
     },
     {
       label: 'المهام المكتملة',
-      value: props.overview?.completedTasks ?? '—',
+      value: overview?.completedTasks ?? '—',
       hint: 'منذ بداية التشغيل',
+      trend: overview ? 'مكتمل' : undefined,
+      trendDirection: 'up' as const,
     },
   ];
 
   const secondary = [
-    { label: 'العملاء', value: props.customersCount },
-    { label: 'السائقون', value: props.driversCount },
-    { label: 'الصناديق المتاحة', value: props.binsStats?.availableBins ?? '—' },
-    { label: 'الشكاوى المفتوحة', value: props.complaintsCount },
+    { label: 'العملاء', value: customersCount, hint: 'إجمالي العملاء المسجلين' },
+    { label: 'السائقون', value: driversCount, hint: 'سائقون نشطون' },
+    { label: 'الصناديق المتاحة', value: binsStats?.availableBins ?? '—', hint: 'جاهزة للتخصيص' },
+    { label: 'الشكاوى المفتوحة', value: complaintsCount, hint: 'تحتاج متابعة' },
   ];
 
   return (
-    <div className="page-stack">
+    <div className="overview-page">
+      <header className="page-header">
+        <div>
+          <h2 className="page-header__title">نظرة تنفيذية</h2>
+          <p className="page-header__description">
+            ملخص سريع لأهم مؤشرات الأداء والعمليات اليومية
+          </p>
+        </div>
+      </header>
+
       <section className="kpi-grid kpi-grid--primary" aria-label="المؤشرات الرئيسية">
-        {primary.map((item) => (
-          <KpiStat
-            key={item.label}
-            label={item.label}
-            value={item.value}
-            hint={item.hint}
-            tone={item.tone}
-          />
-        ))}
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => <KpiSkeleton key={i} />)
+          : primary.map((item) => <KpiStat key={item.label} {...item} />)}
       </section>
 
       <section className="kpi-grid kpi-grid--secondary" aria-label="مؤشرات تشغيلية">
-        {secondary.map((item) => (
-          <KpiStat key={item.label} label={item.label} value={item.value} />
-        ))}
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => <KpiSkeleton key={i} />)
+          : secondary.map((item) => <KpiStat key={item.label} {...item} hint={item.hint} />)}
       </section>
 
-      {props.activityItems.length > 0 ? (
-        <PageSection title="آخر النشاط" description="أحدث العمليات الإدارية">
+      <PageSection
+        title="آخر النشاط"
+        description="أحدث العمليات الإدارية على المنصة"
+        className="overview-activity"
+      >
+        {activityItems.length === 0 ? (
+          <p className="muted">لا يوجد نشاط حديث بعد.</p>
+        ) : (
           <ul className="activity-list">
-            {props.activityItems.map((item) => (
-              <li key={item}>{item}</li>
+            {activityItems.map((item) => (
+              <li key={item}>
+                <span className="activity-list__dot" aria-hidden="true" />
+                <span>{item}</span>
+              </li>
             ))}
           </ul>
-        </PageSection>
-      ) : null}
+        )}
+      </PageSection>
     </div>
   );
 }

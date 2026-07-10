@@ -2,93 +2,9 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { DataTable } from '../components/DataTable';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import type { Address, Area, BankAccountSettings, Bin, Complaint, Customer, DepositRequest, Driver, Payment, Plan, Route, Subscription, Task, User, Wallet } from '../types';
+import { API_ORIGIN, getId } from './module/shared';
 
-const API_ORIGIN = import.meta.env.VITE_API_ORIGIN ?? '';
-
-function getId(entity: { _id?: string; id?: string }) {
-  return entity._id ?? entity.id ?? '';
-}
-
-type UsersPageProps = {
-  users: User[];
-  onCreate: (body: { email: string; name: string; password: string; role: string }) => Promise<void>;
-  onUpdate: (id: string, body: { email?: string; name?: string }) => Promise<void>;
-  onSetStatus: (id: string, status: 'active' | 'inactive') => Promise<void>;
-};
-
-export function UsersPage({ users, onCreate, onUpdate, onSetStatus }: UsersPageProps) {
-  const [form, setForm] = useState({ email: '', name: '', password: '', role: 'support' });
-  const [selected, setSelected] = useState<User | null>(null);
-  const [confirm, setConfirm] = useState<{ id: string; status: 'active' | 'inactive' } | null>(null);
-
-  async function submitCreate(e: FormEvent) {
-    e.preventDefault();
-    await onCreate(form);
-    setForm({ email: '', name: '', password: '', role: 'support' });
-  }
-
-  async function submitUpdate(e: FormEvent) {
-    e.preventDefault();
-    if (!selected) return;
-    await onUpdate(getId(selected), { email: selected.email, name: selected.name });
-  }
-
-  return (
-    <>
-      <section className="panel">
-        <h2>إنشاء مستخدم</h2>
-        <form className="row-form" onSubmit={submitCreate}>
-          <input placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <input type="password" placeholder="Password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-          <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-            <option value="admin">admin</option>
-            <option value="support">support</option>
-            <option value="operations">operations</option>
-            <option value="manager">manager</option>
-          </select>
-          <button type="submit">Create</button>
-        </form>
-      </section>
-      <DataTable
-        title={`المستخدمون (${users.length})`}
-        rows={users}
-        onSelect={setSelected}
-        columns={[
-          { key: 'id', label: 'ID', render: (r) => getId(r) },
-          { key: 'email', label: 'Email' },
-          { key: 'name', label: 'Name' },
-          { key: 'role', label: 'Role' },
-          { key: 'status', label: 'Status' },
-        ]}
-      />
-      {selected ? (
-        <section className="panel">
-          <h3>Edit User: {getId(selected)}</h3>
-          <form className="row-form" onSubmit={submitUpdate}>
-            <input value={selected.email ?? ''} onChange={(e) => setSelected({ ...selected, email: e.target.value })} />
-            <input value={selected.name ?? ''} onChange={(e) => setSelected({ ...selected, name: e.target.value })} />
-            <button type="submit">Save</button>
-            <button type="button" className="ghost" onClick={() => setConfirm({ id: getId(selected), status: selected.status === 'active' ? 'inactive' : 'active' })}>
-              Set {selected.status === 'active' ? 'Inactive' : 'Active'}
-            </button>
-          </form>
-        </section>
-      ) : null}
-      <ConfirmDialog
-        open={Boolean(confirm)}
-        title="Change user status"
-        description="Confirm this user status update."
-        onCancel={() => setConfirm(null)}
-        onConfirm={() => {
-          if (!confirm) return;
-          void onSetStatus(confirm.id, confirm.status);
-          setConfirm(null);
-        }}
-      />
-    </>
-  );
-}
+export { UsersPage } from './module/UsersPage';
 
 type CustomersPageProps = {
   customers: Customer[];

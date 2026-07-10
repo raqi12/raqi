@@ -15,12 +15,69 @@ export const TAB_LABELS = {
   complaints: 'الشكاوى',
 } as const;
 
+export const COMMON = {
+  create: 'إنشاء',
+  save: 'حفظ',
+  cancel: 'إلغاء',
+  confirm: 'تأكيد',
+  search: 'بحث',
+  refresh: 'تحديث',
+  loading: 'جاري التحميل...',
+  noResults: 'لا توجد نتائج',
+  noData: 'لم يتم إضافة بيانات بعد.',
+  trySearch: 'جرّب تعديل كلمات البحث.',
+  records: 'سجل',
+  show: 'إظهار',
+  hide: 'إخفاء',
+  edit: 'تعديل',
+  delete: 'حذف',
+  actions: 'إجراءات',
+  status: 'الحالة',
+  email: 'البريد الإلكتروني',
+  name: 'الاسم',
+  password: 'كلمة المرور',
+  role: 'الدور',
+  type: 'النوع',
+  id: 'المعرف',
+} as const;
+
+export const ROLES: Record<string, string> = {
+  admin: 'مدير',
+  support: 'دعم',
+  operations: 'عمليات',
+  manager: 'مشرف',
+};
+
+export const CUSTOMER_TYPES: Record<string, string> = {
+  home: 'منزلي',
+  commercial: 'تجاري',
+  industrial: 'صناعي',
+};
+
+export const STATUS_LABELS: Record<string, string> = {
+  active: 'نشط',
+  inactive: 'غير نشط',
+  pending: 'معلق',
+  approved: 'موافق عليه',
+  rejected: 'مرفوض',
+  available: 'متاح',
+  assigned: 'مخصص',
+  open: 'مفتوح',
+  closed: 'مغلق',
+  suspended: 'موقوف',
+};
+
 export function formatApiError(message: string): string {
   if (message === 'Failed to fetch' || message.includes('NetworkError')) {
-    return 'تعذر الاتصال بالخادم. تأكد من تشغيل الخادم على المنفذ 3000.';
+    return 'تعذر الاتصال بالخادم. تأكد من تشغيل الخادم.';
   }
   if (message.startsWith('Request failed')) {
     return 'فشل الطلب. تحقق من بيانات الدخول أو حالة الخادم.';
   }
   return message;
+}
+
+export function formatStatus(status?: string): string {
+  if (!status) return '—';
+  return STATUS_LABELS[status] ?? status;
 }
