@@ -23,8 +23,8 @@ env:
   DEPLOY_USER: ${{ vars.DEPLOY_USER || 'root' }}
   DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
   DEPLOY_ROOT: ${{ vars.DEPLOY_ROOT || '/var/www/raqi' }}
-  VITE_API_BASE: ${{ vars.VITE_API_BASE || 'https://api.raqii.com.ly/api/v1' }}
-  VITE_API_ORIGIN: ${{ vars.VITE_API_ORIGIN || 'https://api.raqii.com.ly' }}
+  VITE_API_BASE: ${{ vars.VITE_API_BASE || '/api/v1' }}
+  VITE_API_ORIGIN: ${{ vars.VITE_API_ORIGIN || '' }}
 
 jobs:
   ci:
@@ -47,8 +47,8 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_API_BASE: ${{ vars.VITE_API_BASE || 'https://api.raqii.com.ly/api/v1' }}
-          VITE_API_ORIGIN: ${{ vars.VITE_API_ORIGIN || 'https://api.raqii.com.ly' }}
+          VITE_API_BASE: ${{ vars.VITE_API_BASE || '/api/v1' }}
+          VITE_API_ORIGIN: ${{ vars.VITE_API_ORIGIN || '' }}
 
       - name: Upload artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

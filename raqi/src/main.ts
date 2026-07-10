@@ -10,28 +10,35 @@ import { ensureDepositsUploadDir } from './modules/wallets/upload.config';
 async function bootstrap() {
   ensureDepositsUploadDir();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const defaultOrigins = [
+    'http://localhost:5173',
+    'https://dashboard.raqii.com.ly',
+    'http://dashboard.raqii.com.ly',
+  ];
   const allowedOrigins = new Set(
-    (process.env.CORS_ORIGINS
-      ? process.env.CORS_ORIGINS.split(',')
-      : [
-          'http://localhost:5173',
-          'https://dashboard.raqii.com.ly',
-          'https://dashboard.raqii.com.ly/',
-          'http://dashboard.raqii.com.ly',
-        ]
-    )
+    [
+      ...defaultOrigins,
+      ...(process.env.CORS_ORIGINS?.split(',') ?? []),
+    ]
       .map((origin) => origin.trim().replace(/\/+$/, ''))
       .filter(Boolean),
   );
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.has(origin.replace(/\/+$/, ''))) {
+      if (!origin) {
         callback(null, true);
+        return;
+      }
+      const normalized = origin.replace(/\/+$/, '');
+      if (allowedOrigins.has(normalized)) {
+        callback(null, origin);
         return;
       }
       callback(null, false);
     },
     credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
   app.setGlobalPrefix('api/v1');
