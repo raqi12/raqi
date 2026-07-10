@@ -63,6 +63,15 @@ jobs:
     needs: ci
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    env:
+      DEPLOY_SSH_KEY: |
+        -----BEGIN OPENSSH PRIVATE KEY-----
+        b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+        QyNTUxOQAAACChxxDfIc5dAKNc29AVZrjJHxHRsg5rntabQy9NgNXMAgAAAJjsln8U7JZ/
+        FAAAAAtzc2gtZWQyNTUxOQAAACChxxDfIc5dAKNc29AVZrjJHxHRsg5rntabQy9NgNXMAg
+        AAAEC70Q9XVKArXZlXa1L8xyjBEYr8HTDIC/xJx06tAyqGf6HHEN8hzl0Ao1zb0BVmuMkf
+        EdGyDmue1ptDL02A1cwCAAAAEnJhcWktZ2l0aHViLWRlcGxveQECAw==
+        -----END OPENSSH PRIVATE KEY-----
     steps:
       - uses: actions/checkout@v4
 
@@ -73,8 +82,6 @@ jobs:
           path: api-artifact
 
       - name: Setup SSH
-        env:
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
