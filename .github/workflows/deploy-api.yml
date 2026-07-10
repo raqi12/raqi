@@ -5,12 +5,12 @@ on:
     branches: [main]
     paths:
       - 'raqi/**'
-      - 'deploy/nginx/**'
+      - 'deploy/**'
       - '.github/workflows/deploy-api.yml'
   pull_request:
     paths:
       - 'raqi/**'
-      - 'deploy/nginx/**'
+      - 'deploy/**'
       - '.github/workflows/deploy-api.yml'
   workflow_dispatch:
 
@@ -49,7 +49,7 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           mkdir -p ../api-artifact
-          cp -r dist package.json package-lock.json ecosystem.config.cjs ../api-artifact/
+          cp -r dist package.json package-lock.json Dockerfile ../api-artifact/
 
       - name: Upload artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -92,20 +92,16 @@ jobs:
       - name: Ensure directories on VPS
         run: |
           ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
-            "mkdir -p $DEPLOY_ROOT $DEPLOY_ROOT/api $DEPLOY_ROOT/admin $DEPLOY_ROOT/api/uploads"
+            "mkdir -p $DEPLOY_ROOT $DEPLOY_ROOT/api $DEPLOY_ROOT/admin $DEPLOY_ROOT/uploads"
 
-      - name: Install Node and PM2 if missing
+      - name: Install Docker if missing
         run: |
           ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
-            "export DEBIAN_FRONTEND=noninteractive && \
-             rm -f /etc/apt/sources.list.d/mongodb-org-*.list 2>/dev/null || true && \
-             (grep -rl repo.mongodb.org /etc/apt/sources.list.d/ 2>/dev/null | xargs -r rm -f || true) && \
-             if ! command -v node >/dev/null 2>&1; then \
-               apt-get update && apt-get install -y curl ca-certificates gnupg && \
-               curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-               apt-get install -y nodejs; \
+            "if ! command -v docker >/dev/null 2>&1; then \
+               export DEBIAN_FRONTEND=noninteractive && \
+               curl -fsSL https://get.docker.com | sh; \
              fi && \
-             command -v pm2 >/dev/null 2>&1 || npm install -g pm2"
+             docker compose version >/dev/null 2>&1 || apt-get update && apt-get install -y docker-compose-plugin"
 
       - name: Install Nginx if missing
         run: |
@@ -121,24 +117,37 @@ jobs:
           ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
             "/usr/sbin/nginx -t && systemctl reload nginx"
 
-      - name: Rsync to VPS
+      - name: Upload Docker Compose and env template
+        run: |
+          scp -i ~/.ssh/id_deploy -P "$DEPLOY_PORT" \
+            deploy/docker-compose.yml \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_ROOT/docker-compose.yml"
+          scp -i ~/.ssh/id_deploy -P "$DEPLOY_PORT" \
+            deploy/.env.example \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_ROOT/.env.example"
+
+      - name: Rsync API build to VPS
         run: |
           rsync -avzr --delete \
-            --exclude '.env' \
-            --exclude 'uploads/' \
-            --exclude 'node_modules/' \
             -e "ssh -i ~/.ssh/id_deploy -p $DEPLOY_PORT" \
             api-artifact/ \
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_ROOT/api/"
 
-      - name: Install deps and restart PM2
+      - name: Stop old PM2 apps and start Docker
         run: |
           ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
-            "set -e && cd $DEPLOY_ROOT/api && \
-             npm ci --omit=dev && \
-             pm2 startOrReload ecosystem.config.cjs && \
-             pm2 save && \
-             pm2 describe raqi-api | grep -q online && \
+            "set -e && cd $DEPLOY_ROOT && \
+             if command -v pm2 >/dev/null 2>&1; then \
+               pm2 delete wassetpay-api 2>/dev/null || true; \
+               pm2 delete raqi-api 2>/dev/null || true; \
+               pm2 save 2>/dev/null || true; \
+             fi && \
+             if [ ! -f .env ]; then \
+               cp .env.example .env; \
+               echo 'Created .env from template — update JWT_SECRET on the VPS'; \
+             fi && \
+             docker compose down 2>/dev/null || true && \
+             docker compose up -d --build && \
              for i in \$(seq 1 30); do \
                if curl -fsS http://127.0.0.1:3000/api/v1/health >/dev/null 2>&1; then \
                  curl -fsS http://127.0.0.1:3000/api/v1/health; \
@@ -146,4 +155,4 @@ jobs:
                fi; \
                sleep 3; \
              done; \
-             echo 'API health check failed'; pm2 logs raqi-api --lines 50 --nostream; exit 1"
+             echo 'API health check failed'; docker compose logs api --tail 50; exit 1"

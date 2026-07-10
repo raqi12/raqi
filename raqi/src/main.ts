@@ -10,16 +10,14 @@ import { ensureDepositsUploadDir } from './modules/wallets/upload.config';
 async function bootstrap() {
   ensureDepositsUploadDir();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const configService = app.get(ConfigService);
   const defaultOrigins = [
     'http://localhost:5173',
     'https://dashboard.raqii.com.ly',
     'http://dashboard.raqii.com.ly',
   ];
   const allowedOrigins = new Set(
-    [
-      ...defaultOrigins,
-      ...(process.env.CORS_ORIGINS?.split(',') ?? []),
-    ]
+    [...defaultOrigins, ...(configService.get<string[]>('corsOrigins') ?? [])]
       .map((origin) => origin.trim().replace(/\/+$/, ''))
       .filter(Boolean),
   );
@@ -58,7 +56,6 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const configService = app.get(ConfigService);
   const port = configService.get<number>('port', 3000);
   await app.listen(port);
 }

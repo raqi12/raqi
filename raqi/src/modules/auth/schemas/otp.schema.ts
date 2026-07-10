@@ -25,7 +25,7 @@ export class Otp {
   @Prop({ type: MongooseSchema.Types.Mixed, default: null })
   payload: RegisterOtpPayload | null;
 
-  @Prop({ required: true, index: true })
+  @Prop({ required: true })
   expiresAt: Date;
 
   @Prop({ default: 0 })
