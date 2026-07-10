@@ -1,0 +1,126 @@
+name: Deploy Dashboard (Vite)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'raqi-admin/**'
+      - 'deploy/nginx/**'
+      - '.github/workflows/deploy-dashboard.yml'
+  pull_request:
+    paths:
+      - 'raqi-admin/**'
+      - 'deploy/nginx/**'
+      - '.github/workflows/deploy-dashboard.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-dashboard-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEPLOY_HOST: ${{ vars.DEPLOY_HOST || '69.164.247.213' }}
+  DEPLOY_USER: ${{ vars.DEPLOY_USER || 'root' }}
+  DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
+  DEPLOY_ROOT: ${{ vars.DEPLOY_ROOT || '/var/www/raqi' }}
+  VITE_API_BASE: ${{ vars.VITE_API_BASE || 'https://api.raqii.com.ly/api/v1' }}
+  VITE_API_ORIGIN: ${{ vars.VITE_API_ORIGIN || 'https://api.raqii.com.ly' }}
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: raqi-admin
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: raqi-admin/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_BASE: ${{ vars.VITE_API_BASE || 'https://api.raqii.com.ly/api/v1' }}
+          VITE_API_ORIGIN: ${{ vars.VITE_API_ORIGIN || 'https://api.raqii.com.ly' }}
+
+      - name: Upload artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: raqi-admin
+          path: raqi-admin/dist/
+          retention-days: 7
+
+  deploy:
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: raqi-admin
+          path: dist
+
+      - name: Setup SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Ensure directories on VPS
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "mkdir -p $DEPLOY_ROOT $DEPLOY_ROOT/admin $DEPLOY_ROOT/api $DEPLOY_ROOT/api/uploads"
+
+      - name: Install Nginx if missing
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "export DEBIAN_FRONTEND=noninteractive && \
+             rm -f /etc/apt/sources.list.d/mongodb-org-*.list 2>/dev/null || true && \
+             (grep -rl repo.mongodb.org /etc/apt/sources.list.d/ 2>/dev/null | xargs -r rm -f || true) && \
+             command -v nginx >/dev/null 2>&1 || (apt-get update && apt-get install -y nginx)"
+
+      - name: Configure Nginx upload limits
+        run: |
+          scp -i ~/.ssh/id_deploy -P "$DEPLOY_PORT" \
+            deploy/nginx/raqi-upload-limits.conf \
+            "$DEPLOY_USER@$DEPLOY_HOST:/etc/nginx/conf.d/raqi-upload-limits.conf"
+
+      - name: Upload Nginx config
+        run: |
+          scp -i ~/.ssh/id_deploy -P "$DEPLOY_PORT" \
+            deploy/nginx/raqi.conf.example \
+            "$DEPLOY_USER@$DEPLOY_HOST:/etc/nginx/sites-available/raqi"
+
+      - name: Enable Nginx site
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "ln -sf /etc/nginx/sites-available/raqi /etc/nginx/sites-enabled/raqi && \
+             rm -f /etc/nginx/sites-enabled/default && \
+             /usr/sbin/nginx -t && systemctl enable nginx && systemctl restart nginx"
+
+      - name: Rsync static files to VPS
+        run: |
+          rsync -avzr --delete \
+            -e "ssh -i ~/.ssh/id_deploy -p $DEPLOY_PORT" \
+            dist/ \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_ROOT/admin/"
+
+      - name: Reload Nginx
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "/usr/sbin/nginx -t && systemctl reload nginx"

@@ -1,0 +1,142 @@
+name: Deploy API (NestJS)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'raqi/**'
+      - 'deploy/nginx/**'
+      - '.github/workflows/deploy-api.yml'
+  pull_request:
+    paths:
+      - 'raqi/**'
+      - 'deploy/nginx/**'
+      - '.github/workflows/deploy-api.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-api-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEPLOY_HOST: ${{ vars.DEPLOY_HOST || '69.164.247.213' }}
+  DEPLOY_USER: ${{ vars.DEPLOY_USER || 'root' }}
+  DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
+  DEPLOY_ROOT: ${{ vars.DEPLOY_ROOT || '/var/www/raqi' }}
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: raqi
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: raqi/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Prepare deploy artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p ../api-artifact
+          cp -r dist package.json package-lock.json ecosystem.config.cjs ../api-artifact/
+
+      - name: Upload artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: raqi-api
+          path: api-artifact/
+          retention-days: 7
+
+  deploy:
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: raqi-api
+          path: api-artifact
+
+      - name: Setup SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Ensure directories on VPS
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "mkdir -p $DEPLOY_ROOT $DEPLOY_ROOT/api $DEPLOY_ROOT/admin $DEPLOY_ROOT/api/uploads"
+
+      - name: Install Node and PM2 if missing
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "export DEBIAN_FRONTEND=noninteractive && \
+             rm -f /etc/apt/sources.list.d/mongodb-org-*.list 2>/dev/null || true && \
+             (grep -rl repo.mongodb.org /etc/apt/sources.list.d/ 2>/dev/null | xargs -r rm -f || true) && \
+             if ! command -v node >/dev/null 2>&1; then \
+               apt-get update && apt-get install -y curl ca-certificates gnupg && \
+               curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+               apt-get install -y nodejs; \
+             fi && \
+             command -v pm2 >/dev/null 2>&1 || npm install -g pm2"
+
+      - name: Install Nginx if missing
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "export DEBIAN_FRONTEND=noninteractive && \
+             command -v nginx >/dev/null 2>&1 || (apt-get update && apt-get install -y nginx)"
+
+      - name: Configure Nginx upload limits
+        run: |
+          scp -i ~/.ssh/id_deploy -P "$DEPLOY_PORT" \
+            deploy/nginx/raqi-upload-limits.conf \
+            "$DEPLOY_USER@$DEPLOY_HOST:/etc/nginx/conf.d/raqi-upload-limits.conf"
+          ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "/usr/sbin/nginx -t && systemctl reload nginx"
+
+      - name: Rsync to VPS
+        run: |
+          rsync -avzr --delete \
+            --exclude '.env' \
+            --exclude 'uploads/' \
+            --exclude 'node_modules/' \
+            -e "ssh -i ~/.ssh/id_deploy -p $DEPLOY_PORT" \
+            api-artifact/ \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_ROOT/api/"
+
+      - name: Install deps and restart PM2
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "set -e && cd $DEPLOY_ROOT/api && \
+             npm ci --omit=dev && \
+             pm2 startOrReload ecosystem.config.cjs && \
+             pm2 save && \
+             pm2 describe raqi-api | grep -q online && \
+             for i in \$(seq 1 30); do \
+               if curl -fsS http://127.0.0.1:3000/api/v1/health >/dev/null 2>&1; then \
+                 curl -fsS http://127.0.0.1:3000/api/v1/health; \
+                 exit 0; \
+               fi; \
+               sleep 3; \
+             done; \
+             echo 'API health check failed'; pm2 logs raqi-api --lines 50 --nostream; exit 1"

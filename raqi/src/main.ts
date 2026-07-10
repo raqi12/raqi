@@ -10,8 +10,15 @@ import { ensureDepositsUploadDir } from './modules/wallets/upload.config';
 async function bootstrap() {
   ensureDepositsUploadDir();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const corsOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+    : [
+        'http://localhost:5173',
+        'https://dashboard.raqii.com.ly',
+        'http://dashboard.raqii.com.ly',
+      ];
   app.enableCors({
-    origin: ['http://localhost:5173'],
+    origin: corsOrigins,
     credentials: true,
   });
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });

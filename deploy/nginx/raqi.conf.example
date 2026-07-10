@@ -1,0 +1,53 @@
+# Deployed to /etc/nginx/sites-available/raqi on the VPS by GitHub Actions.
+
+upstream raqi_api {
+  server 127.0.0.1:3000;
+  keepalive 32;
+}
+
+server {
+  listen 80;
+  server_name api.raqii.com.ly;
+
+  location / {
+    proxy_pass http://raqi_api;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Connection "";
+  }
+}
+
+server {
+  listen 80;
+  server_name dashboard.raqii.com.ly;
+
+  root /var/www/raqi/admin;
+  index index.html;
+
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+
+  location /api/ {
+    proxy_pass http://raqi_api;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Connection "";
+  }
+
+  location /uploads/ {
+    proxy_pass http://raqi_api;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Connection "";
+  }
+}
