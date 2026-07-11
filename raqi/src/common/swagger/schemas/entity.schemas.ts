@@ -454,13 +454,13 @@ export class RegisterPendingDto {
 
   @ApiPropertyOptional({
     example: '123456',
-    description: 'Returned when OTP_DEBUG is enabled (development or OTP_DEBUG=true)',
+    description: 'Dev/test OTP returned in API response until SMS is integrated',
   })
   otp?: string;
 
   @ApiPropertyOptional({
     example: '123456',
-    description: 'Alias of otp when OTP debug is enabled',
+    description: 'Alias of otp during dev/testing',
   })
   debugOtp?: string;
 

@@ -12,9 +12,4 @@ export default () => ({
         'https://dashboard.raqii.com.ly',
         'http://dashboard.raqii.com.ly',
       ],
-  otpDebug:
-    process.env.OTP_DEBUG === 'true' ||
-    ((process.env.NODE_ENV ?? 'development') === 'development' &&
-      process.env.OTP_DEBUG !== 'false'),
-  otpDevCode: process.env.OTP_DEV_CODE ?? '123456',
 });

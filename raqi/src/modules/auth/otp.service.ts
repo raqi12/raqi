@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { Model } from 'mongoose';
@@ -13,11 +12,14 @@ import {
 const OTP_EXPIRES_SECONDS = 300;
 const MAX_OTP_ATTEMPTS = 5;
 
+/** Fixed OTP for testing — replace with SMS provider before production. */
+const DEV_OTP_CODE = '123456';
+const USE_DEV_OTP = true;
+
 @Injectable()
 export class OtpService {
   constructor(
     @InjectModel(Otp.name) private readonly otpModel: Model<OtpDocument>,
-    private readonly configService: ConfigService,
   ) {}
 
   async createOtp(
@@ -74,8 +76,8 @@ export class OtpService {
   }
 
   private generateCode(): string {
-    if (this.isOtpDebugEnabled()) {
-      return this.configService.get<string>('otpDevCode') ?? '123456';
+    if (USE_DEV_OTP) {
+      return DEV_OTP_CODE;
     }
     return String(Math.floor(100000 + Math.random() * 900000));
   }
@@ -91,23 +93,12 @@ export class OtpService {
       expiresIn,
     };
 
-    if (this.isOtpDebugEnabled()) {
+    if (USE_DEV_OTP) {
       response.otp = code;
       response.debugOtp = code;
-      console.log(`[OTP debug] code=${code} expiresIn=${expiresIn}s`);
+      console.log(`[OTP dev] code=${code} expiresIn=${expiresIn}s`);
     }
 
     return response;
-  }
-
-  private isOtpDebugEnabled(): boolean {
-    return this.configService.get<boolean>('otpDebug') === true;
-  }
-
-  private isDevelopment(): boolean {
-    return (
-      (this.configService.get<string>('nodeEnv') ?? 'development') ===
-      'development'
-    );
   }
 }
