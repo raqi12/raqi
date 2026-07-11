@@ -65,12 +65,14 @@ export class CreateAddressDto {
   @IsString()
   areaId: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'شارع الجمهورية، بجوار المسجد',
     description: 'Street and landmark details (may be empty)',
+    default: '',
   })
+  @IsOptional()
   @IsString()
-  details: string;
+  details?: string;
 }
 
 export class UpdateAddressDto {

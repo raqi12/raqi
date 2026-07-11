@@ -25,10 +25,12 @@ import {
 import {
   AddressDto,
   CustomerDto,
+  CustomerDetailsDto,
   WalletDto,
 } from '../../common/swagger/schemas/entity.schemas';
 import { UsersService } from '../users/users.service';
 import { CustomersService } from './customers.service';
+import { CustomerAdminService } from './customer-admin.service';
 import { WalletsService } from '../wallets/wallets.service';
 import { AdminCreditWalletDto } from '../wallets/dto/wallet.dto';
 import {
@@ -46,6 +48,7 @@ import {
 export class AdminCustomersController {
   constructor(
     private readonly customersService: CustomersService,
+    private readonly customerAdminService: CustomerAdminService,
     private readonly usersService: UsersService,
     private readonly walletsService: WalletsService,
   ) {}
@@ -58,7 +61,7 @@ export class AdminCustomersController {
   })
   @ApiOkDataResponse(CustomerDto, 'Customer list', { isArray: true })
   async list() {
-    return { data: await this.customersService.findAll() };
+    return { data: await this.customersService.findAllForAdmin() };
   }
 
   @Roles(Role.Admin)
@@ -92,7 +95,9 @@ export class AdminCustomersController {
       areaId: body.areaId,
     });
     await this.walletsService.ensureWallet(String(customer.id));
-    return { data: customer };
+    return {
+      data: await this.customersService.findByIdForAdmin(String(customer.id)),
+    };
   }
 
   @Roles(Role.Admin)
@@ -145,6 +150,19 @@ export class AdminCustomersController {
   }
 
   @Roles(Role.Admin)
+  @Get(':id/details')
+  @ApiOperation({
+    summary: 'Get full customer profile',
+    description:
+      'Returns customer profile with wallet, addresses, subscriptions, payments, deposit requests, bins, tasks, and complaints.',
+  })
+  @ApiMongoIdParam('id', 'Customer MongoDB ID')
+  @ApiOkDataResponse(CustomerDetailsDto, 'Customer full details')
+  async getDetails(@Param('id') id: string) {
+    return { data: await this.customerAdminService.getDetails(id) };
+  }
+
+  @Roles(Role.Admin)
   @Get(':id')
   @ApiOperation({ summary: 'Get customer by ID' })
   @ApiMongoIdParam('id', 'Customer MongoDB ID')
@@ -154,7 +172,7 @@ export class AdminCustomersController {
     if (!customer) {
       throw new NotFoundException('Customer not found');
     }
-    return { data: customer };
+    return { data: await this.customersService.findByIdForAdmin(id) };
   }
 
   @Roles(Role.Admin)
@@ -168,7 +186,7 @@ export class AdminCustomersController {
     if (!customer) {
       throw new NotFoundException('Customer not found');
     }
-    return { data: customer };
+    return { data: await this.customersService.findByIdForAdmin(id) };
   }
 }
 

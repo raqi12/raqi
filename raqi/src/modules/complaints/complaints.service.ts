@@ -22,6 +22,13 @@ export class ComplaintsService {
     return this.complaintModel.find().exec();
   }
 
+  findByCustomer(customerId: string): Promise<ComplaintDocument[]> {
+    return this.complaintModel
+      .find({ customerId })
+      .sort({ createdAt: -1 })
+      .exec();
+  }
+
   update(
     id: string,
     patch: Partial<Complaint>,

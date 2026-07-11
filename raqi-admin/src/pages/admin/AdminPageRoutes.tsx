@@ -85,6 +85,7 @@ export function AdminPageRoutes() {
           <CustomersPage
             customers={customers}
             users={users}
+            drivers={drivers}
             plans={plans}
             bins={bins}
             cities={cities}
@@ -93,11 +94,8 @@ export function AdminPageRoutes() {
             onCreate={(body) => runMutation(() => AdminApi.customers.create(body), 'تم إنشاء العميل')}
             onUpdate={(id, body) => runMutation(() => AdminApi.customers.update(id, body), 'تم تحديث العميل')}
             onLoadDetails={async (id) => {
-              const [walletRes, addressesRes] = await Promise.all([
-                AdminApi.customers.getWallet(id),
-                AdminApi.customers.listAddresses(id),
-              ]);
-              return { wallet: walletRes.data, addresses: addressesRes.data };
+              const res = await AdminApi.customers.getDetails(id);
+              return res.data;
             }}
             onDeposit={(id, amount) =>
               runMutation(() => AdminApi.customers.depositWallet(id, { amount }), 'تم الإيداع في المحفظة')
@@ -214,6 +212,8 @@ export function AdminPageRoutes() {
             customers={customers}
             users={users}
             drivers={drivers}
+            tasks={tasks}
+            payments={payments}
             areas={areas}
             cities={cities}
             loading={loading}

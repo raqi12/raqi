@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { BinsModule } from '../bins/bins.module';
 import { CustomersModule } from '../customers/customers.module';
@@ -20,7 +20,7 @@ import { SubscriptionsService } from './subscriptions.service';
     MongooseModule.forFeature([
       { name: Subscription.name, schema: SubscriptionSchema },
     ]),
-    CustomersModule,
+    forwardRef(() => CustomersModule),
     PlansModule,
     BinsModule,
     WalletsModule,

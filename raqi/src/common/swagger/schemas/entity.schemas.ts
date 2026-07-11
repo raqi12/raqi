@@ -46,6 +46,15 @@ export class CustomerDto {
 
   @ApiProperty({ example: '507f1f77bcf86cd799439014', description: 'Service area MongoDB ID' })
   areaId: string;
+
+  @ApiPropertyOptional({ example: 'أحمد الزاوي', description: 'Linked user display name' })
+  name?: string;
+
+  @ApiPropertyOptional({ example: 'customer@example.com', description: 'Linked user email' })
+  email?: string;
+
+  @ApiPropertyOptional({ enum: ['active', 'inactive'], example: 'active', description: 'Linked user account status' })
+  status?: string;
 }
 
 export class AuthTokensDto {
@@ -391,6 +400,35 @@ export class DepositRequestDto {
 
   @ApiPropertyOptional({ example: 'صورة غير واضحة' })
   rejectionReason?: string;
+}
+
+export class CustomerDetailsDto {
+  @ApiProperty({ type: CustomerDto })
+  customer: CustomerDto;
+
+  @ApiProperty({ type: WalletDto })
+  wallet: WalletDto;
+
+  @ApiProperty({ type: AddressDto, isArray: true })
+  addresses: AddressDto[];
+
+  @ApiProperty({ type: SubscriptionDto, isArray: true })
+  subscriptions: SubscriptionDto[];
+
+  @ApiProperty({ type: PaymentDto, isArray: true })
+  payments: PaymentDto[];
+
+  @ApiProperty({ type: DepositRequestDto, isArray: true })
+  depositRequests: DepositRequestDto[];
+
+  @ApiProperty({ type: BinDto, isArray: true })
+  bins: BinDto[];
+
+  @ApiProperty({ type: TaskDto, isArray: true })
+  tasks: TaskDto[];
+
+  @ApiProperty({ type: ComplaintDto, isArray: true })
+  complaints: ComplaintDto[];
 }
 
 export class OverviewReportDto {

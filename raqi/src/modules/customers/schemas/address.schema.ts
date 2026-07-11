@@ -21,7 +21,7 @@ export class Address {
   @Prop({ required: true })
   label: string;
 
-  @Prop({ required: true, default: '' })
+  @Prop({ default: '' })
   details: string;
 }
 

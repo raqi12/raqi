@@ -99,10 +99,24 @@ export type Customer = {
   _id?: string;
   id?: string;
   userId?: string;
+  name?: string;
+  email?: string;
   type?: string;
   cityId?: string;
   areaId?: string;
   status?: string;
+};
+
+export type CustomerDetails = {
+  customer: Customer;
+  wallet: Wallet | null;
+  addresses: Address[];
+  subscriptions: Subscription[];
+  payments: Payment[];
+  depositRequests: DepositRequest[];
+  bins: Bin[];
+  tasks: Task[];
+  complaints: Complaint[];
 };
 
 export type Driver = {
@@ -118,6 +132,7 @@ export type Driver = {
 export type Task = {
   _id?: string;
   id?: string;
+  subscriptionId?: string;
   customerId?: string;
   driverId?: string;
   areaId?: string;

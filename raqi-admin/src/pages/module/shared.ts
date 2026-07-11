@@ -31,6 +31,13 @@ export function userNameById(users: { _id?: string; id?: string; name?: string }
   return user?.name ?? '—';
 }
 
+export function customerDisplayName(
+  customer: { userId?: string; name?: string },
+  users: { _id?: string; id?: string; name?: string }[] = [],
+) {
+  return customer.name ?? userNameById(users, customer.userId);
+}
+
 export function planNameById(plans: { _id?: string; id?: string; name?: string }[], planId?: string) {
   if (!planId) return '—';
   const plan = plans.find((item) => getId(item) === planId);

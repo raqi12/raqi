@@ -8,6 +8,7 @@ import { Model } from 'mongoose';
 import { CustomerType } from '../../common/customer-type';
 import { AreasService } from '../areas/areas.service';
 import { CitiesService } from '../cities/cities.service';
+import { UsersService } from '../users/users.service';
 import { Customer, CustomerDocument } from './schemas/customer.schema';
 import { Address, AddressDocument } from './schemas/address.schema';
 
@@ -22,6 +23,7 @@ export class CustomersService {
     private readonly addressModel: Model<AddressDocument>,
     private readonly citiesService: CitiesService,
     private readonly areasService: AreasService,
+    private readonly usersService: UsersService,
   ) {}
 
   async create(input: {
@@ -36,6 +38,41 @@ export class CustomersService {
 
   findAll(): Promise<CustomerDocument[]> {
     return this.customerModel.find().exec();
+  }
+
+  async findAllForAdmin(): Promise<Record<string, unknown>[]> {
+    const customers = await this.findAll();
+    const users = await this.usersService.findByIds(
+      customers.map((customer) => String(customer.userId)),
+    );
+    const userById = new Map(users.map((user) => [String(user.id), user]));
+    return customers.map((customer) =>
+      this.toAdminView(customer, userById.get(String(customer.userId))),
+    );
+  }
+
+  async findByIdForAdmin(id: string): Promise<Record<string, unknown> | null> {
+    const customer = await this.findById(id);
+    if (!customer) {
+      return null;
+    }
+    const user = await this.usersService.findById(String(customer.userId));
+    return this.toAdminView(customer, user);
+  }
+
+  private toAdminView(
+    customer: CustomerDocument,
+    user?: { name: string; email: string; status?: string } | null,
+  ): Record<string, unknown> {
+    const json = customer.toJSON() as unknown as Record<string, unknown>;
+    if (user) {
+      json.name = user.name;
+      json.email = user.email;
+      if (user.status) {
+        json.status = user.status;
+      }
+    }
+    return json;
   }
 
   findById(id: string): Promise<CustomerDocument | null> {
@@ -79,7 +116,7 @@ export class CustomersService {
       label: string;
       cityId: string;
       areaId: string;
-      details: string;
+      details?: string;
     },
   ): Promise<AddressDocument> {
     await this.validateLocation(input.cityId, input.areaId);
@@ -88,7 +125,7 @@ export class CustomersService {
       cityId: input.cityId,
       areaId: input.areaId,
       label: input.label,
-      details: input.details,
+      details: input.details ?? '',
       isActive: false,
     });
   }

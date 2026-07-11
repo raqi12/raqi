@@ -7,6 +7,7 @@ import type {
   City,
   Complaint,
   Customer,
+  CustomerDetails,
   DepositRequest,
   Driver,
   Overview,
@@ -121,6 +122,7 @@ export const AdminApi = {
         body: JSON.stringify(body),
       }),
     listAddresses: (id: string) => apiRequest<Address[]>(`/admin/customers/${id}/addresses`),
+    getDetails: (id: string) => apiRequest<CustomerDetails>(`/admin/customers/${id}/details`),
   },
   drivers: {
     list: () => apiRequest<Driver[]>('/admin/drivers'),

@@ -60,6 +60,13 @@ export class SubscriptionsService {
     return this.subscriptionModel.find().exec();
   }
 
+  findByCustomer(customerId: string): Promise<SubscriptionDocument[]> {
+    return this.subscriptionModel
+      .find({ customerId })
+      .sort({ createdAt: -1 })
+      .exec();
+  }
+
   findById(id: string): Promise<SubscriptionDocument | null> {
     return this.subscriptionModel.findById(id).exec();
   }

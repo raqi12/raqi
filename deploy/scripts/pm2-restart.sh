@@ -24,6 +24,10 @@ pm2 delete wassetpay-api 2>/dev/null || true
 pm2 startOrReload ecosystem.config.cjs --update-env
 pm2 save
 
+cd api
+node --env-file=../.env dist/scripts/seed-admin.js
+cd "$ROOT"
+
 echo "PM2 status:"
 pm2 status raqi-api
 

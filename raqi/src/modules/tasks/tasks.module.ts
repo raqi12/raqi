@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { CustomersModule } from '../customers/customers.module';
@@ -16,7 +16,7 @@ import { TasksService } from './tasks.service';
   imports: [
     MongooseModule.forFeature([{ name: Task.name, schema: TaskSchema }]),
     SubscriptionsModule,
-    CustomersModule,
+    forwardRef(() => CustomersModule),
     DriversModule,
     AreasModule,
   ],

@@ -9,7 +9,7 @@ import { Select } from '../../components/ui/Select';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { COMMON, CUSTOMER_TYPES } from '../../i18n/ar';
 import type { Bin, Customer, User } from '../../types';
-import { getId, userNameById } from './shared';
+import { getId, customerDisplayName } from './shared';
 
 type BinStatus = 'available' | 'assigned' | 'maintenance';
 
@@ -40,7 +40,7 @@ const BIN_STATUS_OPTIONS: { value: BinStatus; label: string }[] = [
 ];
 
 function customerOptionLabel(customer: Customer, users: User[]) {
-  const name = userNameById(users, customer.userId);
+  const name = customerDisplayName(customer, users);
   const type = CUSTOMER_TYPES[customer.type ?? ''] ?? customer.type ?? '—';
   return `${name} — ${type}`;
 }

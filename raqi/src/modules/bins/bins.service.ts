@@ -25,6 +25,10 @@ export class BinsService {
     return this.binModel.findById(id).exec();
   }
 
+  findByCustomer(customerId: string): Promise<BinDocument[]> {
+    return this.binModel.find({ customerId }).sort({ createdAt: -1 }).exec();
+  }
+
   update(id: string, patch: Partial<Bin>): Promise<BinDocument | null> {
     return this.binModel.findByIdAndUpdate(id, patch, { new: true }).exec();
   }

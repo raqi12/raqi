@@ -29,6 +29,6 @@ import { DepositRequestsService } from './deposit-requests.service';
   ],
   controllers: [CustomerWalletController, AdminWalletSettingsController],
   providers: [WalletsService, BankAccountSettingsService, DepositRequestsService],
-  exports: [WalletsService],
+  exports: [WalletsService, DepositRequestsService],
 })
 export class WalletsModule {}

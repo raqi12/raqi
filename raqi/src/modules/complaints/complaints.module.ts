@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CustomersModule } from '../customers/customers.module';
 import { Complaint, ComplaintSchema } from './schemas/complaint.schema';
@@ -13,7 +13,7 @@ import { ComplaintsService } from './complaints.service';
     MongooseModule.forFeature([
       { name: Complaint.name, schema: ComplaintSchema },
     ]),
-    CustomersModule,
+    forwardRef(() => CustomersModule),
   ],
   controllers: [CustomerComplaintsController, AdminComplaintsController],
   providers: [ComplaintsService],
