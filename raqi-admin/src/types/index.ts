@@ -25,11 +25,17 @@ export type BinStats = {
   availableBins: number;
 };
 
+export type City = {
+  _id?: string;
+  id?: string;
+  name?: string;
+};
+
 export type Area = {
   _id?: string;
   id?: string;
   name?: string;
-  city?: string;
+  cityId?: string;
 };
 
 export type Route = {
@@ -44,8 +50,10 @@ export type Address = {
   _id?: string;
   id?: string;
   customerId?: string;
+  cityId?: string;
+  areaId?: string;
+  isActive?: boolean;
   label?: string;
-  area?: string;
   details?: string;
 };
 
@@ -92,6 +100,8 @@ export type Customer = {
   id?: string;
   userId?: string;
   type?: string;
+  cityId?: string;
+  areaId?: string;
   status?: string;
 };
 
@@ -100,6 +110,8 @@ export type Driver = {
   id?: string;
   userId?: string;
   vehicleNumber?: string;
+  cityId?: string;
+  areaId?: string;
   status?: 'active' | 'inactive';
 };
 
@@ -109,6 +121,7 @@ export type Task = {
   customerId?: string;
   driverId?: string;
   areaId?: string;
+  scheduledDate?: string;
   date?: string;
   status?: string;
 };
@@ -120,7 +133,9 @@ export type Subscription = {
   planId?: string;
   addressId?: string;
   binId?: string;
+  cityId?: string;
   areaId?: string;
+  driverId?: string;
   paymentStatus?: 'paid' | 'unpaid';
   status?: string;
 };

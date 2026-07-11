@@ -13,6 +13,7 @@ import { BinsModule } from './modules/bins/bins.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { AreasModule } from './modules/areas/areas.module';
+import { CitiesModule } from './modules/cities/cities.module';
 import { RoutesModule } from './modules/routes/routes.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { ComplaintsModule } from './modules/complaints/complaints.module';
@@ -41,6 +42,7 @@ import { WalletsModule } from './modules/wallets/wallets.module';
     SubscriptionsModule,
     PaymentsModule,
     AreasModule,
+    CitiesModule,
     RoutesModule,
     TasksModule,
     ComplaintsModule,

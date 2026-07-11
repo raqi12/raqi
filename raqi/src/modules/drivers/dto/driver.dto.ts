@@ -24,6 +24,14 @@ export class CreateDriverDto {
   @ApiProperty({ example: 'طرابلس-1234', description: 'Vehicle registration number' })
   @IsString()
   vehicleNumber: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439011', description: 'Parent city ID' })
+  @IsString()
+  cityId: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439012', description: 'Service area ID' })
+  @IsString()
+  areaId: string;
 }
 
 export class UpdateDriverDto {
@@ -31,6 +39,16 @@ export class UpdateDriverDto {
   @IsOptional()
   @IsString()
   vehicleNumber?: string;
+
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439011', description: 'Parent city ID' })
+  @IsOptional()
+  @IsString()
+  cityId?: string;
+
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439012', description: 'Service area ID' })
+  @IsOptional()
+  @IsString()
+  areaId?: string;
 
   @ApiPropertyOptional({ enum: ['active', 'inactive'], example: 'active', description: 'Driver account status' })
   @IsOptional()

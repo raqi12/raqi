@@ -1,3 +1,5 @@
+import { IconSearch } from './Icons';
+
 type SearchInputProps = {
   value: string;
   onChange: (value: string) => void;
@@ -13,6 +15,9 @@ export function SearchInput({
 }: SearchInputProps) {
   return (
     <div className="search-input">
+      <span className="search-input__icon" aria-hidden="true">
+        <IconSearch />
+      </span>
       <input
         type="search"
         className="input search-input__field"

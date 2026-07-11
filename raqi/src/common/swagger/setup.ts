@@ -20,6 +20,7 @@ import {
   BinDto,
   BinStatsDto,
   ComplaintDto,
+  CityDto,
   CustomerDto,
   DepositRequestDto,
   DriverDto,
@@ -51,6 +52,7 @@ const extraModels = [
   AuthTokensDto,
   RefreshTokenDataDto,
   RegisterPendingDto,
+  CityDto,
   CustomerDto,
   AddressDto,
   DriverDto,
@@ -80,7 +82,17 @@ export function setupSwagger(app: INestApplication) {
 Protected routes require a JWT bearer token:
 \`Authorization: Bearer <access_token>\`
 
-Obtain tokens via \`POST /api/v1/auth/login\` or customer registration flow.
+Obtain tokens via \`POST /api/v1/auth/login\` or the customer registration flow below.
+
+## Customer registration
+1. \`GET /api/v1/cities\` — list cities (no auth)
+2. \`GET /api/v1/areas?cityId=<cityId>\` — list areas for the selected city (no auth)
+3. \`POST /api/v1/auth/register\` — send OTP with \`cityId\`, \`areaId\`, and profile fields
+4. \`POST /api/v1/auth/verify-otp\` — verify OTP; creates user, customer (with location), active address, and wallet
+
+Both \`cityId\` and \`areaId\` are required at registration. The area must belong to the selected city. Optional \`addressDetails\` sets street/landmark on the first active address.
+
+After login, customers manage addresses via \`GET/POST/PATCH /customer/addresses\` and \`PATCH /customer/addresses/:id/activate\`.
 
 ## Response envelope
 Successful responses use:
@@ -117,12 +129,14 @@ Deposit evidence: \`multipart/form-data\` with field \`evidence\` (jpg, jpeg, pn
     )
     .addTag('Health', 'Service health and readiness')
     .addTag('Auth', 'Registration, login, tokens, and profile')
+    .addTag('Locations', 'Public city and area catalog for signup forms')
     .addTag('Plans', 'Public subscription plans')
     .addTag('Admin - Users', 'Staff user management (admin only)')
     .addTag('Admin - Customers', 'Customer account management')
     .addTag('Customer - Addresses', 'Customer delivery addresses')
     .addTag('Admin - Drivers', 'Driver fleet management')
     .addTag('Admin - Areas', 'Service areas')
+    .addTag('Admin - Cities', 'Service cities')
     .addTag('Admin - Routes', 'Collection routes')
     .addTag('Admin - Plans', 'Plan catalog management')
     .addTag('Admin - Bins', 'Bin inventory management')

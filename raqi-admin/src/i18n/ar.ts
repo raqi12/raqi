@@ -5,7 +5,7 @@ export const TAB_LABELS = {
   drivers: 'السائقون',
   plans: 'الخطط',
   bins: 'الصناديق',
-  areas: 'المناطق',
+  locations: 'المدن والمناطق',
   routes: 'المسارات',
   tasks: 'المهام',
   subscriptions: 'الاشتراكات',
@@ -39,6 +39,12 @@ export const COMMON = {
   role: 'الدور',
   type: 'النوع',
   id: 'المعرف',
+  vehicleNumber: 'رقم المركبة',
+  city: 'المدينة',
+  area: 'المنطقة',
+  driver: 'السائق',
+  selectCity: 'اختر المدينة',
+  selectArea: 'اختر المنطقة',
 } as const;
 
 export const ROLES: Record<string, string> = {
@@ -54,6 +60,12 @@ export const CUSTOMER_TYPES: Record<string, string> = {
   industrial: 'صناعي',
 };
 
+export const PLAN_FREQUENCIES: Record<string, string> = {
+  weekly: 'أسبوعي',
+  monthly: 'شهري',
+  custom: 'مخصص',
+};
+
 export const STATUS_LABELS: Record<string, string> = {
   active: 'نشط',
   inactive: 'غير نشط',
@@ -62,9 +74,15 @@ export const STATUS_LABELS: Record<string, string> = {
   rejected: 'مرفوض',
   available: 'متاح',
   assigned: 'مخصص',
+  maintenance: 'صيانة',
   open: 'مفتوح',
   closed: 'مغلق',
   suspended: 'موقوف',
+  draft: 'مسودة',
+  requested: 'قيد الطلب',
+  expired: 'منتهٍ',
+  paid: 'مدفوع',
+  unpaid: 'غير مدفوع',
 };
 
 export function formatApiError(message: string): string {

@@ -17,6 +17,7 @@ import type {
   BankAccountSettings,
   Bin,
   BinStats,
+  City,
   Complaint,
   Customer,
   DepositRequest,
@@ -32,6 +33,7 @@ import type {
 } from '../types';
 
 const POLL_MS = 10000;
+export const POLL_INTERVAL_SEC = POLL_MS / 1000;
 
 type ActivityLog = {
   items: string[];
@@ -62,6 +64,7 @@ type AdminContextValue = {
   binsStats: BinStats | null;
   plans: Plan[];
   bins: Bin[];
+  cities: City[];
   areas: Area[];
   routes: Route[];
   bankAccount: BankAccountSettings | null;
@@ -113,6 +116,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
   const [binsStats, setBinsStats] = useState<BinStats | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [bins, setBins] = useState<Bin[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [bankAccount, setBankAccount] = useState<BankAccountSettings | null>(null);
@@ -151,6 +155,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
         binsStatsRes,
         plansRes,
         binsRes,
+        citiesRes,
         areasRes,
         routesRes,
         usersRes,
@@ -167,6 +172,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
         AdminApi.bins.stats(),
         AdminApi.plans.list(),
         AdminApi.bins.list(),
+        AdminApi.cities.list(),
         AdminApi.areas.list(),
         AdminApi.routes.list(),
         AdminApi.users.list(),
@@ -183,6 +189,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       setBinsStats(binsStatsRes.data);
       setPlans(plansRes.data);
       setBins(binsRes.data);
+      setCities(citiesRes.data);
       setAreas(areasRes.data);
       setRoutes(routesRes.data);
       setUsers(usersRes.data);
@@ -258,6 +265,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       binsStats,
       plans,
       bins,
+      cities,
       areas,
       routes,
       bankAccount,
@@ -286,6 +294,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       binsStats,
       plans,
       bins,
+      cities,
       areas,
       routes,
       bankAccount,

@@ -9,14 +9,21 @@ export class Address {
   @Prop({ required: true, index: true })
   customerId: string;
 
+  @Prop({ required: true, index: true })
+  cityId: string;
+
+  @Prop({ required: true, index: true })
+  areaId: string;
+
+  @Prop({ required: true, default: false, index: true })
+  isActive: boolean;
+
   @Prop({ required: true })
   label: string;
 
-  @Prop({ required: true })
-  area: string;
-
-  @Prop({ required: true })
+  @Prop({ required: true, default: '' })
   details: string;
 }
 
 export const AddressSchema = SchemaFactory.createForClass(Address);
+AddressSchema.index({ customerId: 1, isActive: 1 });

@@ -26,6 +26,20 @@ export class CreateCustomerDto {
   @IsOptional()
   @IsIn(CUSTOMER_TYPES)
   type?: (typeof CUSTOMER_TYPES)[number];
+
+  @ApiProperty({
+    example: '507f1f77bcf86cd799439011',
+    description: 'Parent city ID (admin: GET /admin/cities)',
+  })
+  @IsString()
+  cityId: string;
+
+  @ApiProperty({
+    example: '507f1f77bcf86cd799439012',
+    description: 'Service area ID (admin: GET /admin/areas?cityId=; must belong to cityId)',
+  })
+  @IsString()
+  areaId: string;
 }
 
 export class UpdateCustomerDto {
@@ -40,11 +54,21 @@ export class CreateAddressDto {
   @IsString()
   label: string;
 
-  @ApiProperty({ example: 'حي الأندلس', description: 'Area or neighborhood name' })
+  @ApiProperty({ example: '507f1f77bcf86cd799439011', description: 'Parent city ID from GET /cities' })
   @IsString()
-  area: string;
+  cityId: string;
 
-  @ApiProperty({ example: 'شارع الجمهورية، بجوار المسجد', description: 'Street and landmark details' })
+  @ApiProperty({
+    example: '507f1f77bcf86cd799439012',
+    description: 'Service area ID from GET /areas?cityId=',
+  })
+  @IsString()
+  areaId: string;
+
+  @ApiProperty({
+    example: 'شارع الجمهورية، بجوار المسجد',
+    description: 'Street and landmark details (may be empty)',
+  })
   @IsString()
   details: string;
 }
@@ -55,10 +79,15 @@ export class UpdateAddressDto {
   @IsString()
   label?: string;
 
-  @ApiPropertyOptional({ example: 'حي الفتح', description: 'Area or neighborhood name' })
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439011', description: 'Parent city ID' })
   @IsOptional()
   @IsString()
-  area?: string;
+  cityId?: string;
+
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439012', description: 'Service area ID' })
+  @IsOptional()
+  @IsString()
+  areaId?: string;
 
   @ApiPropertyOptional({ example: 'شارع عمر المختار، الطابق الثاني', description: 'Street and landmark details' })
   @IsOptional()

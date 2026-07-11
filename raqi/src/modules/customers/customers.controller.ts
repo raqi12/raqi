@@ -66,7 +66,7 @@ export class AdminCustomersController {
   @ApiOperation({
     summary: 'Create customer',
     description:
-      'Creates a customer user account, customer profile, and initializes an empty wallet.',
+      'Creates a customer user account, customer profile (requires `cityId` and `areaId`), and initializes an empty wallet. Use `GET /admin/cities` and `GET /admin/areas?cityId=` to resolve valid location IDs.',
   })
   @ApiBody({ type: CreateCustomerDto })
   @ApiOkDataResponse(CustomerDto, 'Customer created', { status: 201 })
@@ -84,6 +84,12 @@ export class AdminCustomersController {
     const customer = await this.customersService.create({
       userId: String(user.id),
       type: body.type ?? 'home',
+      cityId: body.cityId,
+      areaId: body.areaId,
+    });
+    await this.customersService.createInitialAddress(String(customer.id), {
+      cityId: body.cityId,
+      areaId: body.areaId,
     });
     await this.walletsService.ensureWallet(String(customer.id));
     return { data: customer };
@@ -200,7 +206,8 @@ export class CustomerAddressesController {
   @Post()
   @ApiOperation({
     summary: 'Add address',
-    description: 'Creates a new delivery address for the authenticated customer.',
+    description:
+      'Creates a new delivery address with cityId and areaId. Not active by default; use PATCH /customer/addresses/:id/activate to set primary.',
   })
   @ApiBody({ type: CreateAddressDto })
   @ApiOkDataResponse(AddressDto, 'Address created', { status: 201 })
@@ -209,12 +216,34 @@ export class CustomerAddressesController {
     return { data: await this.customersService.createAddress(customerId, body) };
   }
 
+  @Patch(':id/activate')
+  @ApiOperation({
+    summary: 'Set active address',
+    description:
+      'Marks this address as the customer primary service location and syncs customer cityId/areaId.',
+  })
+  @ApiMongoIdParam('id', 'Address MongoDB ID')
+  @ApiOkDataResponse(AddressDto, 'Address activated')
+  async activate(@Param('id') id: string, @CurrentUser() user?: AuthUser) {
+    const customerId = await this.resolveCustomerId(user);
+    return { data: await this.customersService.setActiveAddress(customerId, id) };
+  }
+
   @Patch(':id')
   @ApiOperation({ summary: 'Update address' })
   @ApiMongoIdParam('id', 'Address MongoDB ID')
   @ApiBody({ type: UpdateAddressDto })
   @ApiOkDataResponse(AddressDto, 'Address updated')
-  async update(@Param('id') id: string, @Body() body: UpdateAddressDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() body: UpdateAddressDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    const customerId = await this.resolveCustomerId(user);
+    const existing = await this.customersService.findAddressById(id);
+    if (!existing || String(existing.customerId) !== customerId) {
+      throw new NotFoundException('Address not found');
+    }
     const address = await this.customersService.updateAddress(id, body);
     if (!address) {
       throw new NotFoundException('Address not found');

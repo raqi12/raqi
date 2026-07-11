@@ -27,7 +27,13 @@ export class Subscription {
   binId: string | null;
 
   @Prop({ type: String, default: null, index: true })
+  cityId: string | null;
+
+  @Prop({ type: String, default: null, index: true })
   areaId: string | null;
+
+  @Prop({ type: String, default: null, index: true })
+  driverId: string | null;
 
   @Prop({
     type: String,

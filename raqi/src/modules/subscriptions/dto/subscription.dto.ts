@@ -11,20 +11,14 @@ export class CreateSubscriptionDto {
   @IsString()
   planId?: string;
 
-  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439013', description: 'Address MongoDB ID' })
-  @IsOptional()
-  @IsString()
-  addressId?: string;
+  @ApiProperty({ example: '507f1f77bcf86cd799439013', description: 'Customer address MongoDB ID' })
+  @IsMongoId()
+  addressId: string;
 
   @ApiPropertyOptional({ example: '507f1f77bcf86cd799439014', description: 'Bin MongoDB ID' })
   @IsOptional()
   @IsString()
   binId?: string;
-
-  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439015', description: 'Area MongoDB ID' })
-  @IsOptional()
-  @IsString()
-  areaId?: string;
 
   @ApiPropertyOptional({ enum: ['unpaid', 'paid'], example: 'unpaid', description: 'Initial payment status' })
   @IsOptional()
@@ -38,15 +32,9 @@ export class RequestSubscriptionDto {
   @IsString()
   planId?: string;
 
-  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439013', description: 'Address MongoDB ID' })
-  @IsOptional()
-  @IsString()
-  addressId?: string;
-
-  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439015', description: 'Area MongoDB ID' })
-  @IsOptional()
-  @IsString()
-  areaId?: string;
+  @ApiProperty({ example: '507f1f77bcf86cd799439013', description: 'Customer address MongoDB ID' })
+  @IsMongoId()
+  addressId: string;
 }
 
 export class SubscribePlanDto {
@@ -58,7 +46,7 @@ export class SubscribePlanDto {
   @IsMongoId()
   binId: string;
 
-  @ApiProperty({ example: '507f1f77bcf86cd799439013', description: 'Address MongoDB ID' })
+  @ApiProperty({ example: '507f1f77bcf86cd799439013', description: 'Customer address MongoDB ID' })
   @IsMongoId()
   addressId: string;
 }
@@ -72,4 +60,10 @@ export class AdminAssignPlanDto extends SubscribePlanDto {
   @IsOptional()
   @IsBoolean()
   deductWallet?: boolean;
+}
+
+export class AssignSubscriptionDriverDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439016', description: 'Driver MongoDB ID' })
+  @IsMongoId()
+  driverId: string;
 }

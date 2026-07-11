@@ -9,6 +9,9 @@ export type RegisterOtpPayload = {
   fullName: string;
   password: string;
   activityType: string;
+  cityId: string;
+  areaId: string;
+  addressDetails?: string;
 };
 
 @Schema(baseSchemaOptions)

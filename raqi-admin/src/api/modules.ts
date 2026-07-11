@@ -4,6 +4,7 @@ import type {
   BankAccountSettings,
   Bin,
   BinStats,
+  City,
   Complaint,
   Customer,
   DepositRequest,
@@ -40,9 +41,23 @@ export const AdminApi = {
       apiRequest<Bin>(`/admin/bins/${id}/unassign`, { method: 'POST' }),
   },
   areas: {
-    list: () => apiRequest<Area[]>('/admin/areas'),
-    create: (body: { name: string; city: string }) =>
+    list: (cityId?: string) =>
+      apiRequest<Area[]>(cityId ? `/admin/areas?cityId=${cityId}` : '/admin/areas'),
+    create: (body: { name: string; cityId: string }) =>
       apiRequest<Area>('/admin/areas', { method: 'POST', body: JSON.stringify(body) }),
+    update: (id: string, body: { name?: string; cityId?: string }) =>
+      apiRequest<Area>(`/admin/areas/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+    delete: (id: string) =>
+      apiRequest<Area>(`/admin/areas/${id}`, { method: 'DELETE' }),
+  },
+  cities: {
+    list: () => apiRequest<City[]>('/admin/cities'),
+    create: (body: { name: string }) =>
+      apiRequest<City>('/admin/cities', { method: 'POST', body: JSON.stringify(body) }),
+    update: (id: string, body: { name?: string }) =>
+      apiRequest<City>(`/admin/cities/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+    delete: (id: string) =>
+      apiRequest<City>(`/admin/cities/${id}`, { method: 'DELETE' }),
   },
   routes: {
     list: () => apiRequest<Route[]>('/admin/routes'),
@@ -85,7 +100,14 @@ export const AdminApi = {
   },
   customers: {
     list: () => apiRequest<Customer[]>('/admin/customers'),
-    create: (body: { email: string; name: string; password: string; type: string }) =>
+    create: (body: {
+      email: string;
+      name: string;
+      password: string;
+      type: string;
+      cityId: string;
+      areaId: string;
+    }) =>
       apiRequest<Customer>('/admin/customers', { method: 'POST', body: JSON.stringify(body) }),
     update: (id: string, body: { type: string }) =>
       apiRequest<Customer>(`/admin/customers/${id}`, {
@@ -107,8 +129,13 @@ export const AdminApi = {
       name: string;
       password: string;
       vehicleNumber: string;
+      cityId: string;
+      areaId: string;
     }) => apiRequest<Driver>('/admin/drivers', { method: 'POST', body: JSON.stringify(body) }),
-    update: (id: string, body: { vehicleNumber?: string }) =>
+    update: (
+      id: string,
+      body: { vehicleNumber?: string; cityId?: string; areaId?: string },
+    ) =>
       apiRequest<Driver>(`/admin/drivers/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(body),
@@ -137,14 +164,18 @@ export const AdminApi = {
     create: (body: {
       customerId: string;
       planId?: string;
-      addressId?: string;
+      addressId: string;
       binId?: string;
-      areaId?: string;
       paymentStatus?: 'paid' | 'unpaid';
     }) =>
       apiRequest<Subscription>('/admin/subscriptions', {
         method: 'POST',
         body: JSON.stringify(body),
+      }),
+    assignDriver: (id: string, driverId: string) =>
+      apiRequest<Subscription>(`/admin/subscriptions/${id}/assign-driver`, {
+        method: 'PATCH',
+        body: JSON.stringify({ driverId }),
       }),
     activate: (id: string) =>
       apiRequest<Subscription>(`/admin/subscriptions/${id}/activate`, { method: 'PATCH' }),

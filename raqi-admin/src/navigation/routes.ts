@@ -9,7 +9,7 @@ export const ROUTE_PATHS: Record<SidebarTab, string> = {
   drivers: '/drivers',
   plans: '/plans',
   bins: '/bins',
-  areas: '/areas',
+  locations: '/locations',
   routes: '/routes',
   tasks: '/tasks',
   subscriptions: '/subscriptions',
@@ -27,6 +27,27 @@ export function tabFromPathname(pathname: string): SidebarTab {
     return 'overview';
   }
   return pathToTab.get(normalized) ?? 'overview';
+}
+
+const TAB_NAV_GROUPS: Record<SidebarTab, string> = {
+  overview: 'رئيسي',
+  customers: 'العمليات',
+  subscriptions: 'العمليات',
+  tasks: 'العمليات',
+  complaints: 'العمليات',
+  users: 'الموارد',
+  drivers: 'الموارد',
+  plans: 'الموارد',
+  bins: 'الموارد',
+  locations: 'الموارد',
+  routes: 'الموارد',
+  payments: 'المالية',
+  'bank-account': 'المالية',
+  'deposit-requests': 'المالية',
+};
+
+export function getNavGroupLabel(tab: SidebarTab): string {
+  return TAB_NAV_GROUPS[tab];
 }
 
 export const ADMIN_ROUTE_PATHS = Object.values(ROUTE_PATHS);

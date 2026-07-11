@@ -2,15 +2,15 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminApi } from '../../api/modules';
 import { useAdmin } from '../../contexts/AdminContext';
 import { OverviewPage } from '../OverviewPage';
+import { LocationsPage } from '../module/LocationsPage';
+import { DriversPage } from '../module/DriversPage';
 import { UsersPage } from '../module/UsersPage';
 import {
-  AreasPage,
   BankAccountPage,
   BinsPage,
   ComplaintsPage,
   CustomersPage,
   DepositRequestsPage,
-  DriversPage,
   PaymentsPage,
   PlansPage,
   RoutesPage,
@@ -25,6 +25,8 @@ export function AdminPageRoutes() {
     users,
     customers,
     drivers,
+    cities,
+    areas,
     tasks,
     subscriptions,
     payments,
@@ -32,7 +34,6 @@ export function AdminPageRoutes() {
     binsStats,
     plans,
     bins,
-    areas,
     routes,
     bankAccount,
     depositRequests,
@@ -83,10 +84,14 @@ export function AdminPageRoutes() {
         element={
           <CustomersPage
             customers={customers}
+            users={users}
             plans={plans}
             bins={bins}
-            onCreate={(body) => runMutation(() => AdminApi.customers.create(body), 'Customer created')}
-            onUpdate={(id, body) => runMutation(() => AdminApi.customers.update(id, body), 'Customer updated')}
+            cities={cities}
+            areas={areas}
+            loading={loading}
+            onCreate={(body) => runMutation(() => AdminApi.customers.create(body), 'تم إنشاء العميل')}
+            onUpdate={(id, body) => runMutation(() => AdminApi.customers.update(id, body), 'تم تحديث العميل')}
             onLoadDetails={async (id) => {
               const [walletRes, addressesRes] = await Promise.all([
                 AdminApi.customers.getWallet(id),
@@ -95,10 +100,10 @@ export function AdminPageRoutes() {
               return { wallet: walletRes.data, addresses: addressesRes.data };
             }}
             onDeposit={(id, amount) =>
-              runMutation(() => AdminApi.customers.depositWallet(id, { amount }), 'Wallet deposit completed')
+              runMutation(() => AdminApi.customers.depositWallet(id, { amount }), 'تم الإيداع في المحفظة')
             }
             onAssignPlan={(body) =>
-              runMutation(() => AdminApi.subscriptions.assignPlan(body), 'Plan subscription assigned')
+              runMutation(() => AdminApi.subscriptions.assignPlan(body), 'تم تعيين الاشتراك')
             }
           />
         }
@@ -108,10 +113,17 @@ export function AdminPageRoutes() {
         element={
           <DriversPage
             drivers={drivers}
-            onCreate={(body) => runMutation(() => AdminApi.drivers.create(body), 'Driver created')}
-            onUpdate={(id, body) => runMutation(() => AdminApi.drivers.update(id, body), 'Driver updated')}
+            users={users}
+            cities={cities}
+            areas={areas}
+            loading={loading}
+            onCreate={(body) => runMutation(() => AdminApi.drivers.create(body), 'تم إنشاء السائق')}
+            onUpdate={(id, body) => runMutation(() => AdminApi.drivers.update(id, body), 'تم تحديث السائق')}
             onSetStatus={(id, status) =>
-              runMutation(() => AdminApi.drivers.setStatus(id, status), `Driver ${status}`)
+              runMutation(
+                () => AdminApi.drivers.setStatus(id, status),
+                status === 'active' ? 'تم تفعيل السائق' : 'تم تعطيل السائق',
+              )
             }
           />
         }
@@ -121,8 +133,9 @@ export function AdminPageRoutes() {
         element={
           <PlansPage
             plans={plans}
-            onCreate={(body) => runMutation(() => AdminApi.plans.create(body), 'Plan created')}
-            onUpdate={(id, body) => runMutation(() => AdminApi.plans.update(id, body), 'Plan updated')}
+            loading={loading}
+            onCreate={(body) => runMutation(() => AdminApi.plans.create(body), 'تم إنشاء الخطة')}
+            onUpdate={(id, body) => runMutation(() => AdminApi.plans.update(id, body), 'تم تحديث الخطة')}
           />
         }
       />
@@ -132,31 +145,43 @@ export function AdminPageRoutes() {
           <BinsPage
             bins={bins}
             customers={customers}
-            onCreate={(body) => runMutation(() => AdminApi.bins.create(body), 'Bin created')}
-            onUpdate={(id, body) => runMutation(() => AdminApi.bins.update(id, body), 'Bin updated')}
+            users={users}
+            loading={loading}
+            onCreate={(body) => runMutation(() => AdminApi.bins.create(body), 'تم إنشاء الصندوق')}
+            onUpdate={(id, body) => runMutation(() => AdminApi.bins.update(id, body), 'تم تحديث الصندوق')}
             onAssign={(id, customerId) =>
-              runMutation(() => AdminApi.bins.assign(id, { customerId }), 'Bin assigned')
+              runMutation(() => AdminApi.bins.assign(id, { customerId }), 'تم تخصيص الصندوق')
             }
-            onUnassign={(id) => runMutation(() => AdminApi.bins.unassign(id), 'Bin unassigned')}
+            onUnassign={(id) => runMutation(() => AdminApi.bins.unassign(id), 'تم إلغاء تخصيص الصندوق')}
           />
         }
       />
       <Route
-        path="/areas"
+        path="/locations"
         element={
-          <AreasPage
+          <LocationsPage
+            cities={cities}
             areas={areas}
-            onCreate={(body) => runMutation(() => AdminApi.areas.create(body), 'Area created')}
+            loading={loading}
+            onCreateCity={(body) => runMutation(() => AdminApi.cities.create(body), 'تم إنشاء المدينة')}
+            onUpdateCity={(id, body) => runMutation(() => AdminApi.cities.update(id, body), 'تم تحديث المدينة')}
+            onDeleteCity={(id) => runMutation(() => AdminApi.cities.delete(id), 'تم حذف المدينة')}
+            onCreateArea={(body) => runMutation(() => AdminApi.areas.create(body), 'تم إنشاء المنطقة')}
+            onUpdateArea={(id, body) => runMutation(() => AdminApi.areas.update(id, body), 'تم تحديث المنطقة')}
+            onDeleteArea={(id) => runMutation(() => AdminApi.areas.delete(id), 'تم حذف المنطقة')}
           />
         }
       />
+      <Route path="/areas" element={<Navigate to="/locations" replace />} />
       <Route
         path="/routes"
         element={
           <RoutesPage
             routes={routes}
             areas={areas}
-            onCreate={(body) => runMutation(() => AdminApi.routes.create(body), 'Route created')}
+            cities={cities}
+            loading={loading}
+            onCreate={(body) => runMutation(() => AdminApi.routes.create(body), 'تم إنشاء المسار')}
           />
         }
       />
@@ -166,11 +191,16 @@ export function AdminPageRoutes() {
           <TasksPage
             tasks={tasks}
             areas={areas}
+            cities={cities}
             drivers={drivers}
+            users={users}
+            loading={loading}
             onGenerate={(date, areaId) =>
-              runMutation(() => AdminApi.tasks.generate(date, areaId), 'Tasks generated')
+              runMutation(() => AdminApi.tasks.generate(date, areaId), 'تم توليد المهام')
             }
-            onAssign={(id, driverId) => runMutation(() => AdminApi.tasks.assign(id, driverId), 'Task assigned')}
+            onAssign={(id, driverId) =>
+              runMutation(() => AdminApi.tasks.assign(id, driverId), 'تم تعيين السائق')
+            }
           />
         }
       />
@@ -182,15 +212,22 @@ export function AdminPageRoutes() {
             plans={plans}
             bins={bins}
             customers={customers}
+            users={users}
+            drivers={drivers}
             areas={areas}
+            cities={cities}
+            loading={loading}
             onLoadAddresses={async (customerId) => {
               const res = await AdminApi.customers.listAddresses(customerId);
               return res.data;
             }}
-            onCreate={(body) => runMutation(() => AdminApi.subscriptions.create(body), 'Subscription created')}
-            onActivate={(id) => runMutation(() => AdminApi.subscriptions.activate(id), 'Subscription activated')}
-            onSuspend={(id) => runMutation(() => AdminApi.subscriptions.suspend(id), 'Subscription suspended')}
-            onRenew={(id) => runMutation(() => AdminApi.subscriptions.renew(id), 'Subscription renewed')}
+            onCreate={(body) => runMutation(() => AdminApi.subscriptions.create(body), 'تم إنشاء الاشتراك')}
+            onAssignDriver={(id, driverId) =>
+              runMutation(() => AdminApi.subscriptions.assignDriver(id, driverId), 'تم تعيين السائق')
+            }
+            onActivate={(id) => runMutation(() => AdminApi.subscriptions.activate(id), 'تم تفعيل الاشتراك')}
+            onSuspend={(id) => runMutation(() => AdminApi.subscriptions.suspend(id), 'تم إيقاف الاشتراك')}
+            onRenew={(id) => runMutation(() => AdminApi.subscriptions.renew(id), 'تم تجديد الاشتراك')}
           />
         }
       />

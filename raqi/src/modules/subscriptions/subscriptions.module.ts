@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { BinsModule } from '../bins/bins.module';
 import { CustomersModule } from '../customers/customers.module';
+import { DriversModule } from '../drivers/drivers.module';
 import { PlansModule } from '../plans/plans.module';
 import { WalletsModule } from '../wallets/wallets.module';
 import {
@@ -23,6 +24,7 @@ import { SubscriptionsService } from './subscriptions.service';
     PlansModule,
     BinsModule,
     WalletsModule,
+    DriversModule,
   ],
   controllers: [
     AdminSubscriptionsController,

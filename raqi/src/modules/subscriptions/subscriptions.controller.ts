@@ -31,6 +31,7 @@ import {
   RequestSubscriptionDto,
   SubscribePlanDto,
   AdminAssignPlanDto,
+  AssignSubscriptionDriverDto,
 } from './dto/subscription.dto';
 
 @ApiTags('Admin - Subscriptions')
@@ -54,7 +55,8 @@ export class AdminSubscriptionsController {
   @Post()
   @ApiOperation({
     summary: 'Create draft subscription',
-    description: 'Creates a subscription in draft status for admin-managed onboarding.',
+    description:
+      'Creates a subscription in draft status. addressId is required; city and area are derived from the address.',
   })
   @ApiBody({ type: CreateSubscriptionDto })
   @ApiOkDataResponse(SubscriptionDto, 'Subscription created', { status: 201 })
@@ -96,6 +98,24 @@ export class AdminSubscriptionsController {
       throw new NotFoundException('Subscription not found');
     }
     return { data: subscription };
+  }
+
+  @Patch(':id/assign-driver')
+  @ApiOperation({
+    summary: 'Assign driver to subscription',
+    description:
+      'Assigns a default driver to the subscription. Driver must be active and serve the same city and area as the subscription address.',
+  })
+  @ApiMongoIdParam('id', 'Subscription MongoDB ID')
+  @ApiBody({ type: AssignSubscriptionDriverDto })
+  @ApiOkDataResponse(SubscriptionDto, 'Driver assigned to subscription')
+  async assignDriver(
+    @Param('id') id: string,
+    @Body() body: AssignSubscriptionDriverDto,
+  ) {
+    return {
+      data: await this.subscriptionsService.assignDriver(id, body.driverId),
+    };
   }
 
   @Patch(':id/activate')
@@ -194,7 +214,8 @@ export class CustomerSubscriptionsController {
   @Post()
   @ApiOperation({
     summary: 'Request subscription',
-    description: 'Submits a subscription request for admin review and activation.',
+    description:
+      'Submits a subscription request for admin review. addressId is required; city and area are derived from the address.',
   })
   @ApiBody({ type: RequestSubscriptionDto })
   @ApiOkDataResponse(SubscriptionDto, 'Subscription request submitted', {

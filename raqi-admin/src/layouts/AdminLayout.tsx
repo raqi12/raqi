@@ -3,7 +3,7 @@ import { Toast } from '../components/Toast';
 import { Sidebar } from '../components/Sidebar';
 import { TopBar } from '../components/TopBar';
 import { SearchProvider } from '../contexts/SearchContext';
-import { useAdmin } from '../contexts/AdminContext';
+import { POLL_INTERVAL_SEC, useAdmin } from '../contexts/AdminContext';
 import { useTheme } from '../hooks/useTheme';
 import { TAB_LABELS } from '../i18n/ar';
 import { tabFromPathname } from '../navigation/routes';
@@ -32,7 +32,7 @@ export function AdminLayout({
     loading,
     error,
     toast,
-    pollSubtitle,
+    lastSync,
     searchQuery,
     setSearchQuery,
     setToast,
@@ -67,7 +67,8 @@ export function AdminLayout({
         <div className="main-area">
           <TopBar
             title={TAB_LABELS[activeTab]}
-            subtitle={pollSubtitle}
+            lastSync={lastSync}
+            pollIntervalSec={POLL_INTERVAL_SEC}
             search={searchQuery}
             onSearchChange={setSearchQuery}
             loading={loading}

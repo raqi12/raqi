@@ -12,6 +12,12 @@ export class Driver {
   @Prop({ required: true })
   vehicleNumber: string;
 
+  @Prop({ required: true, index: true })
+  cityId: string;
+
+  @Prop({ required: true, index: true })
+  areaId: string;
+
   @Prop({
     type: String,
     required: true,

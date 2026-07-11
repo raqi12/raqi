@@ -71,6 +71,8 @@ export class DriversController {
     const driver = await this.driversService.create({
       userId: String(user.id),
       vehicleNumber: body.vehicleNumber,
+      cityId: body.cityId,
+      areaId: body.areaId,
     });
     return { data: driver };
   }

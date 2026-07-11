@@ -1,5 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AreasModule } from '../areas/areas.module';
+import { CitiesModule } from '../cities/cities.module';
 import { UsersModule } from '../users/users.module';
 import { WalletsModule } from '../wallets/wallets.module';
 import { Customer, CustomerSchema } from './schemas/customer.schema';
@@ -17,6 +19,8 @@ import { CustomersService } from './customers.service';
       { name: Address.name, schema: AddressSchema },
     ]),
     UsersModule,
+    CitiesModule,
+    AreasModule,
     forwardRef(() => WalletsModule),
   ],
   controllers: [AdminCustomersController, CustomerAddressesController],

@@ -31,6 +31,28 @@ export class RegisterDto {
   @ApiProperty({ enum: CUSTOMER_TYPES, example: 'home', description: 'Customer activity type' })
   @IsIn(CUSTOMER_TYPES)
   activityType: (typeof CUSTOMER_TYPES)[number];
+
+  @ApiProperty({
+    example: '507f1f77bcf86cd799439011',
+    description: 'Parent city ID from GET /cities',
+  })
+  @IsString()
+  cityId: string;
+
+  @ApiProperty({
+    example: '507f1f77bcf86cd799439012',
+    description: 'Service area ID from GET /areas?cityId= (must belong to cityId)',
+  })
+  @IsString()
+  areaId: string;
+
+  @ApiPropertyOptional({
+    example: 'شارع الجمهورية، بجوار المسجد',
+    description: 'Optional street and landmark for the first address',
+  })
+  @IsOptional()
+  @IsString()
+  addressDetails?: string;
 }
 
 export class VerifyOtpDto {

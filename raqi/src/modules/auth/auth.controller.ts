@@ -53,7 +53,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Register customer (step 1 — send OTP)',
     description:
-      'Starts customer self-registration. Validates phone uniqueness, sends OTP via SMS, and stores pending registration payload. Complete with POST /auth/verify-otp.',
+      'Starts customer self-registration. Requires a valid `cityId` and `areaId` (resolve via `GET /cities` and `GET /areas?cityId=`). Validates phone uniqueness and location, sends OTP via SMS, and stores the pending registration payload. Complete with `POST /auth/verify-otp`.',
   })
   @ApiBody({ type: RegisterDto })
   @ApiOkDataResponse(RegisterPendingDto, 'OTP sent successfully', { status: 201 })
@@ -66,7 +66,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Verify registration OTP (step 2)',
     description:
-      'Verifies OTP for purpose `register`, creates user + customer profile + wallet, and returns JWT tokens.',
+      'Verifies OTP for purpose `register`, creates user + customer profile + active address (including `cityId` and `areaId` from step 1) + wallet, and returns JWT tokens.',
   })
   @ApiBody({ type: VerifyOtpDto })
   @ApiOkDataResponse(AuthTokensDto, 'Registration completed, tokens issued')

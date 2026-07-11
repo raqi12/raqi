@@ -19,6 +19,12 @@ export class Customer {
     default: 'home',
   })
   type: (typeof CUSTOMER_TYPES)[number];
+
+  @Prop({ required: true, index: true })
+  cityId: string;
+
+  @Prop({ required: true, index: true })
+  areaId: string;
 }
 
 export const CustomerSchema = SchemaFactory.createForClass(Customer);

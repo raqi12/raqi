@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { AreasService } from '../areas/areas.service';
+import { DriversService } from '../drivers/drivers.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { Task, TaskDocument, TaskStatus } from './schemas/task.schema';
 import { CompleteTaskDto, SkipTaskDto } from './dto/task.dto';
@@ -10,6 +12,8 @@ export class TasksService {
   constructor(
     @InjectModel(Task.name) private readonly taskModel: Model<TaskDocument>,
     private readonly subscriptionsService: SubscriptionsService,
+    private readonly driversService: DriversService,
+    private readonly areasService: AreasService,
   ) {}
 
   findAll(): Promise<TaskDocument[]> {
@@ -36,20 +40,50 @@ export class TasksService {
     const subscriptions =
       await this.subscriptionsService.findForGeneration(areaId);
     const created = await Promise.all(
-      subscriptions.map((subscription) =>
-        this.taskModel.create({
+      subscriptions.map(async (subscription) => {
+        const task = await this.taskModel.create({
           subscriptionId: String(subscription.id),
           customerId: subscription.customerId,
           areaId,
           scheduledDate: date,
           status: TaskStatus.Pending,
-        }),
-      ),
+        });
+
+        if (subscription.driverId) {
+          return this.assign(String(task.id), subscription.driverId);
+        }
+
+        return task;
+      }),
     );
-    return created;
+    return created.filter((task): task is TaskDocument => task !== null);
   }
 
-  assign(id: string, driverId: string): Promise<TaskDocument | null> {
+  async assign(id: string, driverId: string): Promise<TaskDocument | null> {
+    const task = await this.taskModel.findById(id).exec();
+    if (!task) {
+      return null;
+    }
+
+    const driver = await this.driversService.findById(driverId);
+    if (!driver) {
+      throw new BadRequestException('Driver not found');
+    }
+    if (driver.status !== 'active') {
+      throw new BadRequestException('Driver is not active');
+    }
+
+    const area = await this.areasService.findById(task.areaId);
+    if (!area) {
+      throw new BadRequestException('Task area not found');
+    }
+
+    if (driver.areaId !== task.areaId || driver.cityId !== area.cityId) {
+      throw new BadRequestException(
+        'Driver must serve the same city and area as the task',
+      );
+    }
+
     return this.taskModel
       .findByIdAndUpdate(
         id,

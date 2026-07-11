@@ -6,11 +6,12 @@ export type AreaDocument = HydratedDocument<Area>;
 
 @Schema(baseSchemaOptions)
 export class Area {
-  @Prop({ required: true })
+  @Prop({ required: true, trim: true })
   name: string;
 
-  @Prop({ required: true })
-  city: string;
+  @Prop({ required: true, index: true })
+  cityId: string;
 }
 
 export const AreaSchema = SchemaFactory.createForClass(Area);
+AreaSchema.index({ cityId: 1, name: 1 }, { unique: true });

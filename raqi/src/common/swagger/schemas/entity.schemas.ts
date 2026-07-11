@@ -31,6 +31,23 @@ export class UserDto {
   updatedAt?: string;
 }
 
+export class CustomerDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
+  id: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439012' })
+  userId: string;
+
+  @ApiProperty({ enum: CUSTOMER_TYPES, example: 'home' })
+  type: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439013', description: 'Parent city MongoDB ID' })
+  cityId: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439014', description: 'Service area MongoDB ID' })
+  areaId: string;
+}
+
 export class AuthTokensDto {
   @ApiProperty({
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
@@ -47,24 +64,13 @@ export class AuthTokensDto {
   @ApiProperty({ type: UserDto })
   user: UserDto;
 
-  @ApiPropertyOptional({ type: () => CustomerDto })
+  @ApiPropertyOptional({ type: CustomerDto })
   customer?: CustomerDto;
 }
 
 export class RefreshTokenDataDto {
   @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
   accessToken: string;
-}
-
-export class CustomerDto {
-  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
-  id: string;
-
-  @ApiProperty({ example: '507f1f77bcf86cd799439012' })
-  userId: string;
-
-  @ApiProperty({ enum: CUSTOMER_TYPES, example: 'home' })
-  type: string;
 }
 
 export class AddressDto {
@@ -74,11 +80,17 @@ export class AddressDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439012' })
   customerId: string;
 
+  @ApiProperty({ example: '507f1f77bcf86cd799439013' })
+  cityId: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439014' })
+  areaId: string;
+
+  @ApiProperty({ example: true, description: 'Whether this is the customer primary service address' })
+  isActive: boolean;
+
   @ApiProperty({ example: 'المنزل' })
   label: string;
-
-  @ApiProperty({ example: 'طرابلس - حي الأندلس' })
-  area: string;
 
   @ApiProperty({ example: 'شارع الجمهورية، بجوار المسجد' })
   details: string;
@@ -94,8 +106,22 @@ export class DriverDto {
   @ApiProperty({ example: '5-12345' })
   vehicleNumber: string;
 
+  @ApiProperty({ example: '507f1f77bcf86cd799439013' })
+  cityId: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439014' })
+  areaId: string;
+
   @ApiProperty({ enum: ['active', 'inactive'], example: 'active' })
   status: string;
+}
+
+export class CityDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
+  id: string;
+
+  @ApiProperty({ example: 'طرابلس' })
+  name: string;
 }
 
 export class AreaDto {
@@ -105,8 +131,8 @@ export class AreaDto {
   @ApiProperty({ example: 'حي الأندلس' })
   name: string;
 
-  @ApiProperty({ example: 'طرابلس' })
-  city: string;
+  @ApiProperty({ example: '507f1f77bcf86cd799439012' })
+  cityId: string;
 }
 
 export class RouteDto {
@@ -199,8 +225,14 @@ export class SubscriptionDto {
   @ApiPropertyOptional({ example: '507f1f77bcf86cd799439015' })
   binId?: string;
 
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439017' })
+  cityId?: string;
+
   @ApiPropertyOptional({ example: '507f1f77bcf86cd799439016' })
   areaId?: string;
+
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439018' })
+  driverId?: string;
 
   @ApiProperty({
     enum: ['draft', 'requested', 'active', 'suspended', 'expired'],

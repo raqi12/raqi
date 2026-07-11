@@ -47,10 +47,15 @@ export class AuthService {
       throw new BadRequestException('Phone already registered');
     }
 
+    await this.customersService.validateLocation(body.cityId, body.areaId);
+
     const { response } = await this.otpService.createOtp(phone, 'register', {
       fullName: body.fullName,
       password: body.password,
       activityType: body.activityType,
+      cityId: body.cityId,
+      areaId: body.areaId,
+      addressDetails: body.addressDetails,
     });
 
     return {
@@ -92,6 +97,13 @@ export class AuthService {
     const customer = await this.customersService.create({
       userId: String(user.id),
       type: payload.activityType as CustomerType,
+      cityId: payload.cityId,
+      areaId: payload.areaId,
+    });
+    await this.customersService.createInitialAddress(String(customer.id), {
+      cityId: payload.cityId,
+      areaId: payload.areaId,
+      details: payload.addressDetails,
     });
     await this.walletsService.ensureWallet(String(customer.id));
 

@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { CustomersModule } from '../customers/customers.module';
 import { DriversModule } from '../drivers/drivers.module';
+import { AreasModule } from '../areas/areas.module';
 import { Task, TaskSchema } from './schemas/task.schema';
 import {
   AdminTasksController,
@@ -17,6 +18,7 @@ import { TasksService } from './tasks.service';
     SubscriptionsModule,
     CustomersModule,
     DriversModule,
+    AreasModule,
   ],
   controllers: [
     AdminTasksController,
