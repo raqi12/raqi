@@ -103,6 +103,18 @@ jobs:
              fi && \
              docker compose version >/dev/null 2>&1 || apt-get update && apt-get install -y docker-compose-plugin"
 
+      - name: Install Node.js and PM2 if missing
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "export DEBIAN_FRONTEND=noninteractive && \
+             if ! command -v node >/dev/null 2>&1; then \
+               curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+               apt-get install -y nodejs; \
+             fi && \
+             if ! command -v pm2 >/dev/null 2>&1; then \
+               npm install -g pm2; \
+             fi"
+
       - name: Install Nginx if missing
         run: |
           ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
@@ -117,14 +129,20 @@ jobs:
           ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
             "/usr/sbin/nginx -t && systemctl reload nginx"
 
-      - name: Upload Docker Compose and env template
+      - name: Upload deploy config
         run: |
           scp -i ~/.ssh/id_deploy -P "$DEPLOY_PORT" \
             deploy/docker-compose.yml \
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_ROOT/docker-compose.yml"
           scp -i ~/.ssh/id_deploy -P "$DEPLOY_PORT" \
+            deploy/ecosystem.config.cjs \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_ROOT/ecosystem.config.cjs"
+          scp -i ~/.ssh/id_deploy -P "$DEPLOY_PORT" \
             deploy/.env.example \
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_ROOT/.env.example"
+          scp -i ~/.ssh/id_deploy -P "$DEPLOY_PORT" \
+            deploy/scripts/pm2-restart.sh \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_ROOT/pm2-restart.sh"
 
       - name: Rsync API build to VPS
         run: |
@@ -133,26 +151,29 @@ jobs:
             api-artifact/ \
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_ROOT/api/"
 
-      - name: Stop old PM2 apps and start Docker
+      - name: Start MongoDB and PM2 API
         run: |
           ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
             "set -e && cd $DEPLOY_ROOT && \
-             if command -v pm2 >/dev/null 2>&1; then \
-               pm2 delete wassetpay-api 2>/dev/null || true; \
-               pm2 delete raqi-api 2>/dev/null || true; \
-               pm2 save 2>/dev/null || true; \
-             fi && \
+             mkdir -p logs uploads/deposits && \
+             chmod +x pm2-restart.sh 2>/dev/null || true && \
              if [ ! -f .env ]; then \
                cp .env.example .env; \
                echo 'Created .env from template — update JWT_SECRET on the VPS'; \
              fi && \
-             docker compose down 2>/dev/null || true && \
-             docker compose up -d --build && \
+             docker compose stop api 2>/dev/null || true && \
+             docker compose rm -f api 2>/dev/null || true && \
+             docker compose up -d mongo && \
+             cd api && npm ci --omit=dev && cd .. && \
+             pm2 delete wassetpay-api 2>/dev/null || true && \
+             pm2 startOrReload ecosystem.config.cjs --update-env && \
+             pm2 save && \
              for i in \$(seq 1 30); do \
                if curl -fsS http://127.0.0.1:3000/api/v1/health >/dev/null 2>&1; then \
                  curl -fsS http://127.0.0.1:3000/api/v1/health; \
+                 pm2 status raqi-api; \
                  exit 0; \
                fi; \
                sleep 3; \
              done; \
-             echo 'API health check failed'; docker compose logs api --tail 50; exit 1"
+             echo 'API health check failed'; pm2 logs raqi-api --lines 50 --nostream; exit 1"

@@ -2,24 +2,10 @@ services:
   mongo:
     image: mongo:7
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"
     volumes:
       - mongo_data:/data/db
-    networks:
-      - raqi
-
-  api:
-    build:
-      context: ./api
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    env_file:
-      - .env
-    ports:
-      - "127.0.0.1:3000:3000"
-    volumes:
-      - ./uploads:/app/uploads
-    depends_on:
-      - mongo
     networks:
       - raqi
 
