@@ -70,6 +70,12 @@ export class OtpSentDataDto {
   @ApiProperty({ example: 300, description: 'OTP validity in seconds' })
   expiresIn: number;
 
-  @ApiProperty({ example: '123456', description: 'Returned only in development' })
+  @ApiPropertyOptional({
+    example: '123456',
+    description: 'Returned when OTP_DEBUG is enabled (development or OTP_DEBUG=true)',
+  })
+  otp?: string;
+
+  @ApiPropertyOptional({ example: '123456', description: 'Alias of otp when OTP debug is enabled' })
   debugOtp?: string;
 }

@@ -225,6 +225,9 @@ export function AdminPageRoutes() {
             onAssignDriver={(id, driverId) =>
               runMutation(() => AdminApi.subscriptions.assignDriver(id, driverId), 'تم تعيين السائق')
             }
+            onUpdate={(id, body) =>
+              runMutation(() => AdminApi.subscriptions.update(id, body), 'تم تحديث الاشتراك')
+            }
             onActivate={(id) => runMutation(() => AdminApi.subscriptions.activate(id), 'تم تفعيل الاشتراك')}
             onSuspend={(id) => runMutation(() => AdminApi.subscriptions.suspend(id), 'تم إيقاف الاشتراك')}
             onRenew={(id) => runMutation(() => AdminApi.subscriptions.renew(id), 'تم تجديد الاشتراك')}

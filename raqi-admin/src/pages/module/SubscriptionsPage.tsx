@@ -52,6 +52,15 @@ type SubscriptionsPageProps = {
     paymentStatus?: 'paid' | 'unpaid';
   }) => Promise<void>;
   onAssignDriver: (id: string, driverId: string) => Promise<void>;
+  onUpdate: (
+    id: string,
+    body: {
+      planId?: string;
+      addressId?: string;
+      binId?: string;
+      paymentStatus?: 'paid' | 'unpaid';
+    },
+  ) => Promise<void>;
   onActivate: (id: string) => Promise<void>;
   onSuspend: (id: string) => Promise<void>;
   onRenew: (id: string) => Promise<void>;
@@ -102,6 +111,19 @@ function RecordList({ empty, children }: { empty: string; children: ReactNode })
   return <ul className="record-list">{children}</ul>;
 }
 
+function displayOrMissing(value?: string | null, missing = 'غير محدد') {
+  return value && value !== '—' ? value : missing;
+}
+
+function subscriptionActivationReadiness(subscription: Subscription) {
+  return {
+    plan: Boolean(subscription.planId),
+    address: Boolean(subscription.addressId && subscription.cityId && subscription.areaId),
+    bin: Boolean(subscription.binId),
+    payment: subscription.paymentStatus === 'paid',
+  };
+}
+
 export function SubscriptionsPage({
   subscriptions,
   plans,
@@ -117,6 +139,7 @@ export function SubscriptionsPage({
   onLoadAddresses,
   onCreate,
   onAssignDriver,
+  onUpdate,
   onActivate,
   onSuspend,
   onRenew,
@@ -126,13 +149,28 @@ export function SubscriptionsPage({
   const [addressesLoading, setAddressesLoading] = useState(false);
   const [selected, setSelected] = useState<Subscription | null>(null);
   const [detailAddress, setDetailAddress] = useState<Address | null>(null);
+  const [detailAddresses, setDetailAddresses] = useState<Address[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [editForm, setEditForm] = useState({
+    planId: '',
+    addressId: '',
+    binId: '',
+    paymentStatus: 'unpaid' as 'paid' | 'unpaid',
+  });
   const [assignDriverId, setAssignDriverId] = useState('');
   const [confirm, setConfirm] = useState<{ id: string; action: PendingAction } | null>(null);
   const [saving, setSaving] = useState(false);
 
   const activePlans = useMemo(() => plans.filter((plan) => plan.active !== false), [plans]);
   const availableBins = useMemo(() => bins.filter((bin) => bin.status === 'available'), [bins]);
+  const editBins = useMemo(() => {
+    if (!selected?.binId) return availableBins;
+    const current = bins.find((bin) => getId(bin) === selected.binId);
+    if (!current || availableBins.some((bin) => getId(bin) === getId(current))) {
+      return availableBins;
+    }
+    return [current, ...availableBins];
+  }, [availableBins, bins, selected?.binId]);
 
   const tableRows = useMemo(
     () =>
@@ -211,16 +249,33 @@ export function SubscriptionsPage({
   useEffect(() => {
     if (!selected) {
       setDetailAddress(null);
+      setDetailAddresses([]);
+      setEditForm({ planId: '', addressId: '', binId: '', paymentStatus: 'unpaid' });
       setAssignDriverId('');
       return;
     }
+    setAssignDriverId(selected.driverId ?? '');
+    setEditForm({
+      planId: selected.planId ?? '',
+      addressId: selected.addressId ?? '',
+      binId: selected.binId ?? '',
+      paymentStatus: selected.paymentStatus === 'paid' ? 'paid' : 'unpaid',
+    });
+  }, [selected?.addressId, selected?.binId, selected?.driverId, selected?.id, selected?._id, selected?.paymentStatus, selected?.planId]);
+
+  useEffect(() => {
+    if (!selected) return;
     const updated = subscriptions.find((item) => getId(item) === getId(selected));
     if (updated) {
-      setSelected(updated);
+      setSelected((current) => {
+        if (!current || getId(current) !== getId(updated)) return current;
+        return { ...current, ...updated };
+      });
     }
-    setAssignDriverId(selected.driverId ?? '');
+  }, [subscriptions, selected?.id, selected?._id]);
 
-    if (!selected.customerId) {
+  useEffect(() => {
+    if (!selected?.customerId) {
       setDetailAddress(null);
       return;
     }
@@ -228,11 +283,13 @@ export function SubscriptionsPage({
     setDetailLoading(true);
     void onLoadAddresses(selected.customerId)
       .then((items) => {
-        const address = items.find((item) => getId(item) === selected.addressId) ?? null;
+        setDetailAddresses(items);
+        const address =
+          items.find((item) => getId(item) === selected.addressId) ?? null;
         setDetailAddress(address);
       })
       .finally(() => setDetailLoading(false));
-  }, [onLoadAddresses, selected?.id, selected?._id, subscriptions]);
+  }, [onLoadAddresses, selected?.addressId, selected?.customerId]);
 
   function handleCustomerChange(customerId: string) {
     setForm({
@@ -244,12 +301,12 @@ export function SubscriptionsPage({
 
   async function submitCreate(e: FormEvent) {
     e.preventDefault();
-    if (!form.customerId || !form.addressId) return;
+    if (!form.customerId || !form.addressId || !form.planId) return;
     setSaving(true);
     try {
       await onCreate({
         customerId: form.customerId,
-        planId: form.planId || undefined,
+        planId: form.planId,
         addressId: form.addressId,
         binId: form.binId || undefined,
         paymentStatus: form.paymentStatus,
@@ -272,6 +329,22 @@ export function SubscriptionsPage({
     }
   }
 
+  async function submitUpdate(e: FormEvent) {
+    e.preventDefault();
+    if (!selected || !editForm.planId || !editForm.addressId || !editForm.binId) return;
+    setSaving(true);
+    try {
+      await onUpdate(getId(selected), {
+        planId: editForm.planId,
+        addressId: editForm.addressId,
+        binId: editForm.binId,
+        paymentStatus: editForm.paymentStatus,
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function runConfirmedAction() {
     if (!confirm) return;
     setSaving(true);
@@ -280,7 +353,6 @@ export function SubscriptionsPage({
       if (confirm.action === 'suspend') await onSuspend(confirm.id);
       if (confirm.action === 'renew') await onRenew(confirm.id);
       setConfirm(null);
-      setSelected(null);
     } finally {
       setSaving(false);
     }
@@ -301,10 +373,18 @@ export function SubscriptionsPage({
     },
   };
 
-  const panelTitle = selected ? planNameById(plans, selected.planId) : '';
+  const panelTitle = selected
+    ? selected.planId
+      ? planNameById(plans, selected.planId)
+      : `اشتراك ${selected.status === 'draft' ? 'مسودة' : selected.status ?? '—'}`
+    : '';
   const panelSubtitle = detailCustomer
     ? customerDisplayName(detailCustomer, users)
     : undefined;
+  const readiness = selected ? subscriptionActivationReadiness(selected) : null;
+  const canActivate = readiness
+    ? readiness.plan && readiness.address && readiness.bin && readiness.payment
+    : false;
 
   return (
     <div className={`module-page ${selected ? 'module-page--with-detail' : ''}`}>
@@ -333,8 +413,9 @@ export function SubscriptionsPage({
             label="الخطة"
             value={form.planId}
             onChange={(e) => setForm({ ...form, planId: e.target.value })}
+            required
           >
-            <option value="">اختر الخطة (اختياري)</option>
+            <option value="">اختر الخطة</option>
             {activePlans.map((plan) => (
               <option key={getId(plan)} value={getId(plan)}>
                 {plan.name} — {plan.price} د.ل ({plan.numberOfCollections ?? 0} جمع)
@@ -425,6 +506,107 @@ export function SubscriptionsPage({
           onClose={() => setSelected(null)}
         >
           <div className="detail-stack">
+            {readiness && selected.status !== 'active' ? (
+              <section className="detail-block">
+                <h4 className="detail-block__title">جاهزية التفعيل</h4>
+                <ul className="readiness-list">
+                  <li className={readiness.plan ? 'readiness-list__item--ok' : 'readiness-list__item--missing'}>
+                    الخطة {readiness.plan ? '✓' : '— مطلوبة'}
+                  </li>
+                  <li className={readiness.address ? 'readiness-list__item--ok' : 'readiness-list__item--missing'}>
+                    العنوان والموقع {readiness.address ? '✓' : '— مطلوب'}
+                  </li>
+                  <li className={readiness.bin ? 'readiness-list__item--ok' : 'readiness-list__item--missing'}>
+                    الصندوق {readiness.bin ? '✓' : '— مطلوب'}
+                  </li>
+                  <li className={readiness.payment ? 'readiness-list__item--ok' : 'readiness-list__item--missing'}>
+                    الدفع {readiness.payment ? '✓' : '— يجب أن يكون مدفوعًا'}
+                  </li>
+                </ul>
+                {!canActivate ? (
+                  <p className="field__hint">
+                    أكمل العناصر الناقصة أدناه أو من صفحة العميل (تعيين اشتراك).
+                  </p>
+                ) : null}
+              </section>
+            ) : null}
+
+            {selected.status === 'draft' || selected.status === 'requested' ? (
+              <section className="detail-block">
+                <h4 className="detail-block__title">إكمال الاشتراك</h4>
+                <form className="detail-form" onSubmit={submitUpdate}>
+                  <Select
+                    label="الخطة"
+                    value={editForm.planId}
+                    onChange={(e) => setEditForm({ ...editForm, planId: e.target.value })}
+                    required
+                  >
+                    <option value="">اختر الخطة</option>
+                    {activePlans.map((plan) => (
+                      <option key={getId(plan)} value={getId(plan)}>
+                        {plan.name} — {plan.price} د.ل ({plan.numberOfCollections ?? 0} جمع)
+                      </option>
+                    ))}
+                  </Select>
+                  <Select
+                    label="العنوان"
+                    value={editForm.addressId}
+                    onChange={(e) => setEditForm({ ...editForm, addressId: e.target.value })}
+                    disabled={detailLoading || !detailAddresses.length}
+                    required
+                  >
+                    <option value="">
+                      {detailLoading ? COMMON.loading : 'اختر العنوان'}
+                    </option>
+                    {detailAddresses.map((address) => (
+                      <option key={getId(address)} value={getId(address)}>
+                        {address.label} — {addressLocationLabel(address, cities, areas)}
+                        {address.isActive ? ' (نشط)' : ''}
+                      </option>
+                    ))}
+                  </Select>
+                  <Select
+                    label="الصندوق"
+                    value={editForm.binId}
+                    onChange={(e) => setEditForm({ ...editForm, binId: e.target.value })}
+                    required
+                  >
+                    <option value="">اختر الصندوق</option>
+                    {editBins.map((bin) => (
+                      <option key={getId(bin)} value={getId(bin)}>
+                        {bin.code ?? getId(bin)} ({bin.capacity ?? 0} لتر)
+                      </option>
+                    ))}
+                  </Select>
+                  <Select
+                    label="حالة الدفع"
+                    value={editForm.paymentStatus}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        paymentStatus: e.target.value as 'paid' | 'unpaid',
+                      })
+                    }
+                  >
+                    <option value="unpaid">غير مدفوع</option>
+                    <option value="paid">مدفوع</option>
+                  </Select>
+                  <Button
+                    type="submit"
+                    disabled={
+                      saving ||
+                      detailLoading ||
+                      !editForm.planId ||
+                      !editForm.addressId ||
+                      !editForm.binId
+                    }
+                  >
+                    حفظ التعديلات
+                  </Button>
+                </form>
+              </section>
+            ) : null}
+
             <section className="detail-block">
               <h4 className="detail-block__title">معلومات العميل</h4>
               {detailCustomer ? (
@@ -466,7 +648,7 @@ export function SubscriptionsPage({
                 </div>
                 <div className="info-list__row">
                   <dt>الخطة</dt>
-                  <dd>{planNameById(plans, selected.planId)}</dd>
+                  <dd>{displayOrMissing(planNameById(plans, selected.planId))}</dd>
                 </div>
                 {detailPlan ? (
                   <>
@@ -538,7 +720,7 @@ export function SubscriptionsPage({
               <dl className="info-list">
                 <div className="info-list__row">
                   <dt>الصندوق</dt>
-                  <dd>{binCodeById(bins, selected.binId)}</dd>
+                  <dd>{displayOrMissing(binCodeById(bins, selected.binId))}</dd>
                 </div>
                 {detailBin ? (
                   <>
@@ -556,7 +738,11 @@ export function SubscriptionsPage({
                 ) : null}
                 <div className="info-list__row">
                   <dt>السائق المعيّن</dt>
-                  <dd>{driverNameById(drivers, users, selected.driverId)}</dd>
+                  <dd>
+                    {selected.driverId
+                      ? driverNameById(drivers, users, selected.driverId)
+                      : 'غير معيّن (اختياري)'}
+                  </dd>
                 </div>
               </dl>
             </section>
@@ -639,7 +825,7 @@ export function SubscriptionsPage({
                 <Button
                   type="button"
                   onClick={() => setConfirm({ id: getId(selected), action: 'activate' })}
-                  disabled={saving || selected.status === 'active'}
+                  disabled={saving || selected.status === 'active' || !canActivate}
                 >
                   تفعيل
                 </Button>

@@ -133,6 +133,70 @@ export class SubscriptionsService {
       .exec();
   }
 
+  async update(
+    id: string,
+    input: {
+      planId?: string;
+      binId?: string;
+      addressId?: string;
+      paymentStatus?: 'paid' | 'unpaid';
+    },
+  ): Promise<SubscriptionDocument> {
+    const subscription = await this.subscriptionModel.findById(id).exec();
+    if (!subscription) {
+      throw new BadRequestException('Subscription not found');
+    }
+    if (
+      subscription.status !== SubscriptionStatus.Draft &&
+      subscription.status !== SubscriptionStatus.Requested
+    ) {
+      throw new BadRequestException(
+        'Only draft or requested subscriptions can be updated',
+      );
+    }
+
+    if (input.addressId && input.addressId !== String(subscription.addressId)) {
+      const { cityId, areaId } = await this.resolveAddressLocation(
+        String(subscription.customerId),
+        input.addressId,
+      );
+      subscription.addressId = input.addressId;
+      subscription.cityId = cityId;
+      subscription.areaId = areaId;
+      subscription.driverId = null;
+    }
+
+    if (input.planId) {
+      const plan = await this.plansService.findById(input.planId);
+      if (!plan || !plan.active) {
+        throw new BadRequestException('Plan is not available');
+      }
+      subscription.planId = input.planId;
+    }
+
+    if (input.binId) {
+      const bin = await this.binsService.findById(input.binId);
+      if (!bin) {
+        throw new BadRequestException('Bin not found');
+      }
+      const isCurrentBin = String(subscription.binId) === input.binId;
+      const isAvailable = bin.status === 'available';
+      const isOwnedByCustomer =
+        bin.customerId &&
+        String(bin.customerId) === String(subscription.customerId);
+      if (!isCurrentBin && !isAvailable && !isOwnedByCustomer) {
+        throw new BadRequestException('Bin is not available');
+      }
+      subscription.binId = input.binId;
+    }
+
+    if (input.paymentStatus) {
+      subscription.paymentStatus = input.paymentStatus;
+    }
+
+    return subscription.save();
+  }
+
   async assignDriver(
     subscriptionId: string,
     driverId: string,

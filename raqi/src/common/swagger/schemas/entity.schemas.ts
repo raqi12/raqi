@@ -452,6 +452,18 @@ export class RegisterPendingDto {
   @ApiProperty({ example: 300 })
   expiresIn: number;
 
+  @ApiPropertyOptional({
+    example: '123456',
+    description: 'Returned when OTP_DEBUG is enabled (development or OTP_DEBUG=true)',
+  })
+  otp?: string;
+
+  @ApiPropertyOptional({
+    example: '123456',
+    description: 'Alias of otp when OTP debug is enabled',
+  })
+  debugOtp?: string;
+
   @ApiProperty({ example: '+218912345678' })
   phone: string;
 

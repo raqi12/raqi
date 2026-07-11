@@ -74,6 +74,9 @@ export class OtpService {
   }
 
   private generateCode(): string {
+    if (this.isOtpDebugEnabled()) {
+      return this.configService.get<string>('otpDevCode') ?? '123456';
+    }
     return String(Math.floor(100000 + Math.random() * 900000));
   }
 
@@ -82,21 +85,28 @@ export class OtpService {
       otpSent: boolean;
       expiresIn: number;
       otp?: string;
+      debugOtp?: string;
     } = {
       otpSent: true,
       expiresIn,
     };
 
-    if (this.isDevelopment()) {
+    if (this.isOtpDebugEnabled()) {
       response.otp = code;
+      response.debugOtp = code;
+      console.log(`[OTP debug] code=${code} expiresIn=${expiresIn}s`);
     }
 
     return response;
   }
 
+  private isOtpDebugEnabled(): boolean {
+    return this.configService.get<boolean>('otpDebug') === true;
+  }
+
   private isDevelopment(): boolean {
     return (
-      (this.configService.get<string>('NODE_ENV') ?? 'development') ===
+      (this.configService.get<string>('nodeEnv') ?? 'development') ===
       'development'
     );
   }

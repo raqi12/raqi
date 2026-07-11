@@ -146,7 +146,11 @@ jobs:
 
       - name: Rsync API build to VPS
         run: |
+          ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "pm2 stop raqi-api 2>/dev/null || true"
           rsync -avzr --delete \
+            --exclude 'node_modules' \
+            --exclude 'logs' \
             -e "ssh -i ~/.ssh/id_deploy -p $DEPLOY_PORT" \
             api-artifact/ \
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_ROOT/api/"

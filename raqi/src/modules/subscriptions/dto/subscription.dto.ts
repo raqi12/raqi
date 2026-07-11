@@ -67,3 +67,25 @@ export class AssignSubscriptionDriverDto {
   @IsMongoId()
   driverId: string;
 }
+
+export class UpdateSubscriptionDto {
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439012', description: 'Plan MongoDB ID' })
+  @IsOptional()
+  @IsMongoId()
+  planId?: string;
+
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439013', description: 'Customer address MongoDB ID' })
+  @IsOptional()
+  @IsMongoId()
+  addressId?: string;
+
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439014', description: 'Bin MongoDB ID' })
+  @IsOptional()
+  @IsMongoId()
+  binId?: string;
+
+  @ApiPropertyOptional({ enum: ['unpaid', 'paid'], example: 'paid', description: 'Payment status' })
+  @IsOptional()
+  @IsIn(['unpaid', 'paid'])
+  paymentStatus?: 'paid' | 'unpaid';
+}

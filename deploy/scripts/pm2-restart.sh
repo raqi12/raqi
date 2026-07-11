@@ -16,6 +16,8 @@ if command -v docker >/dev/null 2>&1; then
   docker compose up -d mongo
 fi
 
+pm2 stop raqi-api 2>/dev/null || true
+
 cd api
 npm ci --omit=dev
 cd "$ROOT"

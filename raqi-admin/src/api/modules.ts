@@ -179,6 +179,19 @@ export const AdminApi = {
         method: 'PATCH',
         body: JSON.stringify({ driverId }),
       }),
+    update: (
+      id: string,
+      body: {
+        planId?: string;
+        addressId?: string;
+        binId?: string;
+        paymentStatus?: 'paid' | 'unpaid';
+      },
+    ) =>
+      apiRequest<Subscription>(`/admin/subscriptions/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
     activate: (id: string) =>
       apiRequest<Subscription>(`/admin/subscriptions/${id}/activate`, { method: 'PATCH' }),
     suspend: (id: string) =>

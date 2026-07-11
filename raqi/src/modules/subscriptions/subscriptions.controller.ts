@@ -32,6 +32,7 @@ import {
   SubscribePlanDto,
   AdminAssignPlanDto,
   AssignSubscriptionDriverDto,
+  UpdateSubscriptionDto,
 } from './dto/subscription.dto';
 
 @ApiTags('Admin - Subscriptions')
@@ -98,6 +99,19 @@ export class AdminSubscriptionsController {
       throw new NotFoundException('Subscription not found');
     }
     return { data: subscription };
+  }
+
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'Update draft subscription',
+    description:
+      'Updates plan, address, bin, or payment status on a draft or requested subscription.',
+  })
+  @ApiMongoIdParam('id', 'Subscription MongoDB ID')
+  @ApiBody({ type: UpdateSubscriptionDto })
+  @ApiOkDataResponse(SubscriptionDto, 'Subscription updated')
+  async update(@Param('id') id: string, @Body() body: UpdateSubscriptionDto) {
+    return { data: await this.subscriptionsService.update(id, body) };
   }
 
   @Patch(':id/assign-driver')

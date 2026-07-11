@@ -9,6 +9,7 @@
     "build": "rm -rf dist && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
+    "prestart:dev": "node -e \"require('fs').accessSync('dist/main.js')\" 2>/dev/null || npm run build",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
