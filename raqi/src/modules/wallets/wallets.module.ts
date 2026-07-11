@@ -13,6 +13,7 @@ import {
 import {
   AdminWalletSettingsController,
   CustomerWalletController,
+  WalletBalanceController,
 } from './wallets.controller';
 import { WalletsService } from './wallets.service';
 import { BankAccountSettingsService } from './bank-account-settings.service';
@@ -27,7 +28,11 @@ import { DepositRequestsService } from './deposit-requests.service';
     ]),
     forwardRef(() => CustomersModule),
   ],
-  controllers: [CustomerWalletController, AdminWalletSettingsController],
+  controllers: [
+    CustomerWalletController,
+    WalletBalanceController,
+    AdminWalletSettingsController,
+  ],
   providers: [WalletsService, BankAccountSettingsService, DepositRequestsService],
   exports: [WalletsService, DepositRequestsService],
 })

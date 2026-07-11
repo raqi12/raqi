@@ -353,6 +353,14 @@ export class WalletDto {
   balance: number;
 }
 
+export class WalletBalanceDto {
+  @ApiProperty({ example: 250.5 })
+  balance: number;
+
+  @ApiProperty({ example: 'LYD', description: 'Wallet currency' })
+  currency: string;
+}
+
 export class BankAccountSettingsDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439011' })
   id: string;

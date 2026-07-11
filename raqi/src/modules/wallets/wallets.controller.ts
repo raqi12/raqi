@@ -37,6 +37,7 @@ import {
 import {
   BankAccountSettingsDto,
   DepositRequestDto,
+  WalletBalanceDto,
   WalletDto,
 } from '../../common/swagger/schemas/entity.schemas';
 import { DepositEvidenceUploadDto } from '../../common/swagger/schemas/upload.schemas';
@@ -91,6 +92,23 @@ export class CustomerWalletController {
     const customerId = await this.resolveCustomerId(user);
     const wallet = await this.walletsService.ensureWallet(customerId);
     return { data: wallet };
+  }
+
+  @Get('wallet/balance')
+  @ApiOperation({
+    summary: 'Get wallet balance only',
+    description: 'Returns the current wallet balance for the authenticated customer.',
+  })
+  @ApiOkDataResponse(WalletBalanceDto, 'Wallet balance')
+  async getWalletBalance(@CurrentUser() user?: AuthUser) {
+    const customerId = await this.resolveCustomerId(user);
+    const wallet = await this.walletsService.ensureWallet(customerId);
+    return {
+      data: {
+        balance: wallet.balance,
+        currency: 'LYD',
+      },
+    };
   }
 
   @Get('bank-account')
@@ -158,6 +176,48 @@ export class CustomerWalletController {
   async listDepositRequests(@CurrentUser() user?: AuthUser) {
     const customerId = await this.resolveCustomerId(user);
     return { data: await this.depositRequestsService.findByCustomer(customerId) };
+  }
+}
+
+@ApiTags('Customer - Wallet')
+@ApiBearerAuth('access-token')
+@ApiStandardErrorResponses()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.Customer)
+@Controller('wallet')
+export class WalletBalanceController {
+  constructor(
+    private readonly walletsService: WalletsService,
+    private readonly customersService: CustomersService,
+  ) {}
+
+  private async resolveCustomerId(user?: AuthUser): Promise<string> {
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    const customer = await this.customersService.findByUserId(user.sub);
+    if (!customer) {
+      throw new NotFoundException('Customer profile not found');
+    }
+    return String(customer.id);
+  }
+
+  @Get('balance')
+  @ApiOperation({
+    summary: 'Get wallet balance (alias)',
+    description:
+      'Alias of GET /customer/wallet/balance. Returns the authenticated customer wallet balance.',
+  })
+  @ApiOkDataResponse(WalletBalanceDto, 'Wallet balance')
+  async getBalance(@CurrentUser() user?: AuthUser) {
+    const customerId = await this.resolveCustomerId(user);
+    const wallet = await this.walletsService.ensureWallet(customerId);
+    return {
+      data: {
+        balance: wallet.balance,
+        currency: 'LYD',
+      },
+    };
   }
 }
 
