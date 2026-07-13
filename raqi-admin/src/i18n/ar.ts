@@ -13,6 +13,7 @@ export const TAB_LABELS = {
   'bank-account': 'الحساب البنكي',
   'deposit-requests': 'طلبات الإيداع',
   complaints: 'الشكاوى',
+  tickets: 'تذاكر الدعم',
 } as const;
 
 export const COMMON = {
@@ -77,6 +78,12 @@ export const STATUS_LABELS: Record<string, string> = {
   maintenance: 'صيانة',
   open: 'مفتوح',
   closed: 'مغلق',
+  in_progress: 'قيد المعالجة',
+  resolved: 'تم الحل',
+  low: 'منخفضة',
+  medium: 'متوسطة',
+  high: 'عالية',
+  urgent: 'عاجلة',
   suspended: 'موقوف',
   draft: 'مسودة',
   requested: 'قيد الطلب',

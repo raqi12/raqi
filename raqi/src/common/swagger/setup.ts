@@ -20,6 +20,9 @@ import {
   BinDto,
   BinStatsDto,
   ComplaintDto,
+  TicketDto,
+  TicketMessageDto,
+  TicketMessageListDto,
   CityDto,
   CustomerDto,
   DepositRequestDto,
@@ -65,6 +68,9 @@ const extraModels = [
   PaymentDto,
   TaskDto,
   ComplaintDto,
+  TicketDto,
+  TicketMessageDto,
+  TicketMessageListDto,
   NotificationDto,
   WalletDto,
   BankAccountSettingsDto,
@@ -150,6 +156,8 @@ Deposit evidence: \`multipart/form-data\` with field \`evidence\` (jpg, jpeg, pn
     .addTag('Customer - Tasks', 'Customer task history')
     .addTag('Customer - Complaints', 'Customer complaints')
     .addTag('Admin - Complaints', 'Complaint management')
+    .addTag('Customer - Tickets', 'Customer support tickets and chat')
+    .addTag('Admin - Tickets', 'Support ticket management and chat')
     .addTag('Notifications', 'In-app notifications')
     .addTag('Customer - Wallet', 'Wallet and deposit requests')
     .addTag('Admin - Wallet Settings', 'Bank account and deposit review')

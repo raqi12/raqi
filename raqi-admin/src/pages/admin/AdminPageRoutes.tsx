@@ -16,6 +16,7 @@ import {
   RoutesPage,
   SubscriptionsPage,
   TasksPage,
+  TicketsPage,
 } from '../ModulePages';
 
 export function AdminPageRoutes() {
@@ -31,6 +32,7 @@ export function AdminPageRoutes() {
     subscriptions,
     payments,
     complaints,
+    tickets,
     binsStats,
     plans,
     bins,
@@ -41,6 +43,8 @@ export function AdminPageRoutes() {
     activity,
     runMutation,
     loading,
+    loadAll,
+    session,
   } = admin;
 
   return (
@@ -262,6 +266,21 @@ export function AdminPageRoutes() {
             onApprove={(id) => runMutation(() => AdminApi.depositRequests.approve(id), 'Deposit approved')}
             onReject={(id, reason) =>
               runMutation(() => AdminApi.depositRequests.reject(id, reason), 'Deposit rejected')
+            }
+          />
+        }
+      />
+      <Route
+        path="/tickets"
+        element={
+          <TicketsPage
+            tickets={tickets}
+            users={users}
+            accessToken={session.accessToken}
+            loading={loading}
+            onRefresh={loadAll}
+            onUpdate={(id, body) =>
+              runMutation(() => AdminApi.tickets.update(id, body), 'تم تحديث التذكرة')
             }
           />
         }

@@ -325,6 +325,90 @@ export class ComplaintDto {
   assignee?: string;
 }
 
+export class TicketDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
+  id: string;
+
+  @ApiProperty({ example: 'TKT-20260712-0001' })
+  ticketNumber: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439012' })
+  userId: string;
+
+  @ApiPropertyOptional({ example: 'أحمد محمد' })
+  userName?: string;
+
+  @ApiProperty({ example: 'مشكلة في الجمع' })
+  subject: string;
+
+  @ApiProperty({ example: 'لم يتم الجمع منذ 3 أيام' })
+  description: string;
+
+  @ApiProperty({
+    enum: ['pending', 'open', 'in_progress', 'resolved', 'closed'],
+    example: 'pending',
+  })
+  status: string;
+
+  @ApiProperty({
+    enum: ['low', 'medium', 'high', 'urgent'],
+    example: 'medium',
+  })
+  priority: string;
+
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439013' })
+  assigneeId?: string | null;
+
+  @ApiPropertyOptional({ example: '2026-07-12T18:00:00.000Z' })
+  closedAt?: string | null;
+
+  @ApiProperty({ example: '2026-07-12T18:00:00.000Z' })
+  lastMessageAt: string;
+
+  @ApiPropertyOptional({ example: '2026-07-12T18:00:00.000Z' })
+  createdAt?: string;
+
+  @ApiPropertyOptional({ example: '2026-07-12T18:00:00.000Z' })
+  updatedAt?: string;
+}
+
+export class TicketMessageDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
+  id: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439012' })
+  ticketId: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439013' })
+  senderId: string;
+
+  @ApiProperty({ enum: ['customer', 'admin'], example: 'customer' })
+  senderRole: string;
+
+  @ApiProperty({ example: 'مرحباً، أحتاج مساعدة' })
+  body: string;
+
+  @ApiProperty({ example: '2026-07-12T18:00:00.000Z' })
+  createdAt: string;
+}
+
+export class TicketMessageListDto {
+  @ApiProperty({ type: TicketMessageDto, isArray: true })
+  items: TicketMessageDto[];
+
+  @ApiProperty({ example: 1 })
+  page: number;
+
+  @ApiProperty({ example: 50 })
+  limit: number;
+
+  @ApiProperty({ example: 12 })
+  total: number;
+
+  @ApiProperty({ example: 1 })
+  totalPages: number;
+}
+
 export class NotificationDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439011' })
   id: string;

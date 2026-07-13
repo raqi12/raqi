@@ -175,6 +175,41 @@ export type Complaint = {
   assignee?: string;
 };
 
+export type Ticket = {
+  _id?: string;
+  id?: string;
+  ticketNumber?: string;
+  userId?: string;
+  userName?: string;
+  subject?: string;
+  description?: string;
+  status?: 'pending' | 'open' | 'in_progress' | 'resolved' | 'closed';
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  assigneeId?: string | null;
+  closedAt?: string | null;
+  lastMessageAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type TicketMessage = {
+  _id?: string;
+  id?: string;
+  ticketId?: string;
+  senderId?: string;
+  senderRole?: 'customer' | 'admin';
+  body?: string;
+  createdAt?: string;
+};
+
+export type TicketMessageList = {
+  items: TicketMessage[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 export type BankAccountSettings = {
   _id?: string;
   id?: string;

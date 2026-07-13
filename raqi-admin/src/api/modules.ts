@@ -6,6 +6,9 @@ import type {
   BinStats,
   City,
   Complaint,
+  Ticket,
+  TicketMessage,
+  TicketMessageList,
   Customer,
   CustomerDetails,
   DepositRequest,
@@ -232,6 +235,44 @@ export const AdminApi = {
       apiRequest<Complaint>(`/admin/complaints/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(body),
+      }),
+  },
+  tickets: {
+    list: (params?: {
+      status?: string;
+      priority?: string;
+      assigneeId?: string;
+      search?: string;
+    }) => {
+      const query = new URLSearchParams();
+      if (params?.status) query.set('status', params.status);
+      if (params?.priority) query.set('priority', params.priority);
+      if (params?.assigneeId) query.set('assigneeId', params.assigneeId);
+      if (params?.search) query.set('search', params.search);
+      const suffix = query.toString() ? `?${query.toString()}` : '';
+      return apiRequest<Ticket[]>(`/admin/tickets${suffix}`);
+    },
+    get: (id: string) => apiRequest<Ticket>(`/admin/tickets/${id}`),
+    update: (
+      id: string,
+      body: {
+        status?: Ticket['status'];
+        priority?: Ticket['priority'];
+        assigneeId?: string;
+      },
+    ) =>
+      apiRequest<Ticket>(`/admin/tickets/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    listMessages: (id: string, page = 1, limit = 100) =>
+      apiRequest<TicketMessageList>(
+        `/admin/tickets/${id}/messages?page=${page}&limit=${limit}`,
+      ),
+    sendMessage: (id: string, body: string) =>
+      apiRequest<TicketMessage>(`/admin/tickets/${id}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ body }),
       }),
   },
   settings: {

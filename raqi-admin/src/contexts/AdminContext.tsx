@@ -19,6 +19,7 @@ import type {
   BinStats,
   City,
   Complaint,
+  Ticket,
   Customer,
   DepositRequest,
   Driver,
@@ -61,6 +62,7 @@ type AdminContextValue = {
   subscriptions: Subscription[];
   payments: Payment[];
   complaints: Complaint[];
+  tickets: Ticket[];
   binsStats: BinStats | null;
   plans: Plan[];
   bins: Bin[];
@@ -113,6 +115,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [binsStats, setBinsStats] = useState<BinStats | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [bins, setBins] = useState<Bin[]>([]);
@@ -165,6 +168,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
         subscriptionsRes,
         paymentsRes,
         complaintsRes,
+        ticketsRes,
         bankAccountRes,
         depositRequestsRes,
       ] = await Promise.all([
@@ -182,6 +186,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
         AdminApi.subscriptions.list(),
         AdminApi.payments.list(),
         AdminApi.complaints.list(),
+        AdminApi.tickets.list(),
         AdminApi.settings.bankAccount.get(),
         AdminApi.depositRequests.list(),
       ]);
@@ -199,6 +204,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       setSubscriptions(subscriptionsRes.data);
       setPayments(paymentsRes.data);
       setComplaints(complaintsRes.data);
+      setTickets(ticketsRes.data);
       setBankAccount(bankAccountRes.data);
       setDepositRequests(depositRequestsRes.data);
       setLastSync(new Date().toLocaleTimeString());
@@ -262,6 +268,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       subscriptions,
       payments,
       complaints,
+      tickets,
       binsStats,
       plans,
       bins,
@@ -291,6 +298,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       subscriptions,
       payments,
       complaints,
+      tickets,
       binsStats,
       plans,
       bins,

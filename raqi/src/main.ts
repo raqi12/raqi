@@ -2,6 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import { join } from 'path';
 import { setupSwagger } from './common/swagger/setup';
 import { AppModule } from './app.module';
@@ -10,6 +11,7 @@ import { ensureDepositsUploadDir } from './modules/wallets/upload.config';
 async function bootstrap() {
   ensureDepositsUploadDir();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.useWebSocketAdapter(new IoAdapter(app));
   const configService = app.get(ConfigService);
   const defaultOrigins = [
     'http://localhost:5173',

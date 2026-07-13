@@ -17,6 +17,7 @@ import { CitiesModule } from './modules/cities/cities.module';
 import { RoutesModule } from './modules/routes/routes.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { ComplaintsModule } from './modules/complaints/complaints.module';
+import { TicketsModule } from './modules/tickets/tickets.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { WalletsModule } from './modules/wallets/wallets.module';
@@ -46,6 +47,7 @@ import { WalletsModule } from './modules/wallets/wallets.module';
     RoutesModule,
     TasksModule,
     ComplaintsModule,
+    TicketsModule,
     NotificationsModule,
     ReportsModule,
     WalletsModule,
