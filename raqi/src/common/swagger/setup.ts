@@ -138,14 +138,14 @@ Deposit evidence: \`multipart/form-data\` with field \`evidence\` (jpg, jpeg, pn
     )
     .setVersion('1.0.0')
     .setContact('Raqi Engineering', 'https://raqii.com.ly', 'support@raqii.com.ly')
-    .addServer('https://api.raqii.com.ly/api/v1', 'Production')
-    .addServer('http://localhost:3000/api/v1', 'Local development')
+    .addServer('https://api.raqii.com.ly', 'Production')
+    .addServer('http://localhost:3000', 'Local development')
     .addBearerAuth(
       {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
-        description: 'JWT access token from POST /auth/login',
+        description: 'JWT access token from POST /api/v1/auth/login',
       },
       'access-token',
     )
