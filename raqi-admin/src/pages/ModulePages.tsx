@@ -12,6 +12,7 @@ export { BinsPage } from './module/BinsPage';
 export { RoutesPage } from './module/RoutesPage';
 export { TasksPage } from './module/TasksPage';
 export { TicketsPage } from './module/TicketsPage';
+export { SupportPage } from './module/SupportPage';
 
 type PaymentsPageProps = {
   payments: Payment[];

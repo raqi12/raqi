@@ -13,11 +13,13 @@ import type {
   CustomerDetails,
   DepositRequest,
   Driver,
+  Faq,
   Overview,
   Payment,
   Plan,
   Route,
   Subscription,
+  SupportSettings,
   Task,
   User,
   Wallet,
@@ -289,6 +291,57 @@ export const AdminApi = {
         apiRequest<BankAccountSettings>('/admin/settings/bank-account', {
           method: 'PATCH',
           body: JSON.stringify(body),
+        }),
+    },
+  },
+  support: {
+    settings: {
+      get: () => apiRequest<SupportSettings | null>('/admin/support/settings'),
+      update: (body: {
+        phone: string;
+        whatsapp: string;
+        email: string;
+        twitter: string;
+        workingHours: Array<{ label: string; startTime: string; endTime: string }>;
+        emergencyMessage: string;
+        emergencyPhone: string;
+        appVersion: string;
+        lastUpdateLabel: string;
+        active?: boolean;
+      }) =>
+        apiRequest<SupportSettings>('/admin/support/settings', {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        }),
+    },
+    faqs: {
+      list: () => apiRequest<Faq[]>('/admin/support/faqs'),
+      create: (body: {
+        question: string;
+        answer: string;
+        sortOrder?: number;
+        active?: boolean;
+      }) =>
+        apiRequest<Faq>('/admin/support/faqs', {
+          method: 'POST',
+          body: JSON.stringify(body),
+        }),
+      update: (
+        id: string,
+        body: {
+          question?: string;
+          answer?: string;
+          sortOrder?: number;
+          active?: boolean;
+        },
+      ) =>
+        apiRequest<Faq>(`/admin/support/faqs/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        }),
+      remove: (id: string) =>
+        apiRequest<Faq>(`/admin/support/faqs/${id}`, {
+          method: 'DELETE',
         }),
     },
   },

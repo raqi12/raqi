@@ -20,6 +20,7 @@ pm2 stop raqi-api 2>/dev/null || true
 
 cd api
 npm ci --omit=dev
+node scripts/verify-production-deps.js
 cd "$ROOT"
 
 pm2 delete wassetpay-api 2>/dev/null || true

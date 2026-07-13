@@ -12,7 +12,7 @@
     "prestart:dev": "node -e \"require('fs').accessSync('dist/main.js')\" 2>/dev/null || npm run build",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start:prod": "node scripts/verify-production-deps.js && node dist/main",
     "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/seed-admin.ts",
     "seed:admin:prod": "node dist/scripts/seed-admin.js",
     "migrate:cities": "ts-node -r tsconfig-paths/register src/scripts/migrate-cities.ts",

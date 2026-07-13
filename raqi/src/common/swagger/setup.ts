@@ -17,6 +17,7 @@ import {
   AreaDto,
   AuthTokensDto,
   BankAccountSettingsDto,
+  FaqDto,
   BinDto,
   BinStatsDto,
   ComplaintDto,
@@ -31,6 +32,13 @@ import {
   OverviewReportDto,
   PaymentDto,
   PlanDto,
+  SupportAppInfoDto,
+  SupportContactsDto,
+  SupportEmergencyDto,
+  SupportFaqItemDto,
+  SupportPageDto,
+  SupportSettingsDto,
+  WorkingHoursRangeDto,
   RefreshTokenDataDto,
   RegisterPendingDto,
   RouteDto,
@@ -76,6 +84,14 @@ const extraModels = [
   BankAccountSettingsDto,
   DepositRequestDto,
   OverviewReportDto,
+  WorkingHoursRangeDto,
+  SupportContactsDto,
+  SupportEmergencyDto,
+  SupportAppInfoDto,
+  SupportFaqItemDto,
+  SupportPageDto,
+  SupportSettingsDto,
+  FaqDto,
 ];
 
 export function setupSwagger(app: INestApplication) {
@@ -137,6 +153,9 @@ Deposit evidence: \`multipart/form-data\` with field \`evidence\` (jpg, jpeg, pn
     .addTag('Auth', 'Registration, login, tokens, and profile')
     .addTag('Locations', 'Public city and area catalog for signup forms')
     .addTag('Plans', 'Public subscription plans')
+    .addTag('Support', 'Public support page content')
+    .addTag('Customer - Support', 'Authenticated support page content')
+    .addTag('Admin - Support', 'Support page settings and FAQ management')
     .addTag('Admin - Users', 'Staff user management (admin only)')
     .addTag('Admin - Customers', 'Customer account management')
     .addTag('Customer - Addresses', 'Customer delivery addresses')

@@ -15,6 +15,7 @@ import {
   PlansPage,
   RoutesPage,
   SubscriptionsPage,
+  SupportPage,
   TasksPage,
   TicketsPage,
 } from '../ModulePages';
@@ -33,6 +34,8 @@ export function AdminPageRoutes() {
     payments,
     complaints,
     tickets,
+    supportSettings,
+    faqs,
     binsStats,
     plans,
     bins,
@@ -281,6 +284,28 @@ export function AdminPageRoutes() {
             onRefresh={loadAll}
             onUpdate={(id, body) =>
               runMutation(() => AdminApi.tickets.update(id, body), 'تم تحديث التذكرة')
+            }
+          />
+        }
+      />
+      <Route
+        path="/support"
+        element={
+          <SupportPage
+            supportSettings={supportSettings}
+            faqs={faqs}
+            loading={loading}
+            onUpdateSettings={(body) =>
+              runMutation(() => AdminApi.support.settings.update(body), 'تم حفظ إعدادات الدعم')
+            }
+            onCreateFaq={(body) =>
+              runMutation(() => AdminApi.support.faqs.create(body), 'تم إضافة السؤال')
+            }
+            onUpdateFaq={(id, body) =>
+              runMutation(() => AdminApi.support.faqs.update(id, body), 'تم تحديث السؤال')
+            }
+            onDeleteFaq={(id) =>
+              runMutation(() => AdminApi.support.faqs.remove(id), 'تم حذف السؤال')
             }
           />
         }

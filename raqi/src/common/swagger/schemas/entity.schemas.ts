@@ -537,6 +537,145 @@ export class OverviewReportDto {
   generatedAt: string;
 }
 
+export class WorkingHoursRangeDto {
+  @ApiProperty({ example: 'الأحد - الخميس' })
+  label: string;
+
+  @ApiProperty({ example: '08:00' })
+  startTime: string;
+
+  @ApiProperty({ example: '20:00' })
+  endTime: string;
+}
+
+export class SupportContactsDto {
+  @ApiProperty({ example: '920000000' })
+  phone: string;
+
+  @ApiProperty({ example: '091xxxxxxxx' })
+  whatsapp: string;
+
+  @ApiProperty({ example: 'support@text.sa' })
+  email: string;
+
+  @ApiProperty({ example: 'text' })
+  twitter: string;
+}
+
+export class SupportEmergencyDto {
+  @ApiProperty({
+    example:
+      'حالة طوارئ: للإبلاغ عن مشاكل عاجلة مثل انسكاب النفايات أو تأخير حرج، اتصل بخط الطوارئ.',
+  })
+  message: string;
+
+  @ApiProperty({ example: '920000000' })
+  phone: string;
+}
+
+export class SupportAppInfoDto {
+  @ApiProperty({ example: 'v2.4.1' })
+  version: string;
+
+  @ApiProperty({ example: 'يونيو ٢٠٢٦' })
+  lastUpdate: string;
+}
+
+export class SupportFaqItemDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
+  id: string;
+
+  @ApiProperty({ example: 'كيف يمكنني تغيير موعد الجمع؟' })
+  question: string;
+
+  @ApiProperty({
+    example:
+      'يمكنك تعديل موعد الجمع من صفحة الاشتراك أو التواصل مع خدمة العملاء.',
+  })
+  answer: string;
+
+  @ApiProperty({ example: 0 })
+  sortOrder: number;
+}
+
+export class SupportPageDto {
+  @ApiProperty({ type: SupportContactsDto })
+  contacts: SupportContactsDto;
+
+  @ApiProperty({ type: WorkingHoursRangeDto, isArray: true })
+  workingHours: WorkingHoursRangeDto[];
+
+  @ApiProperty({ type: SupportFaqItemDto, isArray: true })
+  faqs: SupportFaqItemDto[];
+
+  @ApiProperty({ type: SupportEmergencyDto })
+  emergency: SupportEmergencyDto;
+
+  @ApiProperty({ type: SupportAppInfoDto })
+  appInfo: SupportAppInfoDto;
+}
+
+export class SupportSettingsDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
+  id: string;
+
+  @ApiProperty({ example: 'default' })
+  key: string;
+
+  @ApiProperty({ example: '920000000' })
+  phone: string;
+
+  @ApiProperty({ example: '091xxxxxxxx' })
+  whatsapp: string;
+
+  @ApiProperty({ example: 'support@text.sa' })
+  email: string;
+
+  @ApiProperty({ example: 'text' })
+  twitter: string;
+
+  @ApiProperty({ type: WorkingHoursRangeDto, isArray: true })
+  workingHours: WorkingHoursRangeDto[];
+
+  @ApiProperty({
+    example:
+      'حالة طوارئ: للإبلاغ عن مشاكل عاجلة مثل انسكاب النفايات أو تأخير حرج، اتصل بخط الطوارئ.',
+  })
+  emergencyMessage: string;
+
+  @ApiProperty({ example: '920000000' })
+  emergencyPhone: string;
+
+  @ApiProperty({ example: 'v2.4.1' })
+  appVersion: string;
+
+  @ApiProperty({ example: 'يونيو ٢٠٢٦' })
+  lastUpdateLabel: string;
+
+  @ApiProperty({ example: true })
+  active: boolean;
+}
+
+export class FaqDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
+  id: string;
+
+  @ApiProperty({ example: 'كيف يمكنني تغيير موعد الجمع؟' })
+  question: string;
+
+  @ApiProperty({
+    example:
+      'يمكنك تعديل موعد الجمع من صفحة الاشتراك أو التواصل مع خدمة العملاء.',
+  })
+  answer: string;
+
+  @ApiProperty({ example: 0 })
+  sortOrder: number;
+
+  @ApiProperty({ example: true })
+  active: boolean;
+}
+
 export class RegisterPendingDto {
   @ApiProperty({ example: true })
   otpSent: boolean;

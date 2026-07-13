@@ -232,3 +232,58 @@ export type DepositRequest = {
   reviewedAt?: string | null;
   rejectionReason?: string | null;
 };
+
+export type WorkingHoursRange = {
+  label: string;
+  startTime: string;
+  endTime: string;
+};
+
+export type SupportSettings = {
+  _id?: string;
+  id?: string;
+  key?: string;
+  phone?: string;
+  whatsapp?: string;
+  email?: string;
+  twitter?: string;
+  workingHours?: WorkingHoursRange[];
+  emergencyMessage?: string;
+  emergencyPhone?: string;
+  appVersion?: string;
+  lastUpdateLabel?: string;
+  active?: boolean;
+};
+
+export type Faq = {
+  _id?: string;
+  id?: string;
+  question?: string;
+  answer?: string;
+  sortOrder?: number;
+  active?: boolean;
+};
+
+export type SupportPage = {
+  contacts: {
+    phone: string;
+    whatsapp: string;
+    email: string;
+    twitter: string;
+  };
+  workingHours: WorkingHoursRange[];
+  faqs: Array<{
+    id: string;
+    question: string;
+    answer: string;
+    sortOrder: number;
+  }>;
+  emergency: {
+    message: string;
+    phone: string;
+  };
+  appInfo: {
+    version: string;
+    lastUpdate: string;
+  };
+};

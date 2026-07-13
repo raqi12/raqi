@@ -1,6 +1,7 @@
 const path = require('path');
 
 const root = __dirname;
+const apiDir = path.join(root, 'api');
 const envFile = path.join(root, '.env');
 
 /** @type {import('pm2').StartOptions} */
@@ -8,8 +9,8 @@ module.exports = {
   apps: [
     {
       name: 'raqi-api',
-      cwd: root,
-      script: 'api/dist/main.js',
+      cwd: apiDir,
+      script: 'dist/main.js',
       instances: 1,
       exec_mode: 'fork',
       autorestart: true,

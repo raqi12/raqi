@@ -14,6 +14,7 @@ export const TAB_LABELS = {
   'deposit-requests': 'طلبات الإيداع',
   complaints: 'الشكاوى',
   tickets: 'تذاكر الدعم',
+  support: 'صفحة الدعم',
 } as const;
 
 export const COMMON = {

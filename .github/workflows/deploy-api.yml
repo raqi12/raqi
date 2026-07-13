@@ -49,7 +49,7 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           mkdir -p ../api-artifact
-          cp -r dist package.json package-lock.json Dockerfile ../api-artifact/
+          cp -r dist package.json package-lock.json Dockerfile scripts ../api-artifact/
 
       - name: Upload artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -168,7 +168,7 @@ jobs:
              docker compose stop api 2>/dev/null || true && \
              docker compose rm -f api 2>/dev/null || true && \
              docker compose up -d mongo && \
-             cd api && npm ci --omit=dev && cd .. && \
+             cd api && npm ci --omit=dev && node scripts/verify-production-deps.js && cd .. && \
              pm2 delete wassetpay-api 2>/dev/null || true && \
              pm2 startOrReload ecosystem.config.cjs --update-env && \
              pm2 save && \

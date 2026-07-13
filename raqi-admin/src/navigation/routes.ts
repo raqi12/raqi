@@ -18,6 +18,7 @@ export const ROUTE_PATHS: Record<SidebarTab, string> = {
   'deposit-requests': '/deposit-requests',
   complaints: '/complaints',
   tickets: '/tickets',
+  support: '/support',
 };
 
 const pathToTab = new Map(Object.entries(ROUTE_PATHS).map(([tab, path]) => [path, tab as SidebarTab]));
@@ -37,6 +38,7 @@ const TAB_NAV_GROUPS: Record<SidebarTab, string> = {
   tasks: 'العمليات',
   complaints: 'العمليات',
   tickets: 'العمليات',
+  support: 'العمليات',
   users: 'الموارد',
   drivers: 'الموارد',
   plans: 'الموارد',

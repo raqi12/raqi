@@ -23,12 +23,14 @@ import type {
   Customer,
   DepositRequest,
   Driver,
+  Faq,
   Overview,
   Payment,
   Plan,
   Route,
   Session,
   Subscription,
+  SupportSettings,
   Task,
   User,
 } from '../types';
@@ -63,6 +65,8 @@ type AdminContextValue = {
   payments: Payment[];
   complaints: Complaint[];
   tickets: Ticket[];
+  supportSettings: SupportSettings | null;
+  faqs: Faq[];
   binsStats: BinStats | null;
   plans: Plan[];
   bins: Bin[];
@@ -116,6 +120,8 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
   const [payments, setPayments] = useState<Payment[]>([]);
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [supportSettings, setSupportSettings] = useState<SupportSettings | null>(null);
+  const [faqs, setFaqs] = useState<Faq[]>([]);
   const [binsStats, setBinsStats] = useState<BinStats | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [bins, setBins] = useState<Bin[]>([]);
@@ -169,6 +175,8 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
         paymentsRes,
         complaintsRes,
         ticketsRes,
+        supportSettingsRes,
+        faqsRes,
         bankAccountRes,
         depositRequestsRes,
       ] = await Promise.all([
@@ -187,6 +195,8 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
         AdminApi.payments.list(),
         AdminApi.complaints.list(),
         AdminApi.tickets.list(),
+        AdminApi.support.settings.get(),
+        AdminApi.support.faqs.list(),
         AdminApi.settings.bankAccount.get(),
         AdminApi.depositRequests.list(),
       ]);
@@ -205,6 +215,8 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       setPayments(paymentsRes.data);
       setComplaints(complaintsRes.data);
       setTickets(ticketsRes.data);
+      setSupportSettings(supportSettingsRes.data);
+      setFaqs(faqsRes.data);
       setBankAccount(bankAccountRes.data);
       setDepositRequests(depositRequestsRes.data);
       setLastSync(new Date().toLocaleTimeString());
@@ -269,6 +281,8 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       payments,
       complaints,
       tickets,
+      supportSettings,
+      faqs,
       binsStats,
       plans,
       bins,
@@ -299,6 +313,8 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       payments,
       complaints,
       tickets,
+      supportSettings,
+      faqs,
       binsStats,
       plans,
       bins,
