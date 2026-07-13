@@ -5,6 +5,7 @@ import { PaymentsService } from '../payments/payments.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { TasksService } from '../tasks/tasks.service';
 import { DepositRequestsService } from '../wallets/deposit-requests.service';
+import { WalletTransactionsService } from '../wallets/wallet-transactions.service';
 import { WalletsService } from '../wallets/wallets.service';
 import { CustomersService } from './customers.service';
 
@@ -14,6 +15,7 @@ export class CustomerAdminService {
     private readonly customersService: CustomersService,
     private readonly walletsService: WalletsService,
     private readonly depositRequestsService: DepositRequestsService,
+    private readonly walletTransactionsService: WalletTransactionsService,
     private readonly subscriptionsService: SubscriptionsService,
     private readonly paymentsService: PaymentsService,
     private readonly binsService: BinsService,
@@ -33,6 +35,7 @@ export class CustomerAdminService {
       subscriptions,
       payments,
       depositRequests,
+      walletTransactionsRes,
       bins,
       tasks,
       complaints,
@@ -42,6 +45,10 @@ export class CustomerAdminService {
       this.subscriptionsService.findByCustomer(customerId),
       this.paymentsService.findByCustomer(customerId),
       this.depositRequestsService.findByCustomer(customerId),
+      this.walletTransactionsService.findByCustomer(customerId, {
+        page: 1,
+        limit: 50,
+      }),
       this.binsService.findByCustomer(customerId),
       this.tasksService.findByCustomer(customerId),
       this.complaintsService.findByCustomer(customerId),
@@ -54,6 +61,7 @@ export class CustomerAdminService {
       subscriptions,
       payments,
       depositRequests,
+      walletTransactions: walletTransactionsRes.items,
       bins,
       tasks,
       complaints,

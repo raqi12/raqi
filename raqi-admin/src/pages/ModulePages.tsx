@@ -121,6 +121,9 @@ export function BankAccountPage({ bankAccount, onUpdate }: BankAccountPageProps)
   });
 
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7507/ingest/e05eb89e-9cfa-4057-adc1-4bbb50888184',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1c8176'},body:JSON.stringify({sessionId:'1c8176',location:'BankAccountPage.tsx:form-sync-effect',message:'BankAccountPage form synced from props',data:{bankName:bankAccount?.bankName??null},timestamp:Date.now(),hypothesisId:'D',runId:'pre-fix'})}).catch(()=>{});
+    // #endregion
     setForm({
       bankName: bankAccount?.bankName ?? '',
       accountHolder: bankAccount?.accountHolder ?? '',

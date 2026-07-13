@@ -46,7 +46,11 @@ import {
   TaskDto,
   UserDto,
   WalletDto,
+  WalletBalanceDto,
+  WalletTransactionDto,
+  WalletTransactionListDto,
 } from './schemas/entity.schemas';
+import { SubscriptionCostDto } from '../../modules/plans/dto/plan.dto';
 
 const extraModels = [
   BadRequestErrorDto,
@@ -70,6 +74,7 @@ const extraModels = [
   AreaDto,
   RouteDto,
   PlanDto,
+  SubscriptionCostDto,
   BinDto,
   BinStatsDto,
   SubscriptionDto,
@@ -81,6 +86,8 @@ const extraModels = [
   TicketMessageListDto,
   NotificationDto,
   WalletDto,
+  WalletTransactionDto,
+  WalletTransactionListDto,
   BankAccountSettingsDto,
   DepositRequestDto,
   OverviewReportDto,
@@ -115,6 +122,9 @@ Obtain tokens via \`POST /api/v1/auth/login\` or the customer registration flow 
 Both \`cityId\` and \`areaId\` are required at registration. The area must belong to the selected city. Optional \`addressDetails\` sets street/landmark on the first active address.
 
 After login, customers manage addresses via \`GET/POST/PATCH /customer/addresses\` and \`PATCH /customer/addresses/:id/activate\`.
+
+## Mobile Support page (الدعم)
+Customer app Support screen: \`GET /api/v1/support\` (public) or \`GET /api/v1/customer/support\` (authenticated). Returns contacts, working hours, FAQs, emergency info, and app metadata. See repo \`docs/mobile-support-integration.md\`.
 
 ## Response envelope
 Successful responses use:

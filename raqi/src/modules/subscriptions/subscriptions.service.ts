@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BinsService } from '../bins/bins.service';
@@ -6,12 +6,14 @@ import { CustomersService } from '../customers/customers.service';
 import { DriversService } from '../drivers/drivers.service';
 import { PlansService } from '../plans/plans.service';
 import { WalletsService } from '../wallets/wallets.service';
+import { WalletTransactionsService } from '../wallets/wallet-transactions.service';
 import { SubscribePlanDto } from './dto/subscription.dto';
 import {
   Subscription,
   SubscriptionDocument,
   SubscriptionStatus,
 } from './schemas/subscription.schema';
+import { addDays } from './subscription.utils';
 
 @Injectable()
 export class SubscriptionsService {
@@ -21,6 +23,7 @@ export class SubscriptionsService {
     private readonly plansService: PlansService,
     private readonly binsService: BinsService,
     private readonly walletsService: WalletsService,
+    private readonly walletTransactionsService: WalletTransactionsService,
     private readonly customersService: CustomersService,
     private readonly driversService: DriversService,
   ) {}
@@ -89,6 +92,84 @@ export class SubscriptionsService {
       .exec();
   }
 
+  findActiveForCustomer(
+    customerId: string,
+  ): Promise<SubscriptionDocument | null> {
+    return this.subscriptionModel
+      .findOne({ customerId, status: SubscriptionStatus.Active })
+      .exec();
+  }
+
+  private async ensureExpiresAt(
+    subscription: SubscriptionDocument,
+  ): Promise<SubscriptionDocument> {
+    if (
+      subscription.status !== SubscriptionStatus.Active ||
+      !subscription.planId ||
+      subscription.expiresAt
+    ) {
+      return subscription;
+    }
+    const plan = await this.plansService.findById(String(subscription.planId));
+    if (!plan) {
+      return subscription;
+    }
+    const baseDate =
+      subscription.renewedAt ??
+      (subscription as SubscriptionDocument & { createdAt?: Date }).createdAt ??
+      new Date();
+    subscription.expiresAt = addDays(baseDate, plan.durationDays);
+    return subscription.save();
+  }
+
+  async getCurrentWithPlan(customerId: string) {
+    const subscription = await this.findCurrentForCustomer(customerId);
+    if (!subscription) {
+      return null;
+    }
+    await this.ensureExpiresAt(subscription);
+    const result = subscription.toJSON();
+    if (!subscription.planId) {
+      return result;
+    }
+    const plan = await this.plansService.findById(String(subscription.planId));
+    if (!plan) {
+      return result;
+    }
+    return {
+      ...result,
+      plan: {
+        id: String(plan.id),
+        name: plan.name,
+        price: plan.price,
+        durationDays: plan.durationDays,
+        frequency: plan.frequency,
+      },
+    };
+  }
+
+  async setAutoRenew(
+    customerId: string,
+    autoRenew: boolean,
+  ): Promise<SubscriptionDocument> {
+    const subscription = await this.findActiveForCustomer(customerId);
+    if (!subscription) {
+      throw new NotFoundException('Active subscription not found');
+    }
+    subscription.autoRenew = autoRenew;
+    return subscription.save();
+  }
+
+  async suspendActiveForCustomer(customerId: string): Promise<void> {
+    const subscription = await this.findActiveForCustomer(customerId);
+    if (!subscription) {
+      return;
+    }
+    await this.setStatus(String(subscription.id), SubscriptionStatus.Suspended, {
+      autoRenew: false,
+    });
+  }
+
   findForGeneration(areaId: string): Promise<SubscriptionDocument[]> {
     return this.subscriptionModel
       .find({
@@ -113,13 +194,18 @@ export class SubscriptionsService {
     const hasLocation = Boolean(subscription.cityId && subscription.areaId);
     const hasPlan = Boolean(subscription.planId);
     const hasPayment = subscription.paymentStatus === 'paid';
-    const hasBin = Boolean(subscription.binId);
-    if (!hasAddress || !hasLocation || !hasPlan || !hasPayment || !hasBin) {
+    if (!hasAddress || !hasLocation || !hasPlan || !hasPayment) {
       throw new BadRequestException(
-        'Activation requires address, location, plan, paid status, and assigned bin',
+        'Activation requires address, location, plan, and paid status',
       );
     }
     subscription.status = SubscriptionStatus.Active;
+    if (!subscription.expiresAt && subscription.planId) {
+      const plan = await this.plansService.findById(String(subscription.planId));
+      if (plan) {
+        subscription.expiresAt = addDays(new Date(), plan.durationDays);
+      }
+    }
     return subscription.save();
   }
 
@@ -261,10 +347,14 @@ export class SubscriptionsService {
       throw new BadRequestException('Plan is not available');
     }
 
-    const bin = await this.binsService.findById(input.binId);
-    if (!bin || bin.status !== 'available') {
-      throw new BadRequestException('Bin is not available');
+    if (input.binId) {
+      const bin = await this.binsService.findById(input.binId);
+      if (!bin || bin.status !== 'available') {
+        throw new BadRequestException('Bin is not available');
+      }
     }
+
+    const cost = await this.plansService.calculateCost(input.planId, input.binId);
 
     const { cityId, areaId } = await this.resolveAddressLocation(
       customerId,
@@ -273,30 +363,67 @@ export class SubscriptionsService {
 
     if (deductWallet) {
       const wallet = await this.walletsService.ensureWallet(customerId);
-      if (wallet.balance < plan.price) {
+      if (wallet.balance < cost.total) {
         throw new BadRequestException('Insufficient wallet balance');
       }
-      await this.walletsService.debit(customerId, plan.price);
     }
 
+    let debited = false;
+    let debitTransactionId: string | null = null;
+    const paymentDescription =
+      cost.binFee > 0
+        ? `دفع اشتراك - ${plan.name} + رسوم حاوية (${cost.binFee} د.ل)`
+        : `دفع اشتراك - ${plan.name}`;
     try {
+      if (deductWallet) {
+        const { transaction } = await this.walletsService.applyMovement({
+          customerId,
+          type: 'subscription_payment',
+          direction: 'debit',
+          amount: cost.total,
+          referenceType: 'subscription',
+          description: paymentDescription,
+        });
+        debited = true;
+        debitTransactionId = String(transaction.id);
+      }
+
+      const now = new Date();
       const subscription = await this.subscriptionModel.create({
         customerId,
         planId: input.planId,
-        binId: input.binId,
+        binId: input.binId ?? null,
         addressId: input.addressId,
         cityId,
         areaId,
         status: SubscriptionStatus.Active,
         paymentStatus: 'paid',
+        autoRenew: false,
+        expiresAt: addDays(now, plan.durationDays),
       });
 
-      await this.binsService.assign(input.binId, customerId, true);
+      if (debitTransactionId) {
+        await this.walletTransactionsService.updateReferenceId(
+          debitTransactionId,
+          String(subscription.id),
+        );
+      }
+
+      if (input.binId) {
+        await this.binsService.assign(input.binId, customerId, true);
+      }
 
       return subscription;
     } catch (error) {
-      if (deductWallet) {
-        await this.walletsService.credit(customerId, plan.price);
+      if (debited) {
+        await this.walletsService.applyMovement({
+          customerId,
+          type: 'refund',
+          direction: 'credit',
+          amount: cost.total,
+          referenceType: 'subscription',
+          description: `استرداد - فشل تفعيل الاشتراك (${plan.name})`,
+        });
       }
       throw error;
     }

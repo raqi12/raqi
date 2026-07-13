@@ -9,6 +9,8 @@ import {
   Subscription,
   SubscriptionSchema,
 } from './schemas/subscription.schema';
+import { SubscriptionRenewalCron } from './subscription-renewal.cron';
+import { SubscriptionRenewalService } from './subscription-renewal.service';
 import {
   AdminSubscriptionsController,
   CustomerSubscriptionsController,
@@ -30,7 +32,11 @@ import { SubscriptionsService } from './subscriptions.service';
     AdminSubscriptionsController,
     CustomerSubscriptionsController,
   ],
-  providers: [SubscriptionsService],
-  exports: [SubscriptionsService],
+  providers: [
+    SubscriptionsService,
+    SubscriptionRenewalService,
+    SubscriptionRenewalCron,
+  ],
+  exports: [SubscriptionsService, SubscriptionRenewalService],
 })
 export class SubscriptionsModule {}

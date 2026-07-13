@@ -58,13 +58,16 @@ export class DepositRequestsService {
     }
 
     await this.walletsService.ensureWallet(request.customerId);
-    const wallet = await this.walletsService.credit(
-      request.customerId,
-      request.amount,
-    );
-    if (!wallet) {
-      throw new BadRequestException('Wallet not found for customer');
-    }
+    await this.walletsService.applyMovement({
+      customerId: request.customerId,
+      type: 'deposit',
+      direction: 'credit',
+      amount: request.amount,
+      referenceType: 'deposit_request',
+      referenceId: String(request.id),
+      description: 'إيداع محفظة معتمد',
+      createdBy: adminUserId,
+    });
 
     request.status = 'approved';
     request.reviewedBy = adminUserId;

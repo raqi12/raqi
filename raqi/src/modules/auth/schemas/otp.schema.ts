@@ -3,7 +3,7 @@ import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
 import { baseSchemaOptions } from '../../../database/schema.options';
 
 export type OtpDocument = HydratedDocument<Otp>;
-export type OtpPurpose = 'register' | 'reset_password';
+export type OtpPurpose = 'register' | 'reset_password' | 'delete_account';
 
 export type RegisterOtpPayload = {
   fullName: string;
@@ -22,7 +22,7 @@ export class Otp {
   @Prop({ required: true })
   codeHash: string;
 
-  @Prop({ type: String, required: true, enum: ['register', 'reset_password'] })
+  @Prop({ type: String, required: true, enum: ['register', 'reset_password', 'delete_account'] })
   purpose: OtpPurpose;
 
   @Prop({ type: MongooseSchema.Types.Mixed, default: null })

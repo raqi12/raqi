@@ -194,6 +194,9 @@ export class BinDto {
   @ApiProperty({ example: 120 })
   capacity: number;
 
+  @ApiProperty({ example: 50, description: 'Bin fee in LYD added to subscription cost' })
+  fee: number;
+
   @ApiProperty({ enum: ['available', 'assigned', 'maintenance'], example: 'available' })
   status: string;
 
@@ -251,6 +254,40 @@ export class SubscriptionDto {
 
   @ApiProperty({ enum: ['unpaid', 'paid'], example: 'paid' })
   paymentStatus: string;
+
+  @ApiPropertyOptional({ example: '2026-07-10T12:00:00.000Z' })
+  renewedAt?: string;
+
+  @ApiProperty({ example: false })
+  autoRenew: boolean;
+
+  @ApiPropertyOptional({ example: '2026-08-10T12:00:00.000Z' })
+  expiresAt?: string;
+
+  @ApiPropertyOptional({ example: '2026-08-13T12:00:00.000Z' })
+  renewalGraceUntil?: string;
+}
+
+export class SubscriptionPlanSummaryDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439012' })
+  id: string;
+
+  @ApiProperty({ example: 'خطة شهرية' })
+  name: string;
+
+  @ApiProperty({ example: 150 })
+  price: number;
+
+  @ApiProperty({ example: 30 })
+  durationDays: number;
+
+  @ApiProperty({ enum: ['weekly', 'monthly', 'custom'], example: 'monthly' })
+  frequency: string;
+}
+
+export class CustomerSubscriptionCurrentDto extends SubscriptionDto {
+  @ApiPropertyOptional({ type: SubscriptionPlanSummaryDto })
+  plan?: SubscriptionPlanSummaryDto;
 }
 
 export class PaymentDto {
@@ -445,6 +482,64 @@ export class WalletBalanceDto {
   currency: string;
 }
 
+export class WalletTransactionDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
+  id: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439012' })
+  customerId: string;
+
+  @ApiProperty({
+    enum: ['deposit', 'admin_credit', 'subscription_payment', 'refund'],
+    example: 'deposit',
+  })
+  type: string;
+
+  @ApiProperty({ enum: ['credit', 'debit'], example: 'credit' })
+  direction: string;
+
+  @ApiProperty({ example: 500 })
+  amount: number;
+
+  @ApiProperty({ example: 250.5 })
+  balanceBefore: number;
+
+  @ApiProperty({ example: 750.5 })
+  balanceAfter: number;
+
+  @ApiPropertyOptional({
+    enum: ['deposit_request', 'subscription', 'manual'],
+    example: 'deposit_request',
+  })
+  referenceType?: string;
+
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439013' })
+  referenceId?: string;
+
+  @ApiPropertyOptional({ example: 'إيداع محفظة معتمد' })
+  description?: string;
+
+  @ApiPropertyOptional({ example: '2026-07-13T10:00:00.000Z' })
+  createdAt?: string;
+}
+
+export class WalletTransactionListDto {
+  @ApiProperty({ type: WalletTransactionDto, isArray: true })
+  items: WalletTransactionDto[];
+
+  @ApiProperty({ example: 1 })
+  page: number;
+
+  @ApiProperty({ example: 20 })
+  limit: number;
+
+  @ApiProperty({ example: 42 })
+  total: number;
+
+  @ApiProperty({ example: 3 })
+  totalPages: number;
+}
+
 export class BankAccountSettingsDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439011' })
   id: string;
@@ -512,6 +607,9 @@ export class CustomerDetailsDto {
 
   @ApiProperty({ type: DepositRequestDto, isArray: true })
   depositRequests: DepositRequestDto[];
+
+  @ApiProperty({ type: WalletTransactionDto, isArray: true })
+  walletTransactions: WalletTransactionDto[];
 
   @ApiProperty({ type: BinDto, isArray: true })
   bins: BinDto[];

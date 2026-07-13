@@ -150,6 +150,50 @@ export class UsersService implements OnModuleInit {
       .exec();
   }
 
+  async deactivate(id: string): Promise<UserDocument | null> {
+    return this.userModel
+      .findByIdAndUpdate(
+        id,
+        { status: 'inactive', deactivatedAt: new Date() },
+        { new: true },
+      )
+      .exec();
+  }
+
+  async reactivate(id: string): Promise<UserDocument | null> {
+    return this.userModel
+      .findByIdAndUpdate(
+        id,
+        { status: 'active', deactivatedAt: null },
+        { new: true },
+      )
+      .exec();
+  }
+
+  async softDelete(id: string): Promise<UserDocument | null> {
+    const deletedAt = new Date();
+    const tombstone = `deleted_${id}_${deletedAt.getTime()}`;
+    return this.userModel
+      .findByIdAndUpdate(
+        id,
+        {
+          status: 'inactive',
+          deletedAt,
+          deactivatedAt: deletedAt,
+          name: 'محذوف',
+          email: `${tombstone}@deleted.local`,
+          phone: undefined,
+          phoneVerified: false,
+          passwordHash: await bcrypt.hash(
+            `deleted:${id}:${deletedAt.getTime()}`,
+            10,
+          ),
+        },
+        { new: true },
+      )
+      .exec();
+  }
+
   async verifyPassword(user: UserDocument, password: string): Promise<boolean> {
     return bcrypt.compare(password, user.passwordHash);
   }

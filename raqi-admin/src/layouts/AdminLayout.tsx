@@ -3,7 +3,7 @@ import { Toast } from '../components/Toast';
 import { Sidebar } from '../components/Sidebar';
 import { TopBar } from '../components/TopBar';
 import { SearchProvider } from '../contexts/SearchContext';
-import { POLL_INTERVAL_SEC, useAdmin } from '../contexts/AdminContext';
+import { useAdmin } from '../contexts/AdminContext';
 import { useTheme } from '../hooks/useTheme';
 import { TAB_LABELS } from '../i18n/ar';
 import { tabFromPathname } from '../navigation/routes';
@@ -68,7 +68,6 @@ export function AdminLayout({
           <TopBar
             title={TAB_LABELS[activeTab]}
             lastSync={lastSync}
-            pollIntervalSec={POLL_INTERVAL_SEC}
             search={searchQuery}
             onSearchChange={setSearchQuery}
             loading={loading}

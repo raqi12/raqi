@@ -18,10 +18,10 @@ type BinsPageProps = {
   customers: Customer[];
   users: User[];
   loading?: boolean;
-  onCreate: (body: { code: string; qr: string; capacity?: number }) => Promise<void>;
+  onCreate: (body: { code: string; qr: string; capacity?: number; fee?: number }) => Promise<void>;
   onUpdate: (
     id: string,
-    body: { capacity?: number; status?: BinStatus },
+    body: { capacity?: number; fee?: number; status?: BinStatus },
   ) => Promise<void>;
   onAssign: (id: string, customerId: string) => Promise<void>;
   onUnassign: (id: string) => Promise<void>;
@@ -31,6 +31,7 @@ const emptyForm = {
   code: '',
   qr: '',
   capacity: '',
+  fee: '',
 };
 
 const BIN_STATUS_OPTIONS: { value: BinStatus; label: string }[] = [
@@ -77,6 +78,7 @@ export function BinsPage({
       bins.map((bin) => ({
         ...bin,
         capacityLabel: bin.capacity != null ? `${bin.capacity} لتر` : '—',
+        feeLabel: bin.fee != null ? `${bin.fee.toLocaleString('ar-LY')} د.ل` : '0 د.ل',
         customerName: customerNameById(customers, users, bin.customerId),
         activeLabel: bin.active ? 'نشط' : 'غير نشط',
         activeKey: bin.active ? 'active' : 'inactive',
@@ -93,6 +95,7 @@ export function BinsPage({
         code: form.code.trim(),
         qr: form.qr.trim(),
         capacity: form.capacity ? Number(form.capacity) : undefined,
+        fee: form.fee ? Number(form.fee) : undefined,
       });
       setForm(emptyForm);
     } finally {
@@ -107,6 +110,7 @@ export function BinsPage({
     try {
       await onUpdate(getId(selected), {
         capacity: selected.capacity,
+        fee: selected.fee,
         status: selected.status,
       });
     } finally {
@@ -174,6 +178,15 @@ export function BinsPage({
             onChange={(e) => setForm({ ...form, capacity: e.target.value })}
             placeholder="120"
           />
+          <Input
+            label="الرسوم (د.ل)"
+            type="number"
+            min={0}
+            dir="ltr"
+            value={form.fee}
+            onChange={(e) => setForm({ ...form, fee: e.target.value })}
+            placeholder="50"
+          />
         </div>
       </FormCard>
 
@@ -187,6 +200,7 @@ export function BinsPage({
         columns={[
           { key: 'code', label: 'الرمز' },
           { key: 'capacityLabel', label: 'السعة' },
+          { key: 'feeLabel', label: 'الرسوم' },
           {
             key: 'status',
             label: COMMON.status,
@@ -251,6 +265,16 @@ export function BinsPage({
                   value={selected.capacity ?? 0}
                   onChange={(e) =>
                     setSelected({ ...selected, capacity: Number(e.target.value) })
+                  }
+                />
+                <Input
+                  label="الرسوم (د.ل)"
+                  type="number"
+                  min={0}
+                  dir="ltr"
+                  value={selected.fee ?? 0}
+                  onChange={(e) =>
+                    setSelected({ ...selected, fee: Number(e.target.value) })
                   }
                 />
                 <Select

@@ -8,7 +8,6 @@ import { useLocation } from 'react-router-dom';
 type TopBarProps = {
   title: string;
   lastSync: string | null;
-  pollIntervalSec: number;
   search: string;
   onSearchChange: (value: string) => void;
   loading: boolean;
@@ -22,7 +21,6 @@ type TopBarProps = {
 export function TopBar({
   title,
   lastSync,
-  pollIntervalSec,
   search,
   onSearchChange,
   loading,
@@ -65,7 +63,7 @@ export function TopBar({
             <h1 className="topbar__title">{title}</h1>
             <div
               className={['topbar__sync', loading ? 'topbar__sync--active' : ''].filter(Boolean).join(' ')}
-              title={`تحديث تلقائي كل ${pollIntervalSec} ثانية`}
+              title={lastSync ? `آخر مزامنة ${lastSync}` : 'اضغط زر التحديث لمزامنة البيانات'}
             >
               <span className="topbar__sync-dot" aria-hidden="true" />
               <span className="topbar__sync-text">

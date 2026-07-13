@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -20,6 +21,7 @@ import type { AuthUser } from '../../common/auth-user.interface';
 import {
   ApiMongoIdParam,
   ApiOkDataResponse,
+  ApiOptionalQuery,
   ApiStandardErrorResponses,
 } from '../../common/swagger/decorators';
 import {
@@ -27,12 +29,17 @@ import {
   CustomerDto,
   CustomerDetailsDto,
   WalletDto,
+  WalletTransactionListDto,
 } from '../../common/swagger/schemas/entity.schemas';
 import { UsersService } from '../users/users.service';
 import { CustomersService } from './customers.service';
 import { CustomerAdminService } from './customer-admin.service';
 import { WalletsService } from '../wallets/wallets.service';
-import { AdminCreditWalletDto } from '../wallets/dto/wallet.dto';
+import { WalletTransactionsService } from '../wallets/wallet-transactions.service';
+import {
+  AdminCreditWalletDto,
+  ListWalletTransactionsQueryDto,
+} from '../wallets/dto/wallet.dto';
 import {
   CreateAddressDto,
   CreateCustomerDto,
@@ -51,6 +58,7 @@ export class AdminCustomersController {
     private readonly customerAdminService: CustomerAdminService,
     private readonly usersService: UsersService,
     private readonly walletsService: WalletsService,
+    private readonly walletTransactionsService: WalletTransactionsService,
   ) {}
 
   @Roles(Role.Admin)
@@ -109,16 +117,25 @@ export class AdminCustomersController {
   @ApiMongoIdParam('id', 'Customer MongoDB ID')
   @ApiBody({ type: AdminCreditWalletDto })
   @ApiOkDataResponse(WalletDto, 'Wallet credited')
-  async depositWallet(@Param('id') id: string, @Body() body: AdminCreditWalletDto) {
+  async depositWallet(
+    @Param('id') id: string,
+    @Body() body: AdminCreditWalletDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
     const customer = await this.customersService.findById(id);
     if (!customer) {
       throw new NotFoundException('Customer not found');
     }
     await this.walletsService.ensureWallet(id);
-    const wallet = await this.walletsService.credit(id, body.amount);
-    if (!wallet) {
-      throw new BadRequestException('Failed to credit wallet');
-    }
+    const { wallet } = await this.walletsService.applyMovement({
+      customerId: id,
+      type: 'admin_credit',
+      direction: 'credit',
+      amount: body.amount,
+      referenceType: 'manual',
+      description: body.note ?? 'إضافة رصيد يدوية من الإدارة',
+      createdBy: user?.sub ?? null,
+    });
     return { data: wallet };
   }
 
@@ -147,6 +164,33 @@ export class AdminCustomersController {
     }
     const wallet = await this.walletsService.ensureWallet(id);
     return { data: wallet };
+  }
+
+  @Roles(Role.Admin)
+  @Get(':id/wallet/transactions')
+  @ApiOperation({
+    summary: 'List customer wallet transactions',
+    description: 'Returns paginated wallet transaction history for a customer.',
+  })
+  @ApiMongoIdParam('id', 'Customer MongoDB ID')
+  @ApiOptionalQuery('page', 'Page number (1-based)', { type: 'number', example: 1 })
+  @ApiOptionalQuery('limit', 'Items per page (max 100)', { type: 'number', example: 20 })
+  @ApiOptionalQuery('type', 'Filter by transaction type', {
+    enum: ['deposit', 'admin_credit', 'subscription_payment', 'refund'],
+    example: 'deposit',
+  })
+  @ApiOkDataResponse(WalletTransactionListDto, 'Wallet transaction list')
+  async listWalletTransactions(
+    @Param('id') id: string,
+    @Query() query: ListWalletTransactionsQueryDto,
+  ) {
+    const customer = await this.customersService.findById(id);
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+    return {
+      data: await this.walletTransactionsService.findByCustomer(id, query),
+    };
   }
 
   @Roles(Role.Admin)

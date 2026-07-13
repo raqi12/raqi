@@ -9,7 +9,12 @@ export class BinsService {
     @InjectModel(Bin.name) private readonly binModel: Model<BinDocument>,
   ) {}
 
-  create(input: { code: string; qr: string; capacity?: number }): Promise<BinDocument> {
+  create(input: {
+    code: string;
+    qr: string;
+    capacity?: number;
+    fee?: number;
+  }): Promise<BinDocument> {
     return this.binModel.create(input);
   }
 

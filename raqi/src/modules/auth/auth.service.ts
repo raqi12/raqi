@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -10,11 +11,15 @@ import { AuthUser } from '../../common/auth-user.interface';
 import { Role } from '../../common/roles.enum';
 import { UsersService } from '../users/users.service';
 import { CustomersService } from '../customers/customers.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { WalletsService } from '../wallets/wallets.service';
 import {
   ChangePasswordDto,
+  DeactivateAccountDto,
+  DeleteAccountDto,
   ForgotPasswordDto,
   LoginDto,
+  ReactivateAccountDto,
   RegisterDto,
   ResetPasswordDto,
   UpdateMeDto,
@@ -30,6 +35,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly customersService: CustomersService,
+    private readonly subscriptionsService: SubscriptionsService,
     private readonly walletsService: WalletsService,
     private readonly otpService: OtpService,
     private readonly jwtService: JwtService,
@@ -138,6 +144,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    this.assertCustomerCanAuthenticate(user);
+
     return this.issueAuthResponse(user);
   }
 
@@ -147,6 +155,11 @@ export class AuthService {
     if (!stored || stored !== refreshToken) {
       throw new UnauthorizedException('Invalid refresh token');
     }
+    const user = await this.usersService.findById(payload.sub);
+    if (!user) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+    this.assertCustomerCanAuthenticate(user);
     const accessToken = await this.signAccessToken({
       sub: payload.sub,
       role: payload.role,
@@ -156,7 +169,7 @@ export class AuthService {
   }
 
   logout(userId: string) {
-    this.refreshTokens.delete(userId);
+    this.invalidateSession(userId);
     return { loggedOut: true };
   }
 
@@ -225,6 +238,126 @@ export class AuthService {
 
     await this.usersService.setPassword(String(user.id), body.password);
     return { reset: true };
+  }
+
+  async deactivateAccount(userId: string, body: DeactivateAccountDto) {
+    const user = await this.requireActiveCustomer(userId);
+    await this.verifyCustomerPassword(user, body.password);
+
+    const customer = await this.customersService.findByUserId(userId);
+    if (customer) {
+      await this.subscriptionsService.suspendActiveForCustomer(
+        String(customer.id),
+      );
+    }
+
+    await this.usersService.deactivate(userId);
+    this.invalidateSession(userId);
+    return { deactivated: true };
+  }
+
+  async requestAccountDeletionOtp(userId: string) {
+    const user = await this.requireActiveCustomer(userId);
+    if (!user.phone) {
+      throw new BadRequestException('Account has no phone number for OTP');
+    }
+    const { response } = await this.otpService.createOtp(
+      user.phone,
+      'delete_account',
+    );
+    return {
+      ...response,
+      phone: user.phone,
+    };
+  }
+
+  async deleteAccount(userId: string, body: DeleteAccountDto) {
+    const user = await this.requireActiveCustomer(userId);
+    if (!user.phone) {
+      throw new BadRequestException('Account has no phone number for OTP');
+    }
+
+    await this.verifyCustomerPassword(user, body.password);
+    await this.otpService.verifyOtp(user.phone, 'delete_account', body.otp);
+
+    const customer = await this.customersService.findByUserId(userId);
+    if (customer) {
+      await this.subscriptionsService.suspendActiveForCustomer(
+        String(customer.id),
+      );
+    }
+
+    await this.usersService.softDelete(userId);
+    this.invalidateSession(userId);
+    return { deleted: true };
+  }
+
+  async reactivateAccount(body: ReactivateAccountDto) {
+    const phone = normalizePhone(body.phone);
+    const user = await this.usersService.findByPhone(phone);
+    if (!user || user.role !== Role.Customer) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    if (user.deletedAt) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    if (user.status === 'active') {
+      throw new BadRequestException('Account is already active');
+    }
+
+    const valid = await this.usersService.verifyPassword(user, body.password);
+    if (!valid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const reactivated = await this.usersService.reactivate(String(user.id));
+    if (!reactivated) {
+      throw new BadRequestException('Account could not be reactivated');
+    }
+
+    return this.issueAuthResponse(reactivated);
+  }
+
+  private async requireActiveCustomer(userId: string) {
+    const user = await this.usersService.findById(userId);
+    if (!user || user.role !== Role.Customer) {
+      throw new ForbiddenException('Customer account required');
+    }
+    if (user.deletedAt) {
+      throw new BadRequestException('Account has been deleted');
+    }
+    if (user.status === 'inactive') {
+      throw new BadRequestException('Account is already deactivated');
+    }
+    return user;
+  }
+
+  private async verifyCustomerPassword(
+    user: NonNullable<Awaited<ReturnType<UsersService['findById']>>>,
+    password: string,
+  ) {
+    const valid = await this.usersService.verifyPassword(user, password);
+    if (!valid) {
+      throw new UnauthorizedException('Password is incorrect');
+    }
+  }
+
+  private assertCustomerCanAuthenticate(
+    user: NonNullable<Awaited<ReturnType<UsersService['findById']>>>,
+  ) {
+    if (user.role !== Role.Customer) {
+      return;
+    }
+    if (user.deletedAt) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    if (user.status === 'inactive') {
+      throw new UnauthorizedException('Account is deactivated');
+    }
+  }
+
+  invalidateSession(userId: string) {
+    this.refreshTokens.delete(userId);
   }
 
   private async issueAuthResponse(

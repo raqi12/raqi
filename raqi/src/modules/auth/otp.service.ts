@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { Model } from 'mongoose';
+import { normalizePhone } from './phone.util';
 import {
   Otp,
   OtpDocument,
@@ -27,12 +28,13 @@ export class OtpService {
     purpose: OtpPurpose,
     payload: RegisterOtpPayload | null = null,
   ) {
+    const normalizedPhone = normalizePhone(phone);
     const code = this.generateCode();
     const expiresAt = new Date(Date.now() + OTP_EXPIRES_SECONDS * 1000);
 
-    await this.otpModel.deleteMany({ phone, purpose }).exec();
+    await this.otpModel.deleteMany({ phone: normalizedPhone, purpose }).exec();
     await this.otpModel.create({
-      phone,
+      phone: normalizedPhone,
       purpose,
       payload,
       codeHash: await bcrypt.hash(code, 10),
@@ -43,12 +45,15 @@ export class OtpService {
     return {
       code,
       expiresIn: OTP_EXPIRES_SECONDS,
-      response: this.buildOtpResponse(code, OTP_EXPIRES_SECONDS),
+      response: this.buildOtpResponse(code, OTP_EXPIRES_SECONDS, purpose),
     };
   }
 
   async verifyOtp(phone: string, purpose: OtpPurpose, code: string) {
-    const record = await this.otpModel.findOne({ phone, purpose }).exec();
+    const normalizedPhone = normalizePhone(phone);
+    const record = await this.otpModel
+      .findOne({ phone: normalizedPhone, purpose })
+      .exec();
     if (!record) {
       throw new BadRequestException('Invalid or expired OTP');
     }
@@ -82,7 +87,11 @@ export class OtpService {
     return String(Math.floor(100000 + Math.random() * 900000));
   }
 
-  private buildOtpResponse(code: string, expiresIn: number) {
+  private buildOtpResponse(
+    code: string,
+    expiresIn: number,
+    purpose?: OtpPurpose,
+  ) {
     const response: {
       otpSent: boolean;
       expiresIn: number;
@@ -96,7 +105,9 @@ export class OtpService {
     if (USE_DEV_OTP) {
       response.otp = code;
       response.debugOtp = code;
-      console.log(`[OTP dev] code=${code} expiresIn=${expiresIn}s`);
+      console.log(
+        `[OTP dev] purpose=${purpose ?? 'unknown'} code=${code} expiresIn=${expiresIn}s`,
+      );
     }
 
     return response;

@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { useCallback } from 'react';
 import { AdminApi } from '../../api/modules';
 import { useAdmin } from '../../contexts/AdminContext';
 import { OverviewPage } from '../OverviewPage';
@@ -50,6 +51,16 @@ export function AdminPageRoutes() {
     session,
   } = admin;
 
+  const loadCustomerDetails = useCallback(async (id: string) => {
+    const res = await AdminApi.customers.getDetails(id);
+    return res.data;
+  }, []);
+
+  const loadCustomerAddresses = useCallback(async (customerId: string) => {
+    const res = await AdminApi.customers.listAddresses(customerId);
+    return res.data;
+  }, []);
+
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/overview" replace />} />
@@ -100,10 +111,7 @@ export function AdminPageRoutes() {
             loading={loading}
             onCreate={(body) => runMutation(() => AdminApi.customers.create(body), 'تم إنشاء العميل')}
             onUpdate={(id, body) => runMutation(() => AdminApi.customers.update(id, body), 'تم تحديث العميل')}
-            onLoadDetails={async (id) => {
-              const res = await AdminApi.customers.getDetails(id);
-              return res.data;
-            }}
+            onLoadDetails={loadCustomerDetails}
             onDeposit={(id, amount) =>
               runMutation(() => AdminApi.customers.depositWallet(id, { amount }), 'تم الإيداع في المحفظة')
             }
@@ -224,10 +232,7 @@ export function AdminPageRoutes() {
             areas={areas}
             cities={cities}
             loading={loading}
-            onLoadAddresses={async (customerId) => {
-              const res = await AdminApi.customers.listAddresses(customerId);
-              return res.data;
-            }}
+            onLoadAddresses={loadCustomerAddresses}
             onCreate={(body) => runMutation(() => AdminApi.subscriptions.create(body), 'تم إنشاء الاشتراك')}
             onAssignDriver={(id, driverId) =>
               runMutation(() => AdminApi.subscriptions.assignDriver(id, driverId), 'تم تعيين السائق')

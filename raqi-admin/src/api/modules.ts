@@ -19,10 +19,12 @@ import type {
   Plan,
   Route,
   Subscription,
+  SubscriptionCost,
   SupportSettings,
   Task,
   User,
   Wallet,
+  WalletTransactionList,
 } from '../types';
 import { apiRequest } from './http';
 
@@ -31,11 +33,15 @@ export const AdminApi = {
   bins: {
     list: () => apiRequest<Bin[]>('/admin/bins'),
     stats: () => apiRequest<BinStats>('/admin/bins/stats'),
-    create: (body: { code: string; qr: string; capacity?: number }) =>
+    create: (body: { code: string; qr: string; capacity?: number; fee?: number }) =>
       apiRequest<Bin>('/admin/bins', { method: 'POST', body: JSON.stringify(body) }),
     update: (
       id: string,
-      body: { capacity?: number; status?: 'available' | 'assigned' | 'maintenance' },
+      body: {
+        capacity?: number;
+        fee?: number;
+        status?: 'available' | 'assigned' | 'maintenance';
+      },
     ) =>
       apiRequest<Bin>(`/admin/bins/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
     assign: (id: string, body: { customerId: string; active?: boolean }) =>
@@ -91,6 +97,10 @@ export const AdminApi = {
         active?: boolean;
       },
     ) => apiRequest<Plan>(`/admin/plans/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+    cost: (planId: string, binId?: string) => {
+      const params = binId ? `?binId=${encodeURIComponent(binId)}` : '';
+      return apiRequest<SubscriptionCost>(`/plans/${planId}/cost${params}`);
+    },
   },
   users: {
     list: () => apiRequest<User[]>('/admin/users'),
@@ -126,6 +136,15 @@ export const AdminApi = {
         method: 'POST',
         body: JSON.stringify(body),
       }),
+    walletTransactions: {
+      list: (id: string, page = 1, limit = 50, type?: string) => {
+        const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+        if (type) params.set('type', type);
+        return apiRequest<WalletTransactionList>(
+          `/admin/customers/${id}/wallet/transactions?${params.toString()}`,
+        );
+      },
+    },
     listAddresses: (id: string) => apiRequest<Address[]>(`/admin/customers/${id}/addresses`),
     getDetails: (id: string) => apiRequest<CustomerDetails>(`/admin/customers/${id}/details`),
   },
@@ -206,7 +225,7 @@ export const AdminApi = {
     assignPlan: (body: {
       customerId: string;
       planId: string;
-      binId: string;
+      binId?: string;
       addressId: string;
       deductWallet?: boolean;
     }) =>

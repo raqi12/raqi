@@ -15,6 +15,12 @@ export class CreateBinDto {
   @IsNumber()
   @Min(0)
   capacity?: number;
+
+  @ApiPropertyOptional({ example: 50, minimum: 0, description: 'Bin fee in LYD added to subscription cost' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fee?: number;
 }
 
 export class UpdateBinDto {
@@ -32,6 +38,12 @@ export class UpdateBinDto {
   @IsOptional()
   @IsIn(['available', 'assigned', 'maintenance'])
   status?: 'available' | 'assigned' | 'maintenance';
+
+  @ApiPropertyOptional({ example: 50, minimum: 0, description: 'Bin fee in LYD added to subscription cost' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fee?: number;
 }
 
 export class AssignBinDto {

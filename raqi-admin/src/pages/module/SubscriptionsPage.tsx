@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { AdminApi } from '../../api/modules';
 import { DataTable } from '../../components/DataTable';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { DetailPanel } from '../../components/forms/DetailPanel';
@@ -17,6 +18,7 @@ import type {
   Payment,
   Plan,
   Subscription,
+  SubscriptionCost,
   Task,
   User,
 } from '../../types';
@@ -100,6 +102,13 @@ function formatMoney(amount?: number) {
   return `${(amount ?? 0).toLocaleString('ar-LY')} د.ل`;
 }
 
+function formatDateTime(value?: string | null) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString('ar-LY');
+}
+
 function taskDate(task: Task) {
   return task.scheduledDate?.slice(0, 10) ?? task.date?.slice(0, 10) ?? '—';
 }
@@ -119,7 +128,6 @@ function subscriptionActivationReadiness(subscription: Subscription) {
   return {
     plan: Boolean(subscription.planId),
     address: Boolean(subscription.addressId && subscription.cityId && subscription.areaId),
-    bin: Boolean(subscription.binId),
     payment: subscription.paymentStatus === 'paid',
   };
 }
@@ -160,6 +168,8 @@ export function SubscriptionsPage({
   const [assignDriverId, setAssignDriverId] = useState('');
   const [confirm, setConfirm] = useState<{ id: string; action: PendingAction } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [formCost, setFormCost] = useState<SubscriptionCost | null>(null);
+  const [editCost, setEditCost] = useState<SubscriptionCost | null>(null);
 
   const activePlans = useMemo(() => plans.filter((plan) => plan.active !== false), [plans]);
   const availableBins = useMemo(() => bins.filter((bin) => bin.status === 'available'), [bins]);
@@ -247,6 +257,9 @@ export function SubscriptionsPage({
   }, [form.customerId, onLoadAddresses]);
 
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7507/ingest/e05eb89e-9cfa-4057-adc1-4bbb50888184',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1c8176'},body:JSON.stringify({sessionId:'1c8176',location:'SubscriptionsPage.tsx:edit-form-effect',message:'SubscriptionsPage edit form reset effect ran',data:{selectedId:selected?getId(selected):null},timestamp:Date.now(),hypothesisId:'C',runId:'pre-fix'})}).catch(()=>{});
+    // #endregion
     if (!selected) {
       setDetailAddress(null);
       setDetailAddresses([]);
@@ -261,7 +274,7 @@ export function SubscriptionsPage({
       binId: selected.binId ?? '',
       paymentStatus: selected.paymentStatus === 'paid' ? 'paid' : 'unpaid',
     });
-  }, [selected?.addressId, selected?.binId, selected?.driverId, selected?.id, selected?._id, selected?.paymentStatus, selected?.planId]);
+  }, [selected?.id, selected?._id]);
 
   useEffect(() => {
     if (!selected) return;
@@ -290,6 +303,28 @@ export function SubscriptionsPage({
       })
       .finally(() => setDetailLoading(false));
   }, [onLoadAddresses, selected?.addressId, selected?.customerId]);
+
+  useEffect(() => {
+    if (!form.planId) {
+      setFormCost(null);
+      return;
+    }
+    void AdminApi.plans
+      .cost(form.planId, form.binId || undefined)
+      .then((response) => setFormCost(response.data))
+      .catch(() => setFormCost(null));
+  }, [form.planId, form.binId]);
+
+  useEffect(() => {
+    if (!editForm.planId) {
+      setEditCost(null);
+      return;
+    }
+    void AdminApi.plans
+      .cost(editForm.planId, editForm.binId || undefined)
+      .then((response) => setEditCost(response.data))
+      .catch(() => setEditCost(null));
+  }, [editForm.planId, editForm.binId]);
 
   function handleCustomerChange(customerId: string) {
     setForm({
@@ -331,13 +366,13 @@ export function SubscriptionsPage({
 
   async function submitUpdate(e: FormEvent) {
     e.preventDefault();
-    if (!selected || !editForm.planId || !editForm.addressId || !editForm.binId) return;
+    if (!selected || !editForm.planId || !editForm.addressId) return;
     setSaving(true);
     try {
       await onUpdate(getId(selected), {
         planId: editForm.planId,
         addressId: editForm.addressId,
-        binId: editForm.binId,
+        binId: editForm.binId || undefined,
         paymentStatus: editForm.paymentStatus,
       });
     } finally {
@@ -383,7 +418,7 @@ export function SubscriptionsPage({
     : undefined;
   const readiness = selected ? subscriptionActivationReadiness(selected) : null;
   const canActivate = readiness
-    ? readiness.plan && readiness.address && readiness.bin && readiness.payment
+    ? readiness.plan && readiness.address && readiness.payment
     : false;
 
   return (
@@ -444,13 +479,21 @@ export function SubscriptionsPage({
             value={form.binId}
             onChange={(e) => setForm({ ...form, binId: e.target.value })}
           >
-            <option value="">اختر الصندوق (اختياري)</option>
+            <option value="">بدون حاوية</option>
             {availableBins.map((bin) => (
               <option key={getId(bin)} value={getId(bin)}>
-                {bin.code ?? getId(bin)} ({bin.capacity ?? 0} لتر)
+                {bin.code ?? getId(bin)} ({bin.capacity ?? 0} لتر
+                {bin.fee ? ` — ${bin.fee} د.ل` : ''})
               </option>
             ))}
           </Select>
+          {formCost ? (
+            <p className="field__hint">
+              التكلفة: {formatMoney(formCost.planPrice)} خطة
+              {formCost.binFee > 0 ? ` + ${formatMoney(formCost.binFee)} حاوية` : ''}
+              {' '}= {formatMoney(formCost.total)}
+            </p>
+          ) : null}
           <Select
             label="حالة الدفع"
             value={form.paymentStatus}
@@ -516,9 +559,6 @@ export function SubscriptionsPage({
                   <li className={readiness.address ? 'readiness-list__item--ok' : 'readiness-list__item--missing'}>
                     العنوان والموقع {readiness.address ? '✓' : '— مطلوب'}
                   </li>
-                  <li className={readiness.bin ? 'readiness-list__item--ok' : 'readiness-list__item--missing'}>
-                    الصندوق {readiness.bin ? '✓' : '— مطلوب'}
-                  </li>
                   <li className={readiness.payment ? 'readiness-list__item--ok' : 'readiness-list__item--missing'}>
                     الدفع {readiness.payment ? '✓' : '— يجب أن يكون مدفوعًا'}
                   </li>
@@ -569,15 +609,22 @@ export function SubscriptionsPage({
                     label="الصندوق"
                     value={editForm.binId}
                     onChange={(e) => setEditForm({ ...editForm, binId: e.target.value })}
-                    required
                   >
-                    <option value="">اختر الصندوق</option>
+                    <option value="">بدون حاوية</option>
                     {editBins.map((bin) => (
                       <option key={getId(bin)} value={getId(bin)}>
-                        {bin.code ?? getId(bin)} ({bin.capacity ?? 0} لتر)
+                        {bin.code ?? getId(bin)} ({bin.capacity ?? 0} لتر
+                        {bin.fee ? ` — ${bin.fee} د.ل` : ''})
                       </option>
                     ))}
                   </Select>
+                  {editCost ? (
+                    <p className="field__hint">
+                      التكلفة: {formatMoney(editCost.planPrice)} خطة
+                      {editCost.binFee > 0 ? ` + ${formatMoney(editCost.binFee)} حاوية` : ''}
+                      {' '}= {formatMoney(editCost.total)}
+                    </p>
+                  ) : null}
                   <Select
                     label="حالة الدفع"
                     value={editForm.paymentStatus}
@@ -597,8 +644,7 @@ export function SubscriptionsPage({
                       saving ||
                       detailLoading ||
                       !editForm.planId ||
-                      !editForm.addressId ||
-                      !editForm.binId
+                      !editForm.addressId
                     }
                   >
                     حفظ التعديلات
@@ -646,6 +692,24 @@ export function SubscriptionsPage({
                     <StatusBadge status={selected.paymentStatus ?? 'unpaid'} />
                   </dd>
                 </div>
+                <div className="info-list__row">
+                  <dt>التجديد التلقائي</dt>
+                  <dd>{selected.autoRenew ? 'مفعّل' : 'معطّل'}</dd>
+                </div>
+                <div className="info-list__row">
+                  <dt>تاريخ الانتهاء</dt>
+                  <dd>{formatDateTime(selected.expiresAt)}</dd>
+                </div>
+                <div className="info-list__row">
+                  <dt>آخر تجديد</dt>
+                  <dd>{formatDateTime(selected.renewedAt)}</dd>
+                </div>
+                {selected.renewalGraceUntil ? (
+                  <div className="info-list__row">
+                    <dt>فترة السماح</dt>
+                    <dd>{formatDateTime(selected.renewalGraceUntil)}</dd>
+                  </div>
+                ) : null}
                 <div className="info-list__row">
                   <dt>الخطة</dt>
                   <dd>{displayOrMissing(planNameById(plans, selected.planId))}</dd>

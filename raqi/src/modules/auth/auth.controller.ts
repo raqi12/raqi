@@ -15,6 +15,9 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/current-user.decorator';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
+import { RolesGuard } from '../../common/roles.guard';
+import { Roles } from '../../common/roles.decorator';
+import { Role } from '../../common/roles.enum';
 import type { AuthUser } from '../../common/auth-user.interface';
 import {
   ApiOkDataResponse,
@@ -35,8 +38,11 @@ import {
 import { AuthService } from './auth.service';
 import {
   ChangePasswordDto,
+  DeactivateAccountDto,
+  DeleteAccountDto,
   ForgotPasswordDto,
   LoginDto,
+  ReactivateAccountDto,
   RefreshDto,
   RegisterDto,
   ResetPasswordDto,
@@ -196,5 +202,86 @@ export class AuthController {
   @ApiStandardErrorResponses()
   async resetPassword(@Body() body: ResetPasswordDto) {
     return { data: await this.authService.resetPassword(body) };
+  }
+}
+
+@ApiTags('Customer - Account')
+@Controller('customer/account')
+export class CustomerAccountController {
+  constructor(private readonly authService: AuthService) {}
+
+  @Post('reactivate')
+  @ApiOperation({
+    summary: 'Reactivate frozen account',
+    description:
+      'Restores a temporarily deactivated customer account and issues new tokens.',
+  })
+  @ApiBody({ type: ReactivateAccountDto })
+  @ApiOkDataResponse(AuthTokensDto, 'Account reactivated')
+  @ApiStandardErrorResponses()
+  async reactivate(@Body() body: ReactivateAccountDto) {
+    return { data: await this.authService.reactivateAccount(body) };
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Customer)
+  @Post('deactivate')
+  @ApiOperation({
+    summary: 'Temporarily deactivate account',
+    description:
+      'Freezes the customer account, suspends the active subscription, and invalidates refresh tokens.',
+  })
+  @ApiBody({ type: DeactivateAccountDto })
+  @ApiOkEnvelopeResponse('Account deactivated', { deactivated: true })
+  @ApiStandardErrorResponses()
+  async deactivate(
+    @Body() body: DeactivateAccountDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    return { data: await this.authService.deactivateAccount(user.sub, body) };
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Customer)
+  @Post('delete/request-otp')
+  @ApiOperation({
+    summary: 'Request OTP for account deletion',
+    description:
+      'Sends a one-time code to the customer verified phone. In dev/test, the fixed code is returned in `data.otp` and `data.debugOtp` (currently `123456`) until SMS is integrated.',
+  })
+  @ApiOkDataResponse(OtpSentDataDto, 'OTP sent')
+  @ApiStandardErrorResponses()
+  async requestDeleteOtp(@CurrentUser() user?: AuthUser) {
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    return { data: await this.authService.requestAccountDeletionOtp(user.sub) };
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Customer)
+  @Post('delete')
+  @ApiOperation({
+    summary: 'Permanently delete account',
+    description:
+      'Requires password and OTP confirmation. Anonymizes user data, suspends subscription, and invalidates sessions.',
+  })
+  @ApiBody({ type: DeleteAccountDto })
+  @ApiOkEnvelopeResponse('Account deleted', { deleted: true })
+  @ApiStandardErrorResponses()
+  async deleteAccount(
+    @Body() body: DeleteAccountDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    return { data: await this.authService.deleteAccount(user.sub, body) };
   }
 }

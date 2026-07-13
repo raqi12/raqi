@@ -10,7 +10,6 @@ import {
 import { refresh, storeSession } from '../api/auth';
 import { AdminApi } from '../api/modules';
 import { setRefreshHandler, setSessionTokens } from '../api/http';
-import { usePolling } from '../hooks/usePolling';
 import { formatApiError } from '../i18n/ar';
 import type {
   Area,
@@ -35,8 +34,6 @@ import type {
   User,
 } from '../types';
 
-const POLL_MS = 10000;
-export const POLL_INTERVAL_SEC = POLL_MS / 1000;
 
 type ActivityLog = {
   items: string[];
@@ -156,6 +153,9 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
 
   const loadAll = useCallback(async () => {
     if (!session.accessToken) return;
+    // #region agent log
+    fetch('http://127.0.0.1:7507/ingest/e05eb89e-9cfa-4057-adc1-4bbb50888184',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1c8176'},body:JSON.stringify({sessionId:'1c8176',location:'AdminContext.tsx:loadAll-start',message:'loadAll started',data:{pathname:window.location.pathname},timestamp:Date.now(),hypothesisId:'A',runId:'post-fix'})}).catch(()=>{});
+    // #endregion
     setLoading(true);
     setError(null);
     try {
@@ -220,6 +220,9 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       setBankAccount(bankAccountRes.data);
       setDepositRequests(depositRequestsRes.data);
       setLastSync(new Date().toLocaleTimeString());
+      // #region agent log
+      fetch('http://127.0.0.1:7507/ingest/e05eb89e-9cfa-4057-adc1-4bbb50888184',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1c8176'},body:JSON.stringify({sessionId:'1c8176',location:'AdminContext.tsx:loadAll-done',message:'loadAll completed',data:{pathname:window.location.pathname,customersCount:customersRes.data.length},timestamp:Date.now(),hypothesisId:'A',runId:'post-fix'})}).catch(()=>{});
+      // #endregion
     } catch (e) {
       setError(formatApiError(e instanceof Error ? e.message : 'فشل تحميل اللوحة'));
     } finally {
@@ -248,7 +251,12 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
     setRefreshHandler(refreshAccessToken);
   }, [refreshAccessToken, session.accessToken, session.refreshToken]);
 
-  usePolling(loadAll, Boolean(session.accessToken), POLL_MS);
+  useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7507/ingest/e05eb89e-9cfa-4057-adc1-4bbb50888184',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1c8176'},body:JSON.stringify({sessionId:'1c8176',location:'AdminContext.tsx:initial-load',message:'initial loadAll triggered (no polling)',data:{pathname:window.location.pathname},timestamp:Date.now(),hypothesisId:'A',runId:'post-fix'})}).catch(()=>{});
+    // #endregion
+    void loadAll();
+  }, [loadAll]);
 
   function logout() {
     applySession(null);
@@ -256,7 +264,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
   }
 
   const pendingDeposits = depositRequests.filter((r) => r.status === 'pending').length;
-  const pollSubtitle = `تحديث تلقائي كل ${POLL_MS / 1000} ثانية${lastSync ? ` • آخر مزامنة ${lastSync}` : ''}`;
+  const pollSubtitle = lastSync ? `آخر مزامنة ${lastSync}` : 'اضغط تحديث لمزامنة البيانات';
 
   const value = useMemo<AdminContextValue>(
     () => ({

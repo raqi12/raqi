@@ -11,6 +11,10 @@ import {
   DepositRequestSchema,
 } from './schemas/deposit-request.schema';
 import {
+  WalletTransaction,
+  WalletTransactionSchema,
+} from './schemas/wallet-transaction.schema';
+import {
   AdminWalletSettingsController,
   CustomerWalletController,
   WalletBalanceController,
@@ -18,6 +22,7 @@ import {
 import { WalletsService } from './wallets.service';
 import { BankAccountSettingsService } from './bank-account-settings.service';
 import { DepositRequestsService } from './deposit-requests.service';
+import { WalletTransactionsService } from './wallet-transactions.service';
 
 @Module({
   imports: [
@@ -25,6 +30,7 @@ import { DepositRequestsService } from './deposit-requests.service';
       { name: Wallet.name, schema: WalletSchema },
       { name: BankAccountSettings.name, schema: BankAccountSettingsSchema },
       { name: DepositRequest.name, schema: DepositRequestSchema },
+      { name: WalletTransaction.name, schema: WalletTransactionSchema },
     ]),
     forwardRef(() => CustomersModule),
   ],
@@ -33,7 +39,12 @@ import { DepositRequestsService } from './deposit-requests.service';
     WalletBalanceController,
     AdminWalletSettingsController,
   ],
-  providers: [WalletsService, BankAccountSettingsService, DepositRequestsService],
-  exports: [WalletsService, DepositRequestsService],
+  providers: [
+    WalletsService,
+    BankAccountSettingsService,
+    DepositRequestsService,
+    WalletTransactionsService,
+  ],
+  exports: [WalletsService, DepositRequestsService, WalletTransactionsService],
 })
 export class WalletsModule {}

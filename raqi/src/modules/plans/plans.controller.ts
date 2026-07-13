@@ -6,9 +6,10 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { RolesGuard } from '../../common/roles.guard';
 import { Roles } from '../../common/roles.decorator';
@@ -21,7 +22,7 @@ import {
 } from '../../common/swagger/decorators';
 import { PlanDto } from '../../common/swagger/schemas/entity.schemas';
 import { PlansService } from './plans.service';
-import { CreatePlanDto, UpdatePlanDto } from './dto/plan.dto';
+import { CreatePlanDto, SubscriptionCostDto, UpdatePlanDto } from './dto/plan.dto';
 
 @ApiTags('Plans')
 @Controller('plans')
@@ -37,6 +38,26 @@ export class PublicPlansController {
   @ApiStandardErrorResponses()
   async list() {
     return { data: await this.plansService.findActive() };
+  }
+
+  @Get(':planId/cost')
+  @ApiOperation({
+    summary: 'Calculate subscription cost',
+    description:
+      'Returns plan price, optional bin fee, and total cost. Bin selection is optional.',
+  })
+  @ApiQuery({
+    name: 'binId',
+    required: false,
+    description: 'Optional bin MongoDB ID to include bin fee in total',
+  })
+  @ApiOkDataResponse(SubscriptionCostDto, 'Subscription cost breakdown')
+  @ApiStandardErrorResponses()
+  async cost(
+    @Param('planId') planId: string,
+    @Query('binId') binId?: string,
+  ) {
+    return { data: await this.plansService.calculateCost(planId, binId) };
   }
 }
 

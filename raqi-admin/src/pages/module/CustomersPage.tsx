@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { AdminApi } from '../../api/modules';
 import { DataTable } from '../../components/DataTable';
 import { DetailPanel } from '../../components/forms/DetailPanel';
 import { FormCard } from '../../components/forms/FormCard';
@@ -20,8 +21,10 @@ import type {
   Payment,
   Plan,
   Subscription,
+  SubscriptionCost,
   Task,
   User,
+  WalletTransaction,
 } from '../../types';
 import {
   addressLocationLabel,
@@ -58,7 +61,7 @@ type CustomersPageProps = {
   onAssignPlan: (body: {
     customerId: string;
     planId: string;
-    binId: string;
+    binId?: string;
     addressId: string;
     deductWallet?: boolean;
   }) => Promise<void>;
@@ -75,6 +78,18 @@ const emptyForm = {
 
 function formatMoney(amount?: number) {
   return `${(amount ?? 0).toLocaleString('ar-LY')} د.ل`;
+}
+
+const WALLET_TRANSACTION_LABELS: Record<string, string> = {
+  deposit: 'إيداع',
+  admin_credit: 'إضافة إدارية',
+  subscription_payment: 'دفع اشتراك',
+  refund: 'استرداد',
+};
+
+function formatDateTime(value?: string) {
+  if (!value) return '—';
+  return new Date(value).toLocaleString('ar-LY');
 }
 
 function taskDate(task: Task) {
@@ -128,6 +143,7 @@ export function CustomersPage({
     deductWallet: false,
   });
   const [saving, setSaving] = useState(false);
+  const [assignCost, setAssignCost] = useState<SubscriptionCost | null>(null);
 
   const formAreas = useMemo(() => areasForCity(areas, form.cityId), [areas, form.cityId]);
   const hasLocations = cities.length > 0 && areas.length > 0;
@@ -159,6 +175,9 @@ export function CustomersPage({
   };
 
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7507/ingest/e05eb89e-9cfa-4057-adc1-4bbb50888184',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1c8176'},body:JSON.stringify({sessionId:'1c8176',location:'CustomersPage.tsx:details-effect',message:'CustomersPage details effect ran',data:{selectedId:selected?getId(selected):null,hasOnLoadDetails:Boolean(onLoadDetails)},timestamp:Date.now(),hypothesisId:'C',runId:'pre-fix'})}).catch(()=>{});
+    // #endregion
     if (!selected) {
       setDetails(null);
       setAssignForm({ planId: '', binId: '', addressId: '', deductWallet: false });
@@ -167,6 +186,17 @@ export function CustomersPage({
     }
     void reloadDetails(getId(selected));
   }, [onLoadDetails, selected?.id, selected?._id]);
+
+  useEffect(() => {
+    if (!assignForm.planId) {
+      setAssignCost(null);
+      return;
+    }
+    void AdminApi.plans
+      .cost(assignForm.planId, assignForm.binId || undefined)
+      .then((response) => setAssignCost(response.data))
+      .catch(() => setAssignCost(null));
+  }, [assignForm.planId, assignForm.binId]);
 
   function handleCityChange(cityId: string) {
     setForm((prev) => ({ ...prev, cityId, areaId: '' }));
@@ -213,13 +243,13 @@ export function CustomersPage({
 
   async function submitAssignPlan(e: FormEvent) {
     e.preventDefault();
-    if (!selected || !assignForm.planId || !assignForm.binId || !assignForm.addressId) return;
+    if (!selected || !assignForm.planId || !assignForm.addressId) return;
     setSaving(true);
     try {
       await onAssignPlan({
         customerId: getId(selected),
         planId: assignForm.planId,
-        binId: assignForm.binId,
+        binId: assignForm.binId || undefined,
         addressId: assignForm.addressId,
         deductWallet: assignForm.deductWallet,
       });
@@ -242,6 +272,7 @@ export function CustomersPage({
   const subscriptions = details?.subscriptions ?? [];
   const payments = details?.payments ?? [];
   const depositRequests = details?.depositRequests ?? [];
+  const walletTransactions = details?.walletTransactions ?? [];
   const assignedBins = details?.bins ?? [];
   const tasks = details?.tasks ?? [];
   const complaints = details?.complaints ?? [];
@@ -437,6 +468,39 @@ export function CustomersPage({
 
               <section className="detail-block">
                 <h4 className="detail-block__title">
+                  سجل المحفظة ({walletTransactions.length})
+                </h4>
+                <RecordList empty="لا توجد حركات على المحفظة.">
+                  {walletTransactions.length > 0
+                    ? walletTransactions.map((transaction: WalletTransaction) => (
+                        <li key={getId(transaction)} className="record-list__item">
+                          <div className="record-list__header">
+                            <strong>
+                              {transaction.direction === 'debit' ? '−' : '+'}
+                              {formatMoney(transaction.amount)}
+                            </strong>
+                            <StatusBadge
+                              status={String(
+                                WALLET_TRANSACTION_LABELS[transaction.type ?? ''] ??
+                                  transaction.type,
+                              )}
+                            />
+                          </div>
+                          <div className="record-list__meta">
+                            <span>{formatDateTime(transaction.createdAt)}</span>
+                            <span>الرصيد بعد: {formatMoney(transaction.balanceAfter)}</span>
+                          </div>
+                          {transaction.description ? (
+                            <p className="record-list__details">{transaction.description}</p>
+                          ) : null}
+                        </li>
+                      ))
+                    : null}
+                </RecordList>
+              </section>
+
+              <section className="detail-block">
+                <h4 className="detail-block__title">
                   الاشتراكات ({subscriptions.length})
                 </h4>
                 <RecordList empty="لا توجد اشتراكات.">
@@ -505,15 +569,22 @@ export function CustomersPage({
                     label="الصندوق"
                     value={assignForm.binId}
                     onChange={(e) => setAssignForm({ ...assignForm, binId: e.target.value })}
-                    required
                   >
-                    <option value="">اختر الصندوق</option>
+                    <option value="">بدون حاوية</option>
                     {availableBins.map((bin) => (
                       <option key={getId(bin)} value={getId(bin)}>
-                        {bin.code ?? getId(bin)} ({bin.capacity ?? 0} لتر)
+                        {bin.code ?? getId(bin)} ({bin.capacity ?? 0} لتر
+                        {bin.fee ? ` — ${bin.fee} د.ل` : ''})
                       </option>
                     ))}
                   </Select>
+                  {assignCost ? (
+                    <p className="field__hint">
+                      التكلفة: {formatMoney(assignCost.planPrice)} خطة
+                      {assignCost.binFee > 0 ? ` + ${formatMoney(assignCost.binFee)} حاوية` : ''}
+                      {' '}= {formatMoney(assignCost.total)}
+                    </p>
+                  ) : null}
                   <label className="inline-check detail-block__check">
                     <input
                       type="checkbox"
@@ -522,7 +593,7 @@ export function CustomersPage({
                         setAssignForm({ ...assignForm, deductWallet: e.target.checked })
                       }
                     />
-                    خصم سعر الخطة من المحفظة
+                    خصم التكلفة الإجمالية من المحفظة
                   </label>
                   <Button
                     type="submit"
@@ -530,7 +601,6 @@ export function CustomersPage({
                       saving ||
                       detailsLoading ||
                       !assignForm.planId ||
-                      !assignForm.binId ||
                       !assignForm.addressId
                     }
                   >
@@ -588,6 +658,7 @@ export function CustomersPage({
                           </div>
                           <div className="record-list__meta">
                             <span>السعة: {bin.capacity ?? 0} لتر</span>
+                            <span>الرسوم: {formatMoney(bin.fee)}</span>
                             <span>{bin.active ? 'نشط' : 'غير نشط'}</span>
                           </div>
                         </li>

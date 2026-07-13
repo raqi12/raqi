@@ -15,7 +15,7 @@ import { TasksService } from './tasks.service';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Task.name, schema: TaskSchema }]),
-    SubscriptionsModule,
+    forwardRef(() => SubscriptionsModule),
     forwardRef(() => CustomersModule),
     DriversModule,
     AreasModule,

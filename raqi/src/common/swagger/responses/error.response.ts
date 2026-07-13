@@ -71,6 +71,12 @@ export class OtpSentDataDto {
   expiresIn: number;
 
   @ApiPropertyOptional({
+    example: '+218912345678',
+    description: 'Phone number the OTP was issued for',
+  })
+  phone?: string;
+
+  @ApiPropertyOptional({
     example: '123456',
     description: 'Dev/test OTP returned in API response until SMS is integrated',
   })

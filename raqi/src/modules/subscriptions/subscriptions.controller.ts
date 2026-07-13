@@ -22,8 +22,12 @@ import {
   ApiOkDataResponse,
   ApiStandardErrorResponses,
 } from '../../common/swagger/decorators';
-import { SubscriptionDto } from '../../common/swagger/schemas/entity.schemas';
+import {
+  CustomerSubscriptionCurrentDto,
+  SubscriptionDto,
+} from '../../common/swagger/schemas/entity.schemas';
 import { CustomersService } from '../customers/customers.service';
+import { SubscriptionRenewalService } from './subscription-renewal.service';
 import { SubscriptionsService } from './subscriptions.service';
 import { SubscriptionStatus } from './schemas/subscription.schema';
 import {
@@ -33,6 +37,7 @@ import {
   AdminAssignPlanDto,
   AssignSubscriptionDriverDto,
   UpdateSubscriptionDto,
+  UpdateAutoRenewDto,
 } from './dto/subscription.dto';
 
 @ApiTags('Admin - Subscriptions')
@@ -41,7 +46,10 @@ import {
 @Roles(Role.Admin)
 @Controller('admin/subscriptions')
 export class AdminSubscriptionsController {
-  constructor(private readonly subscriptionsService: SubscriptionsService) {}
+  constructor(
+    private readonly subscriptionsService: SubscriptionsService,
+    private readonly subscriptionRenewalService: SubscriptionRenewalService,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -74,7 +82,7 @@ export class AdminSubscriptionsController {
   @ApiOperation({
     summary: 'Assign plan to customer',
     description:
-      'Assigns a plan, bin, and address to a customer. Optionally deducts plan price from wallet.',
+      'Assigns a plan and address to a customer. Bin is optional; when provided, bin fee is included in optional wallet deduction.',
   })
   @ApiBody({ type: AdminAssignPlanDto })
   @ApiOkDataResponse(SubscriptionDto, 'Plan assigned and subscription created')
@@ -87,6 +95,16 @@ export class AdminSubscriptionsController {
         { deductWallet: deductWallet ?? false },
       ),
     };
+  }
+
+  @Post('run-renewals')
+  @ApiOperation({
+    summary: 'Run subscription renewals',
+    description:
+      'Manually processes due auto-renew subscriptions (same logic as the daily cron job).',
+  })
+  async runRenewals() {
+    return { data: await this.subscriptionRenewalService.processDueRenewals() };
   }
 
   @Get(':id')
@@ -208,7 +226,7 @@ export class CustomerSubscriptionsController {
   @ApiOperation({
     summary: 'Subscribe with wallet',
     description:
-      'Creates an active subscription using plan, bin, and address. Deducts plan price from wallet balance.',
+      'Creates an active subscription using plan and address. Bin is optional; when provided, bin fee is added to the wallet debit.',
   })
   @ApiBody({ type: SubscribePlanDto })
   @ApiOkDataResponse(SubscriptionDto, 'Subscription created via wallet payment')
@@ -252,13 +270,34 @@ export class CustomerSubscriptionsController {
   @ApiOperation({
     summary: 'Get current subscription',
     description:
-      'Returns the customer active or most recent subscription, or null if none exists.',
+      'Returns the customer active or most recent subscription with plan summary, or null if none exists.',
   })
-  @ApiOkDataResponse(SubscriptionDto, 'Current subscription (may be null)')
+  @ApiOkDataResponse(CustomerSubscriptionCurrentDto, 'Current subscription (may be null)')
   async current(@CurrentUser() user?: AuthUser) {
     const customerId = await this.resolveCustomerId(user);
     return {
-      data: await this.subscriptionsService.findCurrentForCustomer(customerId),
+      data: await this.subscriptionsService.getCurrentWithPlan(customerId),
+    };
+  }
+
+  @Patch('current/auto-renew')
+  @ApiOperation({
+    summary: 'Update auto-renew preference',
+    description:
+      'Enables or disables automatic renewal for the customer active subscription.',
+  })
+  @ApiBody({ type: UpdateAutoRenewDto })
+  @ApiOkDataResponse(SubscriptionDto, 'Auto-renew preference updated')
+  async updateAutoRenew(
+    @Body() body: UpdateAutoRenewDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    const customerId = await this.resolveCustomerId(user);
+    return {
+      data: await this.subscriptionsService.setAutoRenew(
+        customerId,
+        body.autoRenew,
+      ),
     };
   }
 }

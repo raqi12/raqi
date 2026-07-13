@@ -42,9 +42,10 @@ export class SubscribePlanDto {
   @IsMongoId()
   planId: string;
 
-  @ApiProperty({ example: '507f1f77bcf86cd799439014', description: 'Bin MongoDB ID' })
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439014', description: 'Optional bin MongoDB ID' })
+  @IsOptional()
   @IsMongoId()
-  binId: string;
+  binId?: string;
 
   @ApiProperty({ example: '507f1f77bcf86cd799439013', description: 'Customer address MongoDB ID' })
   @IsMongoId()
@@ -88,4 +89,10 @@ export class UpdateSubscriptionDto {
   @IsOptional()
   @IsIn(['unpaid', 'paid'])
   paymentStatus?: 'paid' | 'unpaid';
+}
+
+export class UpdateAutoRenewDto {
+  @ApiProperty({ example: true, description: 'Enable or disable automatic subscription renewal' })
+  @IsBoolean()
+  autoRenew: boolean;
 }

@@ -142,3 +142,29 @@ export class ResetPasswordDto {
   @MinLength(6)
   confirmPassword: string;
 }
+
+export class DeactivateAccountDto {
+  @ApiProperty({ example: 'CurrentPass123', description: 'Current password confirmation' })
+  @IsString()
+  password: string;
+}
+
+export class DeleteAccountDto {
+  @ApiProperty({ example: 'CurrentPass123', description: 'Current password confirmation' })
+  @IsString()
+  password: string;
+
+  @ApiProperty({ example: '123456', description: 'OTP sent to registered phone' })
+  @IsString()
+  otp: string;
+}
+
+export class ReactivateAccountDto {
+  @ApiProperty({ example: '+218912345678' })
+  @IsString()
+  phone: string;
+
+  @ApiProperty({ example: 'StrongPass123' })
+  @IsString()
+  password: string;
+}

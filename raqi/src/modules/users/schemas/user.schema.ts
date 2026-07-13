@@ -32,6 +32,12 @@ export class User {
     default: 'active',
   })
   status: 'active' | 'inactive';
+
+  @Prop({ type: Date, default: null })
+  deactivatedAt: Date | null;
+
+  @Prop({ type: Date, default: null })
+  deletedAt: Date | null;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

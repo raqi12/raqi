@@ -49,6 +49,15 @@ export class Subscription {
 
   @Prop({ type: Date, default: null })
   renewedAt: Date | null;
+
+  @Prop({ default: false })
+  autoRenew: boolean;
+
+  @Prop({ type: Date, default: null, index: true })
+  expiresAt: Date | null;
+
+  @Prop({ type: Date, default: null })
+  renewalGraceUntil: Date | null;
 }
 
 export const SubscriptionSchema = SchemaFactory.createForClass(Subscription);

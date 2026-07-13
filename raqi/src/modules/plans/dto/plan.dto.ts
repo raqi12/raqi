@@ -72,3 +72,20 @@ export class UpdatePlanDto {
   @IsBoolean()
   active?: boolean;
 }
+
+export class SubscriptionCostDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439012' })
+  planId: string;
+
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439014', nullable: true })
+  binId?: string | null;
+
+  @ApiProperty({ example: 150, description: 'Plan price in LYD' })
+  planPrice: number;
+
+  @ApiProperty({ example: 50, description: 'Bin fee in LYD (0 when no bin selected)' })
+  binFee: number;
+
+  @ApiProperty({ example: 200, description: 'Total subscription cost in LYD' })
+  total: number;
+}

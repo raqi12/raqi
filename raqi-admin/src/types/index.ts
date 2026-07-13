@@ -64,15 +64,47 @@ export type Wallet = {
   balance?: number;
 };
 
+export type WalletTransaction = {
+  _id?: string;
+  id?: string;
+  customerId?: string;
+  type?: 'deposit' | 'admin_credit' | 'subscription_payment' | 'refund';
+  direction?: 'credit' | 'debit';
+  amount?: number;
+  balanceBefore?: number;
+  balanceAfter?: number;
+  referenceType?: 'deposit_request' | 'subscription' | 'manual' | null;
+  referenceId?: string | null;
+  description?: string | null;
+  createdAt?: string;
+};
+
+export type WalletTransactionList = {
+  items: WalletTransaction[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 export type Bin = {
   _id?: string;
   id?: string;
   code?: string;
   qr?: string;
   capacity?: number;
+  fee?: number;
   status?: 'available' | 'assigned' | 'maintenance';
   customerId?: string | null;
   active?: boolean;
+};
+
+export type SubscriptionCost = {
+  planId: string;
+  binId?: string | null;
+  planPrice: number;
+  binFee: number;
+  total: number;
 };
 
 export type Plan = {
@@ -114,6 +146,7 @@ export type CustomerDetails = {
   subscriptions: Subscription[];
   payments: Payment[];
   depositRequests: DepositRequest[];
+  walletTransactions: WalletTransaction[];
   bins: Bin[];
   tasks: Task[];
   complaints: Complaint[];
@@ -153,6 +186,10 @@ export type Subscription = {
   driverId?: string;
   paymentStatus?: 'paid' | 'unpaid';
   status?: string;
+  autoRenew?: boolean;
+  expiresAt?: string;
+  renewalGraceUntil?: string | null;
+  renewedAt?: string | null;
 };
 
 export type Payment = {

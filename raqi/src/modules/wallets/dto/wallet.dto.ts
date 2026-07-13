@@ -68,3 +68,27 @@ export class AdminCreditWalletDto {
   @IsString()
   note?: string;
 }
+
+export class ListWalletTransactionsQueryDto {
+  @ApiPropertyOptional({ example: 1, minimum: 1 })
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 20, minimum: 1, maximum: 100 })
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
+  @Min(1)
+  limit?: number;
+
+  @ApiPropertyOptional({
+    enum: ['deposit', 'admin_credit', 'subscription_payment', 'refund'],
+    example: 'deposit',
+  })
+  @IsOptional()
+  @IsIn(['deposit', 'admin_credit', 'subscription_payment', 'refund'])
+  type?: 'deposit' | 'admin_credit' | 'subscription_payment' | 'refund';
+}

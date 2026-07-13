@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppConfigModule } from './config/config.module';
 import { SecurityModule } from './common/security.module';
 import { HealthModule } from './modules/health/health.module';
@@ -27,6 +28,7 @@ import { SupportModule } from './modules/support/support.module';
   imports: [
     AppConfigModule,
     SecurityModule,
+    ScheduleModule.forRoot(),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

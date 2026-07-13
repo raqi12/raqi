@@ -39,6 +39,7 @@ import {
   DepositRequestDto,
   WalletBalanceDto,
   WalletDto,
+  WalletTransactionListDto,
 } from '../../common/swagger/schemas/entity.schemas';
 import { DepositEvidenceUploadDto } from '../../common/swagger/schemas/upload.schemas';
 import { CustomersService } from '../customers/customers.service';
@@ -47,9 +48,11 @@ import { DepositRequestsService } from './deposit-requests.service';
 import {
   CreateDepositRequestDto,
   ListDepositRequestsQueryDto,
+  ListWalletTransactionsQueryDto,
   RejectDepositRequestDto,
   UpdateBankAccountDto,
 } from './dto/wallet.dto';
+import { WalletTransactionsService } from './wallet-transactions.service';
 import { WalletsService } from './wallets.service';
 import {
   buildEvidenceUrl,
@@ -66,6 +69,7 @@ import {
 export class CustomerWalletController {
   constructor(
     private readonly walletsService: WalletsService,
+    private readonly walletTransactionsService: WalletTransactionsService,
     private readonly bankAccountSettingsService: BankAccountSettingsService,
     private readonly depositRequestsService: DepositRequestsService,
     private readonly customersService: CustomersService,
@@ -108,6 +112,28 @@ export class CustomerWalletController {
         balance: wallet.balance,
         currency: 'LYD',
       },
+    };
+  }
+
+  @Get('wallet/transactions')
+  @ApiOperation({
+    summary: 'List wallet transactions',
+    description: 'Returns paginated wallet transaction history for the authenticated customer.',
+  })
+  @ApiOptionalQuery('page', 'Page number (1-based)', { type: 'number', example: 1 })
+  @ApiOptionalQuery('limit', 'Items per page (max 100)', { type: 'number', example: 20 })
+  @ApiOptionalQuery('type', 'Filter by transaction type', {
+    enum: ['deposit', 'admin_credit', 'subscription_payment', 'refund'],
+    example: 'deposit',
+  })
+  @ApiOkDataResponse(WalletTransactionListDto, 'Wallet transaction list')
+  async listWalletTransactions(
+    @Query() query: ListWalletTransactionsQueryDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    const customerId = await this.resolveCustomerId(user);
+    return {
+      data: await this.walletTransactionsService.findByCustomer(customerId, query),
     };
   }
 

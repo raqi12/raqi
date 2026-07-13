@@ -15,6 +15,9 @@ export class Bin {
   @Prop({ type: Number, required: true, min: 0, default: 0 })
   capacity: number;
 
+  @Prop({ type: Number, required: true, min: 0, default: 0 })
+  fee: number;
+
   @Prop({
     type: String,
     required: true,
