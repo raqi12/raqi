@@ -6,17 +6,20 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { StatusBadge } from '../../components/ui/StatusBadge';
-import { COMMON, PLAN_FREQUENCIES } from '../../i18n/ar';
+import { COMMON, ACTIVITY_TYPES, PLAN_FREQUENCIES } from '../../i18n/ar';
 import type { Plan } from '../../types';
 import { getId } from './shared';
 
 type PlanFrequency = 'weekly' | 'monthly' | 'custom';
+
+type PlanActivityType = 'home' | 'commercial' | 'industrial';
 
 type PlansPageProps = {
   plans: Plan[];
   loading?: boolean;
   onCreate: (body: {
     name: string;
+    activityType: PlanActivityType;
     price: number;
     frequency: PlanFrequency;
     durationDays: number;
@@ -27,6 +30,7 @@ type PlansPageProps = {
     id: string,
     body: {
       name?: string;
+      activityType?: PlanActivityType;
       price?: number;
       frequency?: PlanFrequency;
       durationDays?: number;
@@ -38,6 +42,7 @@ type PlansPageProps = {
 
 const emptyForm = {
   name: '',
+  activityType: 'home' as PlanActivityType,
   price: '',
   frequency: 'monthly' as PlanFrequency,
   durationDays: '30',
@@ -59,6 +64,8 @@ export function PlansPage({ plans, loading = false, onCreate, onUpdate }: PlansP
     () =>
       plans.map((plan) => ({
         ...plan,
+        activityTypeLabel:
+          ACTIVITY_TYPES[plan.activityType ?? ''] ?? plan.activityType ?? '—',
         frequencyLabel: PLAN_FREQUENCIES[plan.frequency ?? ''] ?? plan.frequency ?? '—',
         priceLabel: formatPrice(plan.price),
         durationLabel: plan.durationDays != null ? `${plan.durationDays} يوم` : '—',
@@ -80,6 +87,7 @@ export function PlansPage({ plans, loading = false, onCreate, onUpdate }: PlansP
     try {
       await onCreate({
         name: form.name.trim(),
+        activityType: form.activityType,
         price,
         frequency: form.frequency,
         durationDays,
@@ -99,6 +107,7 @@ export function PlansPage({ plans, loading = false, onCreate, onUpdate }: PlansP
     try {
       await onUpdate(getId(selected), {
         name: selected.name,
+        activityType: selected.activityType as PlanActivityType | undefined,
         price: selected.price,
         frequency: selected.frequency,
         durationDays: selected.durationDays,
@@ -114,7 +123,7 @@ export function PlansPage({ plans, loading = false, onCreate, onUpdate }: PlansP
     <div className={`module-page ${selected ? 'module-page--with-detail' : ''}`}>
       <FormCard
         title="إضافة خطة"
-        description="أنشئ خطة اشتراك جديدة مع تحديد السعر والتكرار وعدد الجولات"
+        description="أنشئ خطة اشتراك جديدة مع تحديد نوع النشاط والسعر والتكرار وعدد الجولات"
         onSubmit={submitCreate}
         submitLabel={COMMON.create}
         loading={saving}
@@ -127,6 +136,20 @@ export function PlansPage({ plans, loading = false, onCreate, onUpdate }: PlansP
             placeholder="مثال: الخطة الشهرية"
             required
           />
+          <Select
+            label={COMMON.type}
+            value={form.activityType}
+            onChange={(e) =>
+              setForm({ ...form, activityType: e.target.value as PlanActivityType })
+            }
+            required
+          >
+            {Object.entries(ACTIVITY_TYPES).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </Select>
           <Input
             label="السعر (د.ل)"
             type="number"
@@ -185,9 +208,10 @@ export function PlansPage({ plans, loading = false, onCreate, onUpdate }: PlansP
         rows={tableRows}
         loading={loading}
         onSelect={setSelected}
-        searchKeys={['name', 'frequencyLabel', 'priceLabel', 'durationLabel', 'collectionsLabel']}
+        searchKeys={['name', 'activityTypeLabel', 'frequencyLabel', 'priceLabel', 'durationLabel', 'collectionsLabel']}
         columns={[
           { key: 'name', label: 'اسم الخطة' },
+          { key: 'activityTypeLabel', label: COMMON.type },
           { key: 'priceLabel', label: 'السعر' },
           { key: 'frequencyLabel', label: 'التكرار' },
           { key: 'durationLabel', label: 'المدة' },
@@ -214,6 +238,22 @@ export function PlansPage({ plans, loading = false, onCreate, onUpdate }: PlansP
               onChange={(e) => setSelected({ ...selected, name: e.target.value })}
               required
             />
+            <Select
+              label={COMMON.type}
+              value={selected.activityType ?? 'home'}
+              onChange={(e) =>
+                setSelected({
+                  ...selected,
+                  activityType: e.target.value as PlanActivityType,
+                })
+              }
+            >
+              {Object.entries(ACTIVITY_TYPES).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
             <Input
               label="السعر (د.ل)"
               type="number"

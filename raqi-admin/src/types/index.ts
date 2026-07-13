@@ -111,6 +111,7 @@ export type Plan = {
   _id?: string;
   id?: string;
   name?: string;
+  activityType?: string;
   price?: number;
   frequency?: 'weekly' | 'monthly' | 'custom';
   durationDays?: number;
@@ -133,7 +134,6 @@ export type Customer = {
   userId?: string;
   name?: string;
   email?: string;
-  type?: string;
   cityId?: string;
   areaId?: string;
   status?: string;

@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { CustomerType } from '../../common/customer-type';
 import { AuthUser } from '../../common/auth-user.interface';
 import { Role } from '../../common/roles.enum';
 import { UsersService } from '../users/users.service';
@@ -58,7 +57,6 @@ export class AuthService {
     const { response } = await this.otpService.createOtp(phone, 'register', {
       fullName: body.fullName,
       password: body.password,
-      activityType: body.activityType,
       cityId: body.cityId,
       areaId: body.areaId,
       addressDetails: body.addressDetails,
@@ -67,7 +65,6 @@ export class AuthService {
     return {
       ...response,
       phone,
-      activityType: body.activityType,
     };
   }
 
@@ -102,7 +99,6 @@ export class AuthService {
     });
     const customer = await this.customersService.create({
       userId: String(user.id),
-      type: payload.activityType as CustomerType,
       cityId: payload.cityId,
       areaId: payload.areaId,
     });

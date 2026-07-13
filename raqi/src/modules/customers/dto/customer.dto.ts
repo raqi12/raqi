@@ -1,12 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
-  IsIn,
   IsOptional,
   IsString,
   MinLength,
 } from 'class-validator';
-import { CUSTOMER_TYPES } from '../../../common/customer-type';
 
 export class CreateCustomerDto {
   @ApiProperty({ example: 'customer@example.com', format: 'email', description: 'Customer login email' })
@@ -22,11 +20,6 @@ export class CreateCustomerDto {
   @MinLength(6)
   password: string;
 
-  @ApiPropertyOptional({ enum: CUSTOMER_TYPES, example: 'home', description: 'Customer activity type' })
-  @IsOptional()
-  @IsIn(CUSTOMER_TYPES)
-  type?: (typeof CUSTOMER_TYPES)[number];
-
   @ApiProperty({
     example: '507f1f77bcf86cd799439011',
     description: 'Parent city ID (admin: GET /admin/cities)',
@@ -40,13 +33,6 @@ export class CreateCustomerDto {
   })
   @IsString()
   areaId: string;
-}
-
-export class UpdateCustomerDto {
-  @ApiPropertyOptional({ enum: CUSTOMER_TYPES, example: 'commercial', description: 'Customer activity type' })
-  @IsOptional()
-  @IsIn(CUSTOMER_TYPES)
-  type?: (typeof CUSTOMER_TYPES)[number];
 }
 
 export class CreateAddressDto {

@@ -22,7 +22,7 @@ import {
 } from '../../common/swagger/decorators';
 import { PlanDto } from '../../common/swagger/schemas/entity.schemas';
 import { PlansService } from './plans.service';
-import { CreatePlanDto, SubscriptionCostDto, UpdatePlanDto } from './dto/plan.dto';
+import { CreatePlanDto, ListPlansQueryDto, SubscriptionCostDto, UpdatePlanDto } from './dto/plan.dto';
 
 @ApiTags('Plans')
 @Controller('plans')
@@ -34,10 +34,20 @@ export class PublicPlansController {
     summary: 'List active plans',
     description: 'Public catalog of subscription plans available for purchase. No authentication required.',
   })
+  @ApiQuery({
+    name: 'activityType',
+    required: false,
+    enum: ['home', 'commercial', 'industrial'],
+    description: 'Filter plans by activity type',
+  })
   @ApiOkDataResponse(PlanDto, 'Active plan list', { isArray: true })
   @ApiStandardErrorResponses()
-  async list() {
-    return { data: await this.plansService.findActive() };
+  async list(@Query() query: ListPlansQueryDto) {
+    return {
+      data: await this.plansService.findActive({
+        activityType: query.activityType,
+      }),
+    };
   }
 
   @Get(':planId/cost')
@@ -74,9 +84,19 @@ export class AdminPlansController {
     summary: 'List all plans',
     description: 'Returns the full plan catalog including inactive plans. Admin role required.',
   })
+  @ApiQuery({
+    name: 'activityType',
+    required: false,
+    enum: ['home', 'commercial', 'industrial'],
+    description: 'Filter plans by activity type',
+  })
   @ApiOkDataResponse(PlanDto, 'Plan list', { isArray: true })
-  async list() {
-    return { data: await this.plansService.findAll() };
+  async list(@Query() query: ListPlansQueryDto) {
+    return {
+      data: await this.plansService.findAll({
+        activityType: query.activityType,
+      }),
+    };
   }
 
   @Post()

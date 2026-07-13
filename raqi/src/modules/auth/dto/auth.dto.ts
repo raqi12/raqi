@@ -7,7 +7,6 @@ import {
   MinLength,
   ValidateIf,
 } from 'class-validator';
-import { CUSTOMER_TYPES } from '../../../common/customer-type';
 
 export class RegisterDto {
   @ApiProperty({ example: 'مصطفى عيسى', description: 'Full legal name of the customer' })
@@ -27,10 +26,6 @@ export class RegisterDto {
   @IsString()
   @MinLength(6)
   confirmPassword: string;
-
-  @ApiProperty({ enum: CUSTOMER_TYPES, example: 'home', description: 'Customer activity type' })
-  @IsIn(CUSTOMER_TYPES)
-  activityType: (typeof CUSTOMER_TYPES)[number];
 
   @ApiProperty({
     example: '507f1f77bcf86cd799439011',

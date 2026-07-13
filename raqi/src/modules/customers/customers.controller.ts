@@ -44,7 +44,6 @@ import {
   CreateAddressDto,
   CreateCustomerDto,
   UpdateAddressDto,
-  UpdateCustomerDto,
 } from './dto/customer.dto';
 
 @ApiTags('Admin - Customers')
@@ -94,7 +93,6 @@ export class AdminCustomersController {
     });
     const customer = await this.customersService.create({
       userId: String(user.id),
-      type: body.type ?? 'home',
       cityId: body.cityId,
       areaId: body.areaId,
     });
@@ -213,20 +211,6 @@ export class AdminCustomersController {
   @ApiOkDataResponse(CustomerDto, 'Customer details')
   async get(@Param('id') id: string) {
     const customer = await this.customersService.findById(id);
-    if (!customer) {
-      throw new NotFoundException('Customer not found');
-    }
-    return { data: await this.customersService.findByIdForAdmin(id) };
-  }
-
-  @Roles(Role.Admin)
-  @Patch(':id')
-  @ApiOperation({ summary: 'Update customer profile' })
-  @ApiMongoIdParam('id', 'Customer MongoDB ID')
-  @ApiBody({ type: UpdateCustomerDto })
-  @ApiOkDataResponse(CustomerDto, 'Customer updated')
-  async update(@Param('id') id: string, @Body() body: UpdateCustomerDto) {
-    const customer = await this.customersService.update(id, body);
     if (!customer) {
       throw new NotFoundException('Customer not found');
     }

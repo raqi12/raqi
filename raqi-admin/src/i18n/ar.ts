@@ -56,11 +56,14 @@ export const ROLES: Record<string, string> = {
   manager: 'مشرف',
 };
 
-export const CUSTOMER_TYPES: Record<string, string> = {
+export const ACTIVITY_TYPES: Record<string, string> = {
   home: 'منزلي',
   commercial: 'تجاري',
   industrial: 'صناعي',
 };
+
+/** @deprecated Use ACTIVITY_TYPES */
+export const CUSTOMER_TYPES = ACTIVITY_TYPES;
 
 export const PLAN_FREQUENCIES: Record<string, string> = {
   weekly: 'أسبوعي',

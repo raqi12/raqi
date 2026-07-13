@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { StatusBadge } from '../../components/ui/StatusBadge';
-import { COMMON, CUSTOMER_TYPES } from '../../i18n/ar';
+import { COMMON } from '../../i18n/ar';
 import type { Bin, Customer, User } from '../../types';
 import { getId, customerDisplayName } from './shared';
 
@@ -41,9 +41,7 @@ const BIN_STATUS_OPTIONS: { value: BinStatus; label: string }[] = [
 ];
 
 function customerOptionLabel(customer: Customer, users: User[]) {
-  const name = customerDisplayName(customer, users);
-  const type = CUSTOMER_TYPES[customer.type ?? ''] ?? customer.type ?? '—';
-  return `${name} — ${type}`;
+  return customerDisplayName(customer, users);
 }
 
 function customerNameById(

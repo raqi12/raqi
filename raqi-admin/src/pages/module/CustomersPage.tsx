@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { StatusBadge } from '../../components/ui/StatusBadge';
-import { COMMON, CUSTOMER_TYPES } from '../../i18n/ar';
+import { COMMON } from '../../i18n/ar';
 import type {
   Address,
   Area,
@@ -51,11 +51,9 @@ type CustomersPageProps = {
     email: string;
     name: string;
     password: string;
-    type: string;
     cityId: string;
     areaId: string;
   }) => Promise<void>;
-  onUpdate: (id: string, body: { type: string }) => Promise<void>;
   onLoadDetails: (id: string) => Promise<CustomerDetails>;
   onDeposit: (id: string, amount: number) => Promise<void>;
   onAssignPlan: (body: {
@@ -71,7 +69,6 @@ const emptyForm = {
   email: '',
   name: '',
   password: '',
-  type: 'home',
   cityId: '',
   areaId: '',
 };
@@ -126,7 +123,6 @@ export function CustomersPage({
   areas,
   loading = false,
   onCreate,
-  onUpdate,
   onLoadDetails,
   onDeposit,
   onAssignPlan,
@@ -160,7 +156,6 @@ export function CustomersPage({
         email: customer.email ?? '—',
         cityName: cityNameById(cities, customer.cityId),
         areaName: areaNameById(areas, customer.areaId),
-        typeLabel: CUSTOMER_TYPES[customer.type ?? ''] ?? customer.type ?? '—',
       })),
     [areas, cities, customers, users],
   );
@@ -214,18 +209,6 @@ export function CustomersPage({
     }
   }
 
-  async function submitTypeUpdate(e: FormEvent) {
-    e.preventDefault();
-    if (!selected) return;
-    setSaving(true);
-    try {
-      await onUpdate(getId(selected), { type: selected.type ?? 'home' });
-      await reloadDetails(getId(selected));
-    } finally {
-      setSaving(false);
-    }
-  }
-
   async function submitDeposit(e: FormEvent) {
     e.preventDefault();
     if (!selected) return;
@@ -265,9 +248,6 @@ export function CustomersPage({
     ? customerDisplayName(selectedCustomer, users)
     : '';
   const selectedEmail = selectedCustomer?.email ?? '—';
-  const selectedTypeLabel = selectedCustomer
-    ? CUSTOMER_TYPES[selectedCustomer.type ?? ''] ?? selectedCustomer.type ?? '—'
-    : '—';
   const addresses = details?.addresses ?? [];
   const subscriptions = details?.subscriptions ?? [];
   const payments = details?.payments ?? [];
@@ -282,7 +262,7 @@ export function CustomersPage({
     <div className={`module-page ${selected ? 'module-page--with-detail' : ''}`}>
       <FormCard
         title="إضافة عميل"
-        description="أنشئ حساب عميل مع تحديد نوع النشاط والمدينة والمنطقة"
+        description="أنشئ حساب عميل مع تحديد المدينة والمنطقة"
         onSubmit={submitCreate}
         submitLabel={COMMON.create}
         loading={saving}
@@ -310,18 +290,6 @@ export function CustomersPage({
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             required
           />
-          <Select
-            label={COMMON.type}
-            value={form.type}
-            onChange={(e) => setForm({ ...form, type: e.target.value })}
-            required
-          >
-            {Object.entries(CUSTOMER_TYPES).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
           <Select
             label={COMMON.city}
             value={form.cityId}
@@ -362,7 +330,7 @@ export function CustomersPage({
         rows={tableRows}
         loading={loading}
         onSelect={setSelected}
-        searchKeys={['customerName', 'email', 'typeLabel', 'cityName', 'areaName']}
+        searchKeys={['customerName', 'email', 'cityName', 'areaName']}
         columns={[
           { key: 'customerName', label: COMMON.name },
           {
@@ -370,7 +338,6 @@ export function CustomersPage({
             label: COMMON.email,
             render: (row) => <span dir="ltr">{String(row.email ?? '—')}</span>,
           },
-          { key: 'typeLabel', label: COMMON.type },
           { key: 'cityName', label: COMMON.city },
           { key: 'areaName', label: COMMON.area },
         ]}
@@ -404,10 +371,6 @@ export function CustomersPage({
                     </dd>
                   </div>
                   <div className="info-list__row">
-                    <dt>{COMMON.type}</dt>
-                    <dd>{selectedTypeLabel}</dd>
-                  </div>
-                  <div className="info-list__row">
                     <dt>{COMMON.city}</dt>
                     <dd>{cityNameById(cities, selectedCustomer.cityId)}</dd>
                   </div>
@@ -416,28 +379,6 @@ export function CustomersPage({
                     <dd>{areaNameById(areas, selectedCustomer.areaId)}</dd>
                   </div>
                 </dl>
-              </section>
-
-              <section className="detail-block">
-                <h4 className="detail-block__title">تعديل نوع النشاط</h4>
-                <form className="detail-form" onSubmit={submitTypeUpdate}>
-                  <Select
-                    label={COMMON.type}
-                    value={selectedCustomer.type ?? 'home'}
-                    onChange={(e) =>
-                      setSelected({ ...selectedCustomer, type: e.target.value })
-                    }
-                  >
-                    {Object.entries(CUSTOMER_TYPES).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </Select>
-                  <Button type="submit" disabled={saving}>
-                    {saving ? 'جاري الحفظ...' : COMMON.save}
-                  </Button>
-                </form>
               </section>
 
               <section className="detail-block">

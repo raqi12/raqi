@@ -110,7 +110,6 @@ export function AdminPageRoutes() {
             areas={areas}
             loading={loading}
             onCreate={(body) => runMutation(() => AdminApi.customers.create(body), 'تم إنشاء العميل')}
-            onUpdate={(id, body) => runMutation(() => AdminApi.customers.update(id, body), 'تم تحديث العميل')}
             onLoadDetails={loadCustomerDetails}
             onDeposit={(id, amount) =>
               runMutation(() => AdminApi.customers.depositWallet(id, { amount }), 'تم الإيداع في المحفظة')

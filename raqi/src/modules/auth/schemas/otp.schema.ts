@@ -8,7 +8,6 @@ export type OtpPurpose = 'register' | 'reset_password' | 'delete_account';
 export type RegisterOtpPayload = {
   fullName: string;
   password: string;
-  activityType: string;
   cityId: string;
   areaId: string;
   addressDetails?: string;

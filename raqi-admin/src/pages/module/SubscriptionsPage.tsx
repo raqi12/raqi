@@ -7,7 +7,7 @@ import { FormCard } from '../../components/forms/FormCard';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
 import { StatusBadge } from '../../components/ui/StatusBadge';
-import { COMMON, CUSTOMER_TYPES } from '../../i18n/ar';
+import { COMMON } from '../../i18n/ar';
 import type {
   Address,
   Area,
@@ -85,9 +85,7 @@ const PLAN_FREQUENCY: Record<string, string> = {
 type PendingAction = 'activate' | 'suspend' | 'renew';
 
 function customerOptionLabel(customer: Customer, users: User[]) {
-  const name = customerDisplayName(customer, users);
-  const type = CUSTOMER_TYPES[customer.type ?? ''] ?? customer.type ?? '—';
-  return `${name} — ${type}`;
+  return customerDisplayName(customer, users);
 }
 
 function driverNameById(drivers: Driver[], users: User[], driverId?: string) {
@@ -664,12 +662,6 @@ export function SubscriptionsPage({
                   <div className="info-list__row">
                     <dt>{COMMON.email}</dt>
                     <dd dir="ltr">{detailCustomer.email ?? '—'}</dd>
-                  </div>
-                  <div className="info-list__row">
-                    <dt>{COMMON.type}</dt>
-                    <dd>
-                      {CUSTOMER_TYPES[detailCustomer.type ?? ''] ?? detailCustomer.type ?? '—'}
-                    </dd>
                   </div>
                 </dl>
               ) : (

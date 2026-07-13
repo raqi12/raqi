@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CustomerType } from '../../common/customer-type';
 import { AreasService } from '../areas/areas.service';
 import { CitiesService } from '../cities/cities.service';
 import { UsersService } from '../users/users.service';
@@ -28,7 +27,6 @@ export class CustomersService {
 
   async create(input: {
     userId: string;
-    type: CustomerType;
     cityId: string;
     areaId: string;
   }): Promise<CustomerDocument> {

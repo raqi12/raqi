@@ -7,11 +7,20 @@ import {
   IsString,
   Min,
 } from 'class-validator';
+import { ACTIVITY_TYPES } from '../../../common/activity-type';
 
 export class CreatePlanDto {
   @ApiProperty({ example: 'باقة شهرية - منزل', description: 'Subscription plan name' })
   @IsString()
   name: string;
+
+  @ApiProperty({
+    enum: ACTIVITY_TYPES,
+    example: 'home',
+    description: 'Target activity type for this plan',
+  })
+  @IsIn(ACTIVITY_TYPES)
+  activityType: (typeof ACTIVITY_TYPES)[number];
 
   @ApiProperty({ example: 150, minimum: 0, description: 'Plan price in LYD' })
   @IsNumber()
@@ -44,6 +53,15 @@ export class UpdatePlanDto {
   @IsString()
   name?: string;
 
+  @ApiPropertyOptional({
+    enum: ACTIVITY_TYPES,
+    example: 'commercial',
+    description: 'Target activity type for this plan',
+  })
+  @IsOptional()
+  @IsIn(ACTIVITY_TYPES)
+  activityType?: (typeof ACTIVITY_TYPES)[number];
+
   @ApiPropertyOptional({ example: 75, minimum: 0, description: 'Plan price in LYD' })
   @IsOptional()
   @IsNumber()
@@ -71,6 +89,17 @@ export class UpdatePlanDto {
   @IsOptional()
   @IsBoolean()
   active?: boolean;
+}
+
+export class ListPlansQueryDto {
+  @ApiPropertyOptional({
+    enum: ACTIVITY_TYPES,
+    example: 'home',
+    description: 'Filter plans by activity type',
+  })
+  @IsOptional()
+  @IsIn(ACTIVITY_TYPES)
+  activityType?: (typeof ACTIVITY_TYPES)[number];
 }
 
 export class SubscriptionCostDto {

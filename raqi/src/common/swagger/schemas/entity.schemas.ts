@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { CUSTOMER_TYPES } from '../../customer-type';
+import { ACTIVITY_TYPES } from '../../activity-type';
 import { Role } from '../../roles.enum';
 
 export class UserDto {
@@ -37,9 +37,6 @@ export class CustomerDto {
 
   @ApiProperty({ example: '507f1f77bcf86cd799439012' })
   userId: string;
-
-  @ApiProperty({ enum: CUSTOMER_TYPES, example: 'home' })
-  type: string;
 
   @ApiProperty({ example: '507f1f77bcf86cd799439013', description: 'Parent city MongoDB ID' })
   cityId: string;
@@ -164,6 +161,9 @@ export class PlanDto {
 
   @ApiProperty({ example: 'خطة شهرية' })
   name: string;
+
+  @ApiProperty({ enum: ACTIVITY_TYPES, example: 'home' })
+  activityType: string;
 
   @ApiProperty({ example: 150 })
   price: number;
@@ -795,7 +795,4 @@ export class RegisterPendingDto {
 
   @ApiProperty({ example: '+218912345678' })
   phone: string;
-
-  @ApiProperty({ enum: CUSTOMER_TYPES, example: 'home' })
-  activityType: string;
 }

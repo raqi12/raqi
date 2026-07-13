@@ -77,9 +77,13 @@ export const AdminApi = {
       apiRequest<Route>('/admin/routes', { method: 'POST', body: JSON.stringify(body) }),
   },
   plans: {
-    list: () => apiRequest<Plan[]>('/admin/plans'),
+    list: (activityType?: string) => {
+      const params = activityType ? `?activityType=${encodeURIComponent(activityType)}` : '';
+      return apiRequest<Plan[]>(`/admin/plans${params}`);
+    },
     create: (body: {
       name: string;
+      activityType: string;
       price: number;
       frequency: 'weekly' | 'monthly' | 'custom';
       durationDays: number;
@@ -90,6 +94,7 @@ export const AdminApi = {
       id: string,
       body: {
         name?: string;
+        activityType?: string;
         price?: number;
         frequency?: 'weekly' | 'monthly' | 'custom';
         durationDays?: number;
@@ -120,16 +125,10 @@ export const AdminApi = {
       email: string;
       name: string;
       password: string;
-      type: string;
       cityId: string;
       areaId: string;
     }) =>
       apiRequest<Customer>('/admin/customers', { method: 'POST', body: JSON.stringify(body) }),
-    update: (id: string, body: { type: string }) =>
-      apiRequest<Customer>(`/admin/customers/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(body),
-      }),
     getWallet: (id: string) => apiRequest<Wallet>(`/admin/customers/${id}/wallet`),
     depositWallet: (id: string, body: { amount: number; note?: string }) =>
       apiRequest<Wallet>(`/admin/customers/${id}/wallet/deposit`, {
