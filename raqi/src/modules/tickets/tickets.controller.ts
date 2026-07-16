@@ -9,7 +9,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/current-user.decorator';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { RolesGuard } from '../../common/roles.guard';
@@ -169,6 +169,147 @@ export class CustomerTicketsController {
       senderRole: 'customer',
       body: body.body,
     });
+
+    const messageDto = toMessageDto(message);
+    const ticketDto = toTicketDto(updatedTicket);
+    this.ticketsGateway.emitMessageCreated(id, messageDto);
+    this.ticketsGateway.emitTicketUpdated(id, ticketDto);
+
+    return { data: messageDto };
+  }
+}
+
+@ApiTags('Driver - Tickets')
+@ApiBearerAuth('access-token')
+@ApiStandardErrorResponses()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.Driver)
+@Controller('driver/tickets')
+export class DriverTicketsController {
+  constructor(
+    private readonly ticketsService: TicketsService,
+    private readonly ticketMessagesService: TicketMessagesService,
+    private readonly ticketsGateway: TicketsGateway,
+  ) {}
+
+  @Post()
+  @ApiOperation({
+    summary: 'Create support ticket',
+    description: 'Creates a ticket and seeds the first message from the description.',
+  })
+  @ApiBody({ type: CreateTicketDto })
+  @ApiOkDataResponse(TicketDto, 'Ticket created', { status: 201 })
+  async create(@Body() body: CreateTicketDto, @CurrentUser() user?: AuthUser) {
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const ticket = await this.ticketsService.create({
+      userId: user.sub,
+      subject: body.subject,
+      description: body.description,
+      priority: body.priority,
+    });
+
+    await this.ticketMessagesService.createInitialMessage(
+      String(ticket.id),
+      user.sub,
+      body.description,
+      'driver',
+    );
+
+    return { data: toTicketDto(ticket) };
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'List my tickets' })
+  @ApiOptionalQuery('status', 'Filter by status', {
+    enum: ['pending', 'open', 'in_progress', 'resolved', 'closed'],
+  })
+  @ApiOkDataResponse(TicketDto, 'Ticket list', { isArray: true })
+  async list(
+    @Query() query: ListTicketsQueryDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const tickets = await this.ticketsService.findAll({
+      userId: user.sub,
+      status: query.status,
+    });
+    return { data: tickets.map((ticket) => toTicketDto(ticket)) };
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get ticket by ID' })
+  @ApiMongoIdParam('id', 'Ticket MongoDB ID')
+  @ApiOkDataResponse(TicketDto, 'Ticket details')
+  async get(@Param('id') id: string, @CurrentUser() user?: AuthUser) {
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    const ticket = await this.ticketsService.findByIdOrThrow(id);
+    await this.ticketsService.assertAccess(ticket, user);
+    return { data: toTicketDto(ticket) };
+  }
+
+  @Get(':id/messages')
+  @ApiOperation({ summary: 'List ticket messages' })
+  @ApiMongoIdParam('id', 'Ticket MongoDB ID')
+  @ApiOkDataResponse(TicketMessageListDto, 'Paginated ticket messages')
+  async listMessages(
+    @Param('id') id: string,
+    @Query() query: ListTicketMessagesQueryDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    const ticket = await this.ticketsService.findByIdOrThrow(id);
+    await this.ticketsService.assertAccess(ticket, user);
+
+    const result = await this.ticketMessagesService.list(
+      id,
+      query.page,
+      query.limit,
+    );
+    return {
+      data: {
+        items: result.items.map((item) => toMessageDto(item)),
+        page: result.page,
+        limit: result.limit,
+        total: result.total,
+        totalPages: result.totalPages,
+      },
+    };
+  }
+
+  @Post(':id/messages')
+  @ApiOperation({ summary: 'Send ticket message' })
+  @ApiMongoIdParam('id', 'Ticket MongoDB ID')
+  @ApiBody({ type: CreateTicketMessageDto })
+  @ApiOkDataResponse(TicketMessageDto, 'Message sent', { status: 201 })
+  async sendMessage(
+    @Param('id') id: string,
+    @Body() body: CreateTicketMessageDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const ticket = await this.ticketsService.findByIdOrThrow(id);
+    await this.ticketsService.assertAccess(ticket, user);
+
+    const { message, ticket: updatedTicket } =
+      await this.ticketMessagesService.sendMessage({
+        ticketId: id,
+        senderId: user.sub,
+        senderRole: 'driver',
+        body: body.body,
+      });
 
     const messageDto = toMessageDto(message);
     const ticketDto = toTicketDto(updatedTicket);

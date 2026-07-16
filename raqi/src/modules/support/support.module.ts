@@ -9,6 +9,7 @@ import { FaqsService } from './faqs.service';
 import {
   AdminSupportController,
   CustomerSupportController,
+  DriverSupportController,
   PublicSupportController,
 } from './support.controller';
 import { SupportSettingsService } from './support-settings.service';
@@ -24,6 +25,7 @@ import { SupportService } from './support.service';
   controllers: [
     PublicSupportController,
     CustomerSupportController,
+    DriverSupportController,
     AdminSupportController,
   ],
   providers: [SupportSettingsService, FaqsService, SupportService],

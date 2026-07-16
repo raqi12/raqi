@@ -14,6 +14,7 @@ import {
 import {
   AdminTicketsController,
   CustomerTicketsController,
+  DriverTicketsController,
 } from './tickets.controller';
 import { TicketMessagesService } from './ticket-messages.service';
 import { TicketsGateway } from './tickets.gateway';
@@ -29,7 +30,11 @@ import { TicketsService } from './tickets.service';
     UsersModule,
     JwtModule.register({}),
   ],
-  controllers: [CustomerTicketsController, AdminTicketsController],
+  controllers: [
+    CustomerTicketsController,
+    DriverTicketsController,
+    AdminTicketsController,
+  ],
   providers: [TicketsService, TicketMessagesService, TicketsGateway],
   exports: [TicketsService, TicketMessagesService, TicketsGateway],
 })

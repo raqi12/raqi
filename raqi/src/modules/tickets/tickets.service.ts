@@ -13,6 +13,7 @@ import {
 } from './schemas/ticket-counter.schema';
 import { Ticket, TicketDocument } from './schemas/ticket.schema';
 import type { TicketPriority, TicketStatus } from './ticket.enums';
+import type { TicketMessageSenderRole } from './ticket.enums';
 
 export type TicketListFilters = {
   status?: TicketStatus;
@@ -108,7 +109,10 @@ export class TicketsService {
     if (user.role === Role.Admin) {
       return;
     }
-    if (user.role === Role.Customer && String(ticket.userId) === user.sub) {
+    if (
+      (user.role === Role.Customer || user.role === Role.Driver) &&
+      String(ticket.userId) === user.sub
+    ) {
       return;
     }
     throw new ForbiddenException('You do not have access to this ticket');
@@ -161,7 +165,7 @@ export class TicketsService {
 
   async applyMessageSideEffects(
     ticket: TicketDocument,
-    senderRole: 'customer' | 'admin',
+    senderRole: TicketMessageSenderRole,
   ): Promise<TicketDocument> {
     const patch: Partial<Ticket> = {};
 
@@ -172,7 +176,10 @@ export class TicketsService {
       if (!ticket.assigneeId) {
         // assignee set explicitly via PATCH; no auto-assign here
       }
-    } else if (senderRole === 'customer' && ticket.status === 'resolved') {
+    } else if (
+      (senderRole === 'customer' || senderRole === 'driver') &&
+      ticket.status === 'resolved'
+    ) {
       patch.status = 'open';
     }
 

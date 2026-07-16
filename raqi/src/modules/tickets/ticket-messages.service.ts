@@ -81,11 +81,12 @@ export class TicketMessagesService {
     ticketId: string,
     userId: string,
     body: string,
+    senderRole: TicketMessageSenderRole = 'customer',
   ): Promise<TicketMessageDocument> {
     return this.create({
       ticketId,
       senderId: userId,
-      senderRole: 'customer',
+      senderRole,
       body,
     });
   }

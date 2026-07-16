@@ -78,7 +78,12 @@ export class TicketsGateway implements OnGatewayConnection {
     const ticket = await this.ticketsService.findByIdOrThrow(payload.ticketId);
     await this.ticketsService.assertAccess(ticket, user);
 
-    const senderRole = user.role === Role.Admin ? 'admin' : 'customer';
+    const senderRole =
+      user.role === Role.Admin
+        ? 'admin'
+        : user.role === Role.Driver
+          ? 'driver'
+          : 'customer';
     const { message, ticket: updatedTicket } =
       await this.ticketMessagesService.sendMessage({
         ticketId: payload.ticketId,

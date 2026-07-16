@@ -700,7 +700,7 @@ export class TicketMessageDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439013' })
   senderId: string;
 
-  @ApiProperty({ enum: ['customer', 'admin'], example: 'customer' })
+  @ApiProperty({ enum: ['customer', 'driver', 'admin'], example: 'customer' })
   senderRole: string;
 
   @ApiProperty({ example: 'مرحباً، أحتاج مساعدة' })

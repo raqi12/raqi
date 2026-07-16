@@ -73,6 +73,27 @@ export class CustomerSupportController {
   }
 }
 
+@ApiTags('Driver - Support')
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.Driver)
+@Controller('driver')
+@ApiStandardErrorResponses()
+export class DriverSupportController {
+  constructor(private readonly supportService: SupportService) {}
+
+  @Get('support')
+  @ApiOperation({
+    summary: 'Get support page content',
+    description:
+      'Same support page payload as GET /support for authenticated drivers.',
+  })
+  @ApiOkDataResponse(SupportPageDto, 'Support page content')
+  async getSupportPage() {
+    return { data: await this.supportService.getPublicPayload() };
+  }
+}
+
 @ApiTags('Admin - Support')
 @ApiAdminAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
