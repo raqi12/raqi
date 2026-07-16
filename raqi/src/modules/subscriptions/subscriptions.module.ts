@@ -4,6 +4,7 @@ import { BinsModule } from '../bins/bins.module';
 import { CustomersModule } from '../customers/customers.module';
 import { DriversModule } from '../drivers/drivers.module';
 import { PlansModule } from '../plans/plans.module';
+import { TasksModule } from '../tasks/tasks.module';
 import { WalletsModule } from '../wallets/wallets.module';
 import {
   Subscription,
@@ -23,6 +24,7 @@ import { SubscriptionsService } from './subscriptions.service';
       { name: Subscription.name, schema: SubscriptionSchema },
     ]),
     forwardRef(() => CustomersModule),
+    forwardRef(() => TasksModule),
     PlansModule,
     BinsModule,
     WalletsModule,

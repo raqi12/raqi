@@ -35,6 +35,9 @@ export class Subscription {
   @Prop({ type: String, default: null, index: true })
   driverId: string | null;
 
+  @Prop({ type: [String], default: [] })
+  collectionDates: string[];
+
   @Prop({
     type: String,
     required: true,

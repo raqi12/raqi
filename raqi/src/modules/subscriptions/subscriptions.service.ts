@@ -1,10 +1,17 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BinsService } from '../bins/bins.service';
 import { CustomersService } from '../customers/customers.service';
 import { DriversService } from '../drivers/drivers.service';
 import { PlansService } from '../plans/plans.service';
+import { TasksService } from '../tasks/tasks.service';
 import { WalletsService } from '../wallets/wallets.service';
 import { WalletTransactionsService } from '../wallets/wallet-transactions.service';
 import { SubscribePlanDto } from './dto/subscription.dto';
@@ -13,7 +20,10 @@ import {
   SubscriptionDocument,
   SubscriptionStatus,
 } from './schemas/subscription.schema';
-import { addDays } from './subscription.utils';
+import {
+  addDays,
+  normalizeCollectionDates,
+} from './subscription.utils';
 
 @Injectable()
 export class SubscriptionsService {
@@ -26,6 +36,8 @@ export class SubscriptionsService {
     private readonly walletTransactionsService: WalletTransactionsService,
     private readonly customersService: CustomersService,
     private readonly driversService: DriversService,
+    @Inject(forwardRef(() => TasksService))
+    private readonly tasksService: TasksService,
   ) {}
 
   private async resolveAddressLocation(
@@ -170,11 +182,15 @@ export class SubscriptionsService {
     });
   }
 
-  findForGeneration(areaId: string): Promise<SubscriptionDocument[]> {
+  findForGeneration(
+    areaId: string,
+    scheduledDate: string,
+  ): Promise<SubscriptionDocument[]> {
     return this.subscriptionModel
       .find({
         areaId,
         status: { $in: [SubscriptionStatus.Active, SubscriptionStatus.Requested] },
+        collectionDates: scheduledDate,
       })
       .exec();
   }
@@ -314,7 +330,17 @@ export class SubscriptionsService {
     }
 
     subscription.driverId = driverId;
-    return subscription.save();
+    await subscription.save();
+
+    await this.tasksService.ensureAssignedToDriver({
+      subscriptionId: String(subscription.id),
+      customerId: String(subscription.customerId),
+      areaId: String(subscription.areaId),
+      collectionDates: subscription.collectionDates ?? [],
+      driverId,
+    });
+
+    return subscription;
   }
 
   async subscribeWithWallet(
@@ -361,6 +387,15 @@ export class SubscriptionsService {
       input.addressId,
     );
 
+    const now = new Date();
+    const expiresAt = addDays(now, plan.durationDays);
+    const collectionDates = normalizeCollectionDates(
+      input.collectionDates,
+      plan.numberOfCollections,
+      now,
+      expiresAt,
+    );
+
     if (deductWallet) {
       const wallet = await this.walletsService.ensureWallet(customerId);
       if (wallet.balance < cost.total) {
@@ -388,7 +423,6 @@ export class SubscriptionsService {
         debitTransactionId = String(transaction.id);
       }
 
-      const now = new Date();
       const subscription = await this.subscriptionModel.create({
         customerId,
         planId: input.planId,
@@ -396,10 +430,11 @@ export class SubscriptionsService {
         addressId: input.addressId,
         cityId,
         areaId,
+        collectionDates,
         status: SubscriptionStatus.Active,
         paymentStatus: 'paid',
         autoRenew: false,
-        expiresAt: addDays(now, plan.durationDays),
+        expiresAt,
       });
 
       if (debitTransactionId) {
@@ -412,6 +447,14 @@ export class SubscriptionsService {
       if (input.binId) {
         await this.binsService.assign(input.binId, customerId, true);
       }
+
+      await this.tasksService.createForSubscription({
+        subscriptionId: String(subscription.id),
+        customerId,
+        areaId,
+        collectionDates,
+        driverId: null,
+      });
 
       return subscription;
     } catch (error) {

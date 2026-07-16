@@ -9,6 +9,9 @@ export class Driver {
   @Prop({ required: true, index: true })
   userId: string;
 
+  @Prop({ type: String, unique: true, sparse: true, index: true })
+  code: string | null;
+
   @Prop({ required: true })
   vehicleNumber: string;
 
@@ -17,6 +20,10 @@ export class Driver {
 
   @Prop({ required: true, index: true })
   areaId: string;
+
+  /** Admin-set rating 0–5 until a customer rating system exists. */
+  @Prop({ type: Number, default: null, min: 0, max: 5 })
+  rating: number | null;
 
   @Prop({
     type: String,

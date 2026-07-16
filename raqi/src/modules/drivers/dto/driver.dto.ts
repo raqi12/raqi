@@ -1,10 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsEmail,
   IsIn,
+  IsInt,
+  IsNumber,
   IsOptional,
   IsString,
+  Max,
+  Min,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateDriverDto {
@@ -50,6 +56,23 @@ export class UpdateDriverDto {
   @IsString()
   areaId?: string;
 
+  @ApiPropertyOptional({ example: 'DR-2045', description: 'Driver display / employee code' })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
+  @ApiPropertyOptional({
+    example: 4.9,
+    description: 'Driver rating 0–5 (null clears)',
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null && v !== undefined)
+  @IsNumber()
+  @Min(0)
+  @Max(5)
+  rating?: number | null;
+
   @ApiPropertyOptional({ enum: ['active', 'inactive'], example: 'active', description: 'Driver account status' })
   @IsOptional()
   @IsIn(['active', 'inactive'])
@@ -60,4 +83,21 @@ export class UpdateDriverStatusDto {
   @ApiProperty({ enum: ['active', 'inactive'], example: 'active', description: 'Driver account status' })
   @IsIn(['active', 'inactive'])
   status: 'active' | 'inactive';
+}
+
+export class DriverMonthlyStatsQueryDto {
+  @ApiPropertyOptional({ example: 2026, description: 'UTC year (defaults to current)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(2000)
+  year?: number;
+
+  @ApiPropertyOptional({ example: 7, description: 'UTC month 1–12 (defaults to current)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  month?: number;
 }

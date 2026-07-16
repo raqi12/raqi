@@ -109,6 +109,9 @@ export class DriverDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439012' })
   userId: string;
 
+  @ApiPropertyOptional({ example: 'DR-2045', nullable: true })
+  code?: string | null;
+
   @ApiProperty({ example: '5-12345' })
   vehicleNumber: string;
 
@@ -117,6 +120,160 @@ export class DriverDto {
 
   @ApiProperty({ example: '507f1f77bcf86cd799439014' })
   areaId: string;
+
+  @ApiPropertyOptional({ example: 4.9, nullable: true })
+  rating?: number | null;
+
+  @ApiProperty({ enum: ['active', 'inactive'], example: 'active' })
+  status: string;
+}
+
+export class DriverWeekStatsDto {
+  @ApiProperty({ example: 24, description: 'Total tasks scheduled this week' })
+  total: number;
+
+  @ApiProperty({ example: 18, description: 'Completed tasks this week' })
+  completed: number;
+}
+
+export class DriverProfileDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
+  id: string;
+
+  @ApiPropertyOptional({ example: 'DR-2045', nullable: true })
+  code?: string | null;
+
+  @ApiProperty({ example: 'أحمد محمد السالم' })
+  name: string;
+
+  @ApiPropertyOptional({ example: '+218912345678', nullable: true })
+  phone?: string | null;
+
+  @ApiPropertyOptional({ example: 4.9, nullable: true })
+  rating?: number | null;
+
+  @ApiProperty({ example: 156, description: 'Lifetime completed tasks' })
+  completedTasksTotal: number;
+
+  @ApiProperty({ type: DriverWeekStatsDto })
+  week: DriverWeekStatsDto;
+
+  @ApiProperty({ example: 'طرابلس-1234' })
+  vehicleNumber: string;
+}
+
+export class DriverMonthlyStatsDto {
+  @ApiProperty({ example: 2025 })
+  year: number;
+
+  @ApiProperty({ example: 10 })
+  month: number;
+
+  @ApiProperty({ example: 156 })
+  total: number;
+
+  @ApiProperty({ example: 149 })
+  completed: number;
+
+  @ApiProperty({ example: 7, description: 'Skipped / failed stops' })
+  skipped: number;
+
+  @ApiProperty({ example: 7, description: 'Alias of skipped for UI فشل' })
+  failed: number;
+
+  @ApiProperty({ example: 0 })
+  inProgress: number;
+
+  @ApiProperty({ example: 0 })
+  upcoming: number;
+
+  @ApiProperty({ example: 96, description: 'completed / total * 100' })
+  completionRate: number;
+
+  @ApiProperty({
+    example: 97,
+    description: 'completed / (completed + skipped) * 100',
+  })
+  commitmentRate: number;
+
+  @ApiProperty({
+    example: 184,
+    description: 'Sum of startedAt→completedAt durations in hours',
+  })
+  workHours: number;
+
+  @ApiPropertyOptional({
+    example: null,
+    nullable: true,
+    description: 'Not tracked yet (no GPS trip data)',
+  })
+  distanceKm?: number | null;
+
+  @ApiPropertyOptional({
+    example: null,
+    nullable: true,
+    description: 'Not tracked yet (no waste weight data)',
+  })
+  wasteTons?: number | null;
+
+  @ApiPropertyOptional({ example: 4.9, nullable: true })
+  rating?: number | null;
+
+  @ApiProperty({ type: () => DriverWeekDayCountDto, isArray: true })
+  weekDaily: DriverWeekDayCountDto[];
+
+  @ApiPropertyOptional({ type: () => DriverAchievementDto, nullable: true })
+  achievement?: DriverAchievementDto | null;
+}
+
+export class DriverWeekDayCountDto {
+  @ApiProperty({ example: 1, description: 'ISO weekday 1=Mon .. 7=Sun' })
+  day: number;
+
+  @ApiProperty({ example: 'ن' })
+  label: string;
+
+  @ApiProperty({ example: '2025-10-06' })
+  date: string;
+
+  @ApiProperty({ example: 7 })
+  count: number;
+}
+
+export class DriverAchievementDto {
+  @ApiProperty({ example: true })
+  unlocked: boolean;
+
+  @ApiProperty({ example: 'سائق متميز' })
+  title: string;
+
+  @ApiProperty({ example: 'حافظت على أداء استثنائي هذا الشهر. استمر!' })
+  message: string;
+}
+
+export class DriverMonthOptionDto {
+  @ApiProperty({ example: 2025 })
+  year: number;
+
+  @ApiProperty({ example: 10 })
+  month: number;
+}
+
+export class DriverVehicleDto {
+  @ApiProperty({ example: 'طرابلس-1234' })
+  vehicleNumber: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439013' })
+  cityId: string;
+
+  @ApiProperty({ example: 'طرابلس' })
+  cityName: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439014' })
+  areaId: string;
+
+  @ApiProperty({ example: 'حي الأندلس' })
+  areaName: string;
 
   @ApiProperty({ enum: ['active', 'inactive'], example: 'active' })
   status: string;
@@ -246,6 +403,13 @@ export class SubscriptionDto {
   @ApiPropertyOptional({ example: '507f1f77bcf86cd799439018' })
   driverId?: string;
 
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['2026-07-18', '2026-07-25', '2026-08-01', '2026-08-08'],
+    description: 'Scheduled collection dates (YYYY-MM-DD)',
+  })
+  collectionDates?: string[];
+
   @ApiProperty({
     enum: ['draft', 'requested', 'active', 'suspended', 'expired'],
     example: 'active',
@@ -333,10 +497,127 @@ export class TaskDto {
   scheduledDate: string;
 
   @ApiProperty({
-    enum: ['pending', 'in_progress', 'completed', 'skipped'],
-    example: 'pending',
+    enum: ['pending', 'assigned', 'in_progress', 'completed', 'skipped'],
+    example: 'assigned',
   })
   status: string;
+
+  @ApiPropertyOptional({
+    example: 'https://cdn.raqi.local/uploads/collection-proof.jpg',
+    description: 'Proof or problem photo URL',
+  })
+  photo?: string;
+
+  @ApiPropertyOptional({
+    example: 'تم التجميع بنجاح',
+    description: 'Driver note on completion',
+  })
+  note?: string;
+
+  @ApiPropertyOptional({
+    example: 'الحاوية غير موجودة في الموقع',
+    description: 'Reason when collection could not be completed',
+  })
+  skipReason?: string;
+
+  @ApiPropertyOptional({
+    example: '32.8872,13.1913',
+    description: 'GPS coordinates when a problem was reported',
+  })
+  skipLocation?: string;
+
+  @ApiPropertyOptional({ example: '2026-07-10T08:15:00.000Z' })
+  startedAt?: string;
+
+  @ApiPropertyOptional({ example: '2026-07-10T08:40:00.000Z' })
+  completedAt?: string;
+
+  @ApiPropertyOptional({ example: '2026-07-10T08:20:00.000Z' })
+  skippedAt?: string;
+}
+
+export class DriverTaskViewDto extends TaskDto {
+  @ApiProperty({
+    enum: ['upcoming', 'in_progress', 'completed', 'skipped'],
+    example: 'upcoming',
+    description:
+      'UI tab status: upcoming=قادمة (assigned), in_progress=جارية, completed=مكتملة, skipped=problem reported',
+  })
+  uiStatus: 'upcoming' | 'in_progress' | 'completed' | 'skipped';
+
+  @ApiProperty({
+    example: 'شارع البرج',
+    description: 'Street / stop title (address label)',
+  })
+  street: string;
+
+  @ApiProperty({
+    example: 'حي الأندلس',
+    description: 'Neighborhood / area name',
+  })
+  areaName: string;
+
+  @ApiPropertyOptional({
+    example: 'A-1848',
+    description: 'Bin code (صندوق)',
+    nullable: true,
+  })
+  binCode?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'الصندوق خلف المبنى',
+    description: 'Special instructions from address details',
+    nullable: true,
+  })
+  instructions?: string | null;
+
+  @ApiProperty({
+    example: '07:00',
+    description: 'Collection window start (HH:mm)',
+  })
+  timeWindowStart: string;
+
+  @ApiProperty({
+    example: '11:00',
+    description: 'Collection window end (HH:mm)',
+  })
+  timeWindowEnd: string;
+
+  @ApiPropertyOptional({
+    example: '507f1f77bcf86cd799439016',
+    description: 'Customer address ID',
+    nullable: true,
+  })
+  addressId?: string | null;
+
+  @ApiPropertyOptional({
+    example: '507f1f77bcf86cd799439017',
+    description: 'Bin ID',
+    nullable: true,
+  })
+  binId?: string | null;
+}
+
+export class DriverTodayTaskCountsDto {
+  @ApiProperty({ example: 4 })
+  all: number;
+
+  @ApiProperty({ example: 1, description: 'جارية (in_progress)' })
+  inProgress: number;
+
+  @ApiProperty({ example: 1, description: 'مكتملة (completed)' })
+  completed: number;
+
+  @ApiProperty({ example: 2, description: 'قادمة (assigned / upcoming)' })
+  upcoming: number;
+}
+
+export class DriverTodayTasksDto {
+  @ApiProperty({ type: DriverTaskViewDto, isArray: true })
+  tasks: DriverTaskViewDto[];
+
+  @ApiProperty({ type: DriverTodayTaskCountsDto })
+  counts: DriverTodayTaskCountsDto;
 }
 
 export class ComplaintDto {

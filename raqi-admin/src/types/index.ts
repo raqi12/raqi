@@ -184,6 +184,7 @@ export type Subscription = {
   cityId?: string;
   areaId?: string;
   driverId?: string;
+  collectionDates?: string[];
   paymentStatus?: 'paid' | 'unpaid';
   status?: string;
   autoRenew?: boolean;

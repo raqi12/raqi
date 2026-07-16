@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -22,13 +23,18 @@ import {
   ApiOkDataResponse,
   ApiStandardErrorResponses,
 } from '../../common/swagger/decorators';
-import { TaskDto } from '../../common/swagger/schemas/entity.schemas';
+import {
+  DriverTaskViewDto,
+  DriverTodayTasksDto,
+  TaskDto,
+} from '../../common/swagger/schemas/entity.schemas';
 import { CustomersService } from '../customers/customers.service';
 import { DriversService } from '../drivers/drivers.service';
 import { TasksService } from './tasks.service';
 import {
   AssignTaskDto,
   CompleteTaskDto,
+  DriverTodayTasksQueryDto,
   GenerateTasksDto,
   SkipTaskDto,
 } from './dto/task.dto';
@@ -51,11 +57,26 @@ export class AdminTasksController {
     return { data: await this.tasksService.findAll() };
   }
 
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get task by ID',
+    description: 'Returns a single collection task by its MongoDB ID.',
+  })
+  @ApiMongoIdParam('id', 'Task MongoDB ID')
+  @ApiOkDataResponse(TaskDto, 'Task details')
+  async get(@Param('id') id: string) {
+    const task = await this.tasksService.findById(id);
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+    return { data: task };
+  }
+
   @Post('generate')
   @ApiOperation({
     summary: 'Generate tasks for date and area',
     description:
-      'Creates pending collection tasks for active subscriptions in the given area on the specified date.',
+      'Creates pending collection tasks for active subscriptions in the given area whose collectionDates include the specified date. Skips dates that already have a task.',
   })
   @ApiBody({ type: GenerateTasksDto })
   @ApiOkDataResponse(TaskDto, 'Generated tasks', { isArray: true })
@@ -104,74 +125,123 @@ export class DriverTasksController {
     return String(driver.id);
   }
 
+  private async resolveOwnedTask(id: string, user?: AuthUser) {
+    const driverId = await this.resolveDriverId(user);
+    const task = await this.tasksService.findById(id);
+    if (!task || String(task.driverId) !== driverId) {
+      throw new NotFoundException('Task not found');
+    }
+    return { driverId, task };
+  }
+
   @Get('today')
   @ApiOperation({
-    summary: "List today's tasks",
-    description: 'Returns tasks assigned to the authenticated driver.',
+    summary: "Today's task schedule (جدول مهام اليوم)",
+    description:
+      'Returns enriched tasks for today with tab counts (الكل / جارية / مكتملة / قادمة). Optional status filter matches UI tabs: all, upcoming (assigned), in_progress, completed.',
   })
-  @ApiOkDataResponse(TaskDto, "Driver's task list", { isArray: true })
-  async today(@CurrentUser() user?: AuthUser) {
+  @ApiOkDataResponse(DriverTodayTasksDto, "Driver's today schedule with counts")
+  async today(
+    @Query() query: DriverTodayTasksQueryDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
     const driverId = await this.resolveDriverId(user);
-    return { data: await this.tasksService.findByDriver(driverId) };
+    return {
+      data: await this.tasksService.getDriverTodaySchedule(
+        driverId,
+        query.status ?? 'all',
+      ),
+    };
+  }
+
+  @Get('upcoming')
+  @ApiOperation({
+    summary: 'List future-dated tasks',
+    description:
+      'Returns enriched tasks assigned to the driver with scheduledDate after today (UTC), sorted ascending.',
+  })
+  @ApiOkDataResponse(DriverTaskViewDto, "Driver's upcoming tasks", {
+    isArray: true,
+  })
+  async upcoming(@CurrentUser() user?: AuthUser) {
+    const driverId = await this.resolveDriverId(user);
+    const today = this.tasksService.todayDateString();
+    const tasks = await this.tasksService.findByDriverUpcoming(driverId, today);
+    return { data: await this.tasksService.enrichTasks(tasks) };
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get task by ID' })
+  @ApiOperation({
+    summary: 'Get task details (التفاصيل)',
+    description:
+      'Returns enriched task details for the assigned driver (address, area, bin, time window, instructions).',
+  })
   @ApiMongoIdParam('id', 'Task MongoDB ID')
-  @ApiOkDataResponse(TaskDto, 'Task details')
-  async get(@Param('id') id: string) {
-    const task = await this.tasksService.findById(id);
-    if (!task) {
-      throw new NotFoundException('Task not found');
-    }
-    return { data: task };
+  @ApiOkDataResponse(DriverTaskViewDto, 'Task details')
+  async get(@Param('id') id: string, @CurrentUser() user?: AuthUser) {
+    const { task } = await this.resolveOwnedTask(id, user);
+    return { data: await this.tasksService.enrichTask(task) };
   }
 
   @Patch(':id/start')
   @ApiOperation({
-    summary: 'Start task',
-    description: 'Marks a task as in progress.',
+    summary: 'Start task (بدء المهمة)',
+    description:
+      'Marks an assigned task as in progress. Only the assigned driver may start it.',
   })
   @ApiMongoIdParam('id', 'Task MongoDB ID')
-  @ApiOkDataResponse(TaskDto, 'Task started')
-  async start(@Param('id') id: string) {
+  @ApiOkDataResponse(DriverTaskViewDto, 'Task started')
+  async start(@Param('id') id: string, @CurrentUser() user?: AuthUser) {
+    await this.resolveOwnedTask(id, user);
     const task = await this.tasksService.start(id);
     if (!task) {
       throw new NotFoundException('Task not found');
     }
-    return { data: task };
+    return { data: await this.tasksService.enrichTask(task) };
   }
 
   @Patch(':id/complete')
   @ApiOperation({
-    summary: 'Complete task',
-    description: 'Marks a task as completed with optional photo and note.',
+    summary: 'Confirm collection (تأكيد الجمع)',
+    description:
+      'Marks the task as completed. Optional photo and note. Only the assigned driver may complete it; status must be assigned or in_progress.',
   })
   @ApiMongoIdParam('id', 'Task MongoDB ID')
   @ApiBody({ type: CompleteTaskDto })
-  @ApiOkDataResponse(TaskDto, 'Task completed')
-  async complete(@Param('id') id: string, @Body() body: CompleteTaskDto) {
+  @ApiOkDataResponse(DriverTaskViewDto, 'Task completed')
+  async complete(
+    @Param('id') id: string,
+    @Body() body: CompleteTaskDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    await this.resolveOwnedTask(id, user);
     const task = await this.tasksService.complete(id, body);
     if (!task) {
       throw new NotFoundException('Task not found');
     }
-    return { data: task };
+    return { data: await this.tasksService.enrichTask(task) };
   }
 
   @Patch(':id/skip')
   @ApiOperation({
-    summary: 'Skip task',
-    description: 'Marks a task as skipped with reason and location.',
+    summary: 'Report problem / cannot collect',
+    description:
+      'Closes the stop as skipped when collection cannot be completed. Requires reason and GPS location; optional photo evidence.',
   })
   @ApiMongoIdParam('id', 'Task MongoDB ID')
   @ApiBody({ type: SkipTaskDto })
-  @ApiOkDataResponse(TaskDto, 'Task skipped')
-  async skip(@Param('id') id: string, @Body() body: SkipTaskDto) {
+  @ApiOkDataResponse(DriverTaskViewDto, 'Problem reported; task skipped')
+  async skip(
+    @Param('id') id: string,
+    @Body() body: SkipTaskDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    await this.resolveOwnedTask(id, user);
     const task = await this.tasksService.skip(id, body);
     if (!task) {
       throw new NotFoundException('Task not found');
     }
-    return { data: task };
+    return { data: await this.tasksService.enrichTask(task) };
   }
 }
 

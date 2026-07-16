@@ -226,6 +226,7 @@ export const AdminApi = {
       planId: string;
       binId?: string;
       addressId: string;
+      collectionDates: string[];
       deductWallet?: boolean;
     }) =>
       apiRequest<Subscription>('/admin/subscriptions/assign-plan', {

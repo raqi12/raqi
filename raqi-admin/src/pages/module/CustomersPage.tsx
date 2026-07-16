@@ -61,6 +61,7 @@ type CustomersPageProps = {
     planId: string;
     binId?: string;
     addressId: string;
+    collectionDates: string[];
     deductWallet?: boolean;
   }) => Promise<void>;
 };
@@ -137,7 +138,9 @@ export function CustomersPage({
     binId: '',
     addressId: '',
     deductWallet: false,
+    collectionDates: [] as string[],
   });
+  const [collectionDateDraft, setCollectionDateDraft] = useState('');
   const [saving, setSaving] = useState(false);
   const [assignCost, setAssignCost] = useState<SubscriptionCost | null>(null);
 
@@ -147,6 +150,11 @@ export function CustomersPage({
     () => bins.filter((bin) => bin.status === 'available'),
     [bins],
   );
+  const selectedPlan = useMemo(
+    () => plans.find((plan) => getId(plan) === assignForm.planId) ?? null,
+    [assignForm.planId, plans],
+  );
+  const requiredCollections = selectedPlan?.numberOfCollections ?? 0;
 
   const tableRows = useMemo(
     () =>
@@ -175,7 +183,14 @@ export function CustomersPage({
     // #endregion
     if (!selected) {
       setDetails(null);
-      setAssignForm({ planId: '', binId: '', addressId: '', deductWallet: false });
+      setAssignForm({
+        planId: '',
+        binId: '',
+        addressId: '',
+        deductWallet: false,
+        collectionDates: [],
+      });
+      setCollectionDateDraft('');
       setDepositAmount('');
       return;
     }
@@ -227,6 +242,12 @@ export function CustomersPage({
   async function submitAssignPlan(e: FormEvent) {
     e.preventDefault();
     if (!selected || !assignForm.planId || !assignForm.addressId) return;
+    if (
+      !requiredCollections ||
+      assignForm.collectionDates.length !== requiredCollections
+    ) {
+      return;
+    }
     setSaving(true);
     try {
       await onAssignPlan({
@@ -234,13 +255,41 @@ export function CustomersPage({
         planId: assignForm.planId,
         binId: assignForm.binId || undefined,
         addressId: assignForm.addressId,
+        collectionDates: [...assignForm.collectionDates].sort(),
         deductWallet: assignForm.deductWallet,
       });
-      setAssignForm({ planId: '', binId: '', addressId: '', deductWallet: false });
+      setAssignForm({
+        planId: '',
+        binId: '',
+        addressId: '',
+        deductWallet: false,
+        collectionDates: [],
+      });
+      setCollectionDateDraft('');
       await reloadDetails(getId(selected));
     } finally {
       setSaving(false);
     }
+  }
+
+  function addCollectionDate() {
+    if (!collectionDateDraft) return;
+    if (assignForm.collectionDates.includes(collectionDateDraft)) return;
+    if (requiredCollections && assignForm.collectionDates.length >= requiredCollections) {
+      return;
+    }
+    setAssignForm({
+      ...assignForm,
+      collectionDates: [...assignForm.collectionDates, collectionDateDraft].sort(),
+    });
+    setCollectionDateDraft('');
+  }
+
+  function removeCollectionDate(date: string) {
+    setAssignForm({
+      ...assignForm,
+      collectionDates: assignForm.collectionDates.filter((item) => item !== date),
+    });
   }
 
   const selectedCustomer = details?.customer ?? selected;
@@ -465,6 +514,14 @@ export function CustomersPage({
                               السائق: {driverNameById(drivers, users, subscription.driverId)}
                             </span>
                           </div>
+                          <div className="record-list__meta">
+                            <span>
+                              مواعيد الجمع:{' '}
+                              {subscription.collectionDates?.length
+                                ? subscription.collectionDates.join('، ')
+                                : '—'}
+                            </span>
+                          </div>
                         </li>
                       ))
                     : null}
@@ -477,7 +534,13 @@ export function CustomersPage({
                   <Select
                     label="الخطة"
                     value={assignForm.planId}
-                    onChange={(e) => setAssignForm({ ...assignForm, planId: e.target.value })}
+                    onChange={(e) =>
+                      setAssignForm({
+                        ...assignForm,
+                        planId: e.target.value,
+                        collectionDates: [],
+                      })
+                    }
                     required
                   >
                     <option value="">اختر الخطة</option>
@@ -485,7 +548,7 @@ export function CustomersPage({
                       .filter((plan) => plan.active !== false)
                       .map((plan) => (
                         <option key={getId(plan)} value={getId(plan)}>
-                          {plan.name} — {plan.price} د.ل
+                          {plan.name} — {plan.price} د.ل ({plan.numberOfCollections ?? 0} جمع)
                         </option>
                       ))}
                   </Select>
@@ -519,6 +582,54 @@ export function CustomersPage({
                       </option>
                     ))}
                   </Select>
+                  <div className="field">
+                    <label className="field__label">
+                      مواعيد الجمع
+                      {requiredCollections
+                        ? ` (${assignForm.collectionDates.length}/${requiredCollections})`
+                        : ''}
+                    </label>
+                    <div className="form-grid" style={{ alignItems: 'end' }}>
+                      <Input
+                        label="تاريخ"
+                        type="date"
+                        dir="ltr"
+                        value={collectionDateDraft}
+                        onChange={(e) => setCollectionDateDraft(e.target.value)}
+                        disabled={!assignForm.planId}
+                      />
+                      <Button
+                        type="button"
+                        disabled={
+                          !collectionDateDraft ||
+                          !assignForm.planId ||
+                          (requiredCollections > 0 &&
+                            assignForm.collectionDates.length >= requiredCollections)
+                        }
+                        onClick={addCollectionDate}
+                      >
+                        إضافة تاريخ
+                      </Button>
+                    </div>
+                    {assignForm.collectionDates.length > 0 ? (
+                      <ul className="record-list" style={{ marginTop: '0.75rem' }}>
+                        {assignForm.collectionDates.map((date) => (
+                          <li key={date} className="record-list__item">
+                            <div className="record-list__header">
+                              <strong dir="ltr">{date}</strong>
+                              <Button type="button" onClick={() => removeCollectionDate(date)}>
+                                حذف
+                              </Button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="field__hint">
+                        اختر عدد أيام يساوي عدد جمعات الخطة ({requiredCollections || '—'}).
+                      </p>
+                    )}
+                  </div>
                   {assignCost ? (
                     <p className="field__hint">
                       التكلفة: {formatMoney(assignCost.planPrice)} خطة
@@ -542,7 +653,9 @@ export function CustomersPage({
                       saving ||
                       detailsLoading ||
                       !assignForm.planId ||
-                      !assignForm.addressId
+                      !assignForm.addressId ||
+                      !requiredCollections ||
+                      assignForm.collectionDates.length !== requiredCollections
                     }
                   >
                     تعيين الاشتراك

@@ -61,3 +61,7 @@ export class Task {
 }
 
 export const TaskSchema = SchemaFactory.createForClass(Task);
+TaskSchema.index(
+  { subscriptionId: 1, scheduledDate: 1 },
+  { unique: true },
+);

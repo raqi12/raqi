@@ -1,11 +1,13 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AreasModule } from '../areas/areas.module';
 import { CitiesModule } from '../cities/cities.module';
+import { TasksModule } from '../tasks/tasks.module';
 import { UsersModule } from '../users/users.module';
-import { Driver, DriverSchema } from './schemas/driver.schema';
+import { DriverAccountController } from './driver-account.controller';
 import { DriversController } from './drivers.controller';
 import { DriversService } from './drivers.service';
+import { Driver, DriverSchema } from './schemas/driver.schema';
 
 @Module({
   imports: [
@@ -13,8 +15,9 @@ import { DriversService } from './drivers.service';
     UsersModule,
     CitiesModule,
     AreasModule,
+    forwardRef(() => TasksModule),
   ],
-  controllers: [DriversController],
+  controllers: [DriversController, DriverAccountController],
   providers: [DriversService],
   exports: [DriversService],
 })

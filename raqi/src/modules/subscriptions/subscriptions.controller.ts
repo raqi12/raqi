@@ -82,7 +82,7 @@ export class AdminSubscriptionsController {
   @ApiOperation({
     summary: 'Assign plan to customer',
     description:
-      'Assigns a plan and address to a customer. Bin is optional; when provided, bin fee is included in optional wallet deduction.',
+      'Assigns a plan and address to a customer with exact collectionDates (count must equal plan.numberOfCollections). Creates collection tasks upfront. Bin is optional; when provided, bin fee is included in optional wallet deduction.',
   })
   @ApiBody({ type: AdminAssignPlanDto })
   @ApiOkDataResponse(SubscriptionDto, 'Plan assigned and subscription created')
@@ -136,7 +136,7 @@ export class AdminSubscriptionsController {
   @ApiOperation({
     summary: 'Assign driver to subscription',
     description:
-      'Assigns a default driver to the subscription. Driver must be active and serve the same city and area as the subscription address.',
+      'Assigns a default driver to the subscription and attaches that driver to all open collection tasks. Driver must be active and serve the same city and area as the subscription address.',
   })
   @ApiMongoIdParam('id', 'Subscription MongoDB ID')
   @ApiBody({ type: AssignSubscriptionDriverDto })
@@ -226,7 +226,7 @@ export class CustomerSubscriptionsController {
   @ApiOperation({
     summary: 'Subscribe with wallet',
     description:
-      'Creates an active subscription using plan and address. Bin is optional; when provided, bin fee is added to the wallet debit.',
+      'Creates an active subscription using plan, address, and collectionDates (count must equal plan.numberOfCollections). Creates collection tasks upfront. Bin is optional; when provided, bin fee is added to the wallet debit.',
   })
   @ApiBody({ type: SubscribePlanDto })
   @ApiOkDataResponse(SubscriptionDto, 'Subscription created via wallet payment')

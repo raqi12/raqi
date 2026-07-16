@@ -1,7 +1,13 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PlansService } from '../plans/plans.service';
+import { TasksService } from '../tasks/tasks.service';
 import { WalletsService } from '../wallets/wallets.service';
 import { WalletTransactionsService } from '../wallets/wallet-transactions.service';
 import {
@@ -9,7 +15,7 @@ import {
   SubscriptionDocument,
   SubscriptionStatus,
 } from './schemas/subscription.schema';
-import { addDays, isSameUtcDay } from './subscription.utils';
+import { addDays, isSameUtcDay, shiftDateString } from './subscription.utils';
 
 export type RenewalOutcome = 'renewed' | 'grace' | 'suspended' | 'skipped';
 
@@ -29,6 +35,8 @@ export class SubscriptionRenewalService {
     private readonly plansService: PlansService,
     private readonly walletsService: WalletsService,
     private readonly walletTransactionsService: WalletTransactionsService,
+    @Inject(forwardRef(() => TasksService))
+    private readonly tasksService: TasksService,
   ) {}
 
   async processDueRenewals(): Promise<RenewalRunSummary> {
@@ -95,17 +103,33 @@ export class SubscriptionRenewalService {
         description: `تجديد اشتراك تلقائي - ${plan.name}`,
       });
 
+      const previousDates = subscription.collectionDates ?? [];
+      const nextDates = previousDates.map((date) =>
+        shiftDateString(date, plan.durationDays),
+      );
+
       subscription.expiresAt = addDays(subscription.expiresAt, plan.durationDays);
       subscription.renewedAt = new Date();
       subscription.renewalGraceUntil = null;
       subscription.paymentStatus = 'paid';
       subscription.status = SubscriptionStatus.Active;
+      subscription.collectionDates = nextDates;
       await subscription.save();
 
       await this.walletTransactionsService.updateReferenceId(
         String(transaction.id),
         String(subscription.id),
       );
+
+      if (nextDates.length > 0 && subscription.areaId) {
+        await this.tasksService.createForSubscription({
+          subscriptionId: String(subscription.id),
+          customerId: String(subscription.customerId),
+          areaId: String(subscription.areaId),
+          collectionDates: nextDates,
+          driverId: subscription.driverId,
+        });
+      }
 
       return 'renewed';
     } catch (error) {

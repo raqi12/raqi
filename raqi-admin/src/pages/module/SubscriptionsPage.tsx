@@ -728,6 +728,14 @@ export function SubscriptionsPage({
                     </div>
                   </>
                 ) : null}
+                <div className="info-list__row">
+                  <dt>مواعيد الجمع</dt>
+                  <dd dir="ltr">
+                    {selected.collectionDates?.length
+                      ? selected.collectionDates.join(', ')
+                      : '—'}
+                  </dd>
+                </div>
               </dl>
             </section>
 

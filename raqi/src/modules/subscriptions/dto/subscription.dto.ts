@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsIn, IsMongoId, IsOptional, IsString } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsIn,
+  IsMongoId,
+  IsOptional,
+  IsString,
+  Matches,
+} from 'class-validator';
 
 export class CreateSubscriptionDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439011', description: 'Customer MongoDB ID' })
@@ -50,6 +59,20 @@ export class SubscribePlanDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439013', description: 'Customer address MongoDB ID' })
   @IsMongoId()
   addressId: string;
+
+  @ApiProperty({
+    type: [String],
+    example: ['2026-07-18', '2026-07-25', '2026-08-01', '2026-08-08'],
+    description:
+      'Exact collection dates (YYYY-MM-DD). Count must equal plan.numberOfCollections.',
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    each: true,
+    message: 'each collectionDate must be YYYY-MM-DD',
+  })
+  collectionDates: string[];
 }
 
 export class AdminAssignPlanDto extends SubscribePlanDto {
