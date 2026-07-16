@@ -11,14 +11,19 @@ export class CreatePaymentDto {
   @IsString()
   subscriptionId?: string;
 
-  @ApiProperty({ example: 150, minimum: 0, description: 'Payment amount in LYD' })
+  @ApiProperty({ example: 150, minimum: 0.01, description: 'Payment amount in LYD' })
   @IsNumber()
-  @Min(0)
+  @Min(0.01)
   amount: number;
 
   @ApiProperty({ enum: ['cash', 'online'], example: 'cash', description: 'Payment method' })
   @IsIn(['cash', 'online'])
   method: 'cash' | 'online';
+
+  @ApiPropertyOptional({ example: 'تحصيل اشتراك نقداً' })
+  @IsOptional()
+  @IsString()
+  description?: string;
 }
 
 export class CreateCustomerPaymentDto {
@@ -27,8 +32,15 @@ export class CreateCustomerPaymentDto {
   @IsString()
   subscriptionId?: string;
 
-  @ApiProperty({ example: 150, minimum: 0, description: 'Payment amount in LYD' })
+  @ApiProperty({ example: 150, minimum: 0.01, description: 'Payment amount in LYD' })
   @IsNumber()
-  @Min(0)
+  @Min(0.01)
   amount: number;
+}
+
+export class ConfirmPaymentDto {
+  @ApiPropertyOptional({ example: 'تم تأكيد الدفع من البوابة' })
+  @IsOptional()
+  @IsString()
+  description?: string;
 }

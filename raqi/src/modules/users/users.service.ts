@@ -108,6 +108,14 @@ export class UsersService implements OnModuleInit {
     return this.userModel.find({ role: { $ne: Role.Customer } }).exec();
   }
 
+  findAll(): Promise<UserDocument[]> {
+    return this.userModel.find().exec();
+  }
+
+  findByRole(role: Role): Promise<UserDocument[]> {
+    return this.userModel.find({ role, status: 'active' }).exec();
+  }
+
   findByIds(ids: string[]): Promise<UserDocument[]> {
     if (!ids.length) {
       return Promise.resolve([]);

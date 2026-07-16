@@ -7,6 +7,8 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PlansService } from '../plans/plans.service';
+import { CustomersService } from '../customers/customers.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { TasksService } from '../tasks/tasks.service';
 import { WalletsService } from '../wallets/wallets.service';
 import { WalletTransactionsService } from '../wallets/wallet-transactions.service';
@@ -37,7 +39,25 @@ export class SubscriptionRenewalService {
     private readonly walletTransactionsService: WalletTransactionsService,
     @Inject(forwardRef(() => TasksService))
     private readonly tasksService: TasksService,
+    private readonly customersService: CustomersService,
+    private readonly notificationsService: NotificationsService,
   ) {}
+
+  private async notifyCustomer(
+    customerId: string,
+    code: string,
+    subscriptionId: string,
+  ) {
+    const customer = await this.customersService.findById(customerId);
+    if (!customer?.userId) return;
+    void this.notificationsService
+      .notifyFromTemplate(code, [String(customer.userId)], {}, {
+        referenceType: 'subscription',
+        referenceId: subscriptionId,
+        actionUrl: `/subscriptions/${subscriptionId}`,
+      })
+      .catch(() => undefined);
+  }
 
   async processDueRenewals(): Promise<RenewalRunSummary> {
     const due = await this.subscriptionModel
@@ -131,6 +151,12 @@ export class SubscriptionRenewalService {
         });
       }
 
+      await this.notifyCustomer(
+        String(subscription.customerId),
+        'SUBSCRIPTION_ACTIVATED',
+        String(subscription.id),
+      );
+
       return 'renewed';
     } catch (error) {
       if (!this.isInsufficientBalanceError(error)) {
@@ -147,6 +173,11 @@ export class SubscriptionRenewalService {
       if (now >= subscription.renewalGraceUntil) {
         subscription.status = SubscriptionStatus.Suspended;
         await subscription.save();
+        await this.notifyCustomer(
+          String(subscription.customerId),
+          'SUBSCRIPTION_SUSPENDED',
+          String(subscription.id),
+        );
         return 'suspended';
       }
 

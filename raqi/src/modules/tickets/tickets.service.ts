@@ -7,6 +7,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Role } from '../../common/roles.enum';
 import type { AuthUser } from '../../common/auth-user.interface';
+import { NotificationsService } from '../notifications/notifications.service';
+import { UsersService } from '../users/users.service';
 import {
   TicketCounter,
   TicketCounterDocument,
@@ -30,6 +32,8 @@ export class TicketsService {
     private readonly ticketModel: Model<TicketDocument>,
     @InjectModel(TicketCounter.name)
     private readonly counterModel: Model<TicketCounterDocument>,
+    private readonly usersService: UsersService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async generateTicketNumber(): Promise<string> {
@@ -60,7 +64,7 @@ export class TicketsService {
   }): Promise<TicketDocument> {
     const now = new Date();
     const ticketNumber = await this.generateTicketNumber();
-    return this.ticketModel.create({
+    const ticket = await this.ticketModel.create({
       ticketNumber,
       userId: input.userId,
       subject: input.subject,
@@ -71,6 +75,30 @@ export class TicketsService {
       closedAt: null,
       lastMessageAt: now,
     });
+
+    const admins = await this.usersService.findByRole(Role.Admin);
+    const adminIds = admins
+      .map((admin) => String(admin.id))
+      .filter((id) => id !== input.userId);
+    if (adminIds.length) {
+      void this.notificationsService
+        .notifyFromTemplate(
+          'TICKET_CREATED',
+          adminIds,
+          {
+            ticketNumber: ticket.ticketNumber,
+            subject: ticket.subject,
+          },
+          {
+            referenceType: 'ticket',
+            referenceId: String(ticket.id),
+            actionUrl: `/tickets/${ticket.id}`,
+          },
+        )
+        .catch(() => undefined);
+    }
+
+    return ticket;
   }
 
   findAll(filters: TicketListFilters = {}): Promise<TicketDocument[]> {
@@ -150,6 +178,41 @@ export class TicketsService {
     if (!updated) {
       throw new NotFoundException('Ticket not found');
     }
+
+    if (
+      patch.assigneeId !== undefined &&
+      patch.assigneeId &&
+      patch.assigneeId !== ticket.assigneeId
+    ) {
+      void this.notificationsService
+        .notifyFromTemplate(
+          'TICKET_ASSIGNED',
+          [patch.assigneeId],
+          { ticketNumber: updated.ticketNumber },
+          {
+            referenceType: 'ticket',
+            referenceId: String(updated.id),
+            actionUrl: `/tickets/${updated.id}`,
+          },
+        )
+        .catch(() => undefined);
+    }
+
+    if (patch.status === 'closed' && ticket.status !== 'closed') {
+      void this.notificationsService
+        .notifyFromTemplate(
+          'TICKET_CLOSED',
+          [String(updated.userId)],
+          { ticketNumber: updated.ticketNumber },
+          {
+            referenceType: 'ticket',
+            referenceId: String(updated.id),
+            actionUrl: `/tickets/${updated.id}`,
+          },
+        )
+        .catch(() => undefined);
+    }
+
     return updated;
   }
 

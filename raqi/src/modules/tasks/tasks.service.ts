@@ -10,6 +10,7 @@ import { AreasService } from '../areas/areas.service';
 import { BinsService } from '../bins/bins.service';
 import { CustomersService } from '../customers/customers.service';
 import { DriversService } from '../drivers/drivers.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { SupportSettingsService } from '../support/support-settings.service';
 import { DEFAULT_WORKING_HOURS } from '../support/support.defaults';
@@ -120,6 +121,7 @@ export class TasksService {
     private readonly customersService: CustomersService,
     private readonly binsService: BinsService,
     private readonly supportSettingsService: SupportSettingsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   findAll(): Promise<TaskDocument[]> {
@@ -606,13 +608,30 @@ export class TasksService {
       );
     }
 
-    return this.taskModel
+    const updated = await this.taskModel
       .findByIdAndUpdate(
         id,
         { driverId, status: TaskStatus.Assigned },
         { new: true },
       )
       .exec();
+
+    if (updated && driver.userId) {
+      void this.notificationsService
+        .notifyFromTemplate(
+          'TASK_ASSIGNED',
+          [String(driver.userId)],
+          { scheduledDate: String(updated.scheduledDate) },
+          {
+            referenceType: 'task',
+            referenceId: String(updated.id),
+            actionUrl: `/tasks/${updated.id}`,
+          },
+        )
+        .catch(() => undefined);
+    }
+
+    return updated;
   }
 
   start(id: string): Promise<TaskDocument | null> {
@@ -623,8 +642,8 @@ export class TasksService {
     });
   }
 
-  complete(id: string, body: CompleteTaskDto): Promise<TaskDocument | null> {
-    return this.updateWithTransition(id, {
+  async complete(id: string, body: CompleteTaskDto): Promise<TaskDocument | null> {
+    const updated = await this.updateWithTransition(id, {
       allowed: [TaskStatus.Assigned, TaskStatus.InProgress],
       action: 'complete',
       update: {
@@ -634,13 +653,21 @@ export class TasksService {
         completedAt: new Date(),
       },
     });
+    if (updated) {
+      await this.notifyCustomerForTask(
+        updated,
+        'TASK_COMPLETED',
+        { scheduledDate: String(updated.scheduledDate) },
+      );
+    }
+    return updated;
   }
 
-  skip(id: string, body: SkipTaskDto): Promise<TaskDocument | null> {
+  async skip(id: string, body: SkipTaskDto): Promise<TaskDocument | null> {
     if (!body.reason || !body.location) {
       throw new BadRequestException('Report problem requires reason and location');
     }
-    return this.updateWithTransition(id, {
+    const updated = await this.updateWithTransition(id, {
       allowed: [TaskStatus.Assigned, TaskStatus.InProgress],
       action: 'report problem',
       update: {
@@ -651,10 +678,33 @@ export class TasksService {
         skippedAt: new Date(),
       },
     });
+    if (updated) {
+      await this.notifyCustomerForTask(updated, 'TASK_SKIPPED', {
+        scheduledDate: String(updated.scheduledDate),
+        reason: body.reason,
+      });
+    }
+    return updated;
   }
 
   todayDateString(): string {
     return toUtcDateString(new Date());
+  }
+
+  private async notifyCustomerForTask(
+    task: TaskDocument,
+    code: string,
+    variables: Record<string, string>,
+  ) {
+    const customer = await this.customersService.findById(String(task.customerId));
+    if (!customer?.userId) return;
+    void this.notificationsService
+      .notifyFromTemplate(code, [String(customer.userId)], variables, {
+        referenceType: 'task',
+        referenceId: String(task.id),
+        actionUrl: `/tasks/${task.id}`,
+      })
+      .catch(() => undefined);
   }
 
   private async resolveTimeWindow(): Promise<{

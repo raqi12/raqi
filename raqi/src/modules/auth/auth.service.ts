@@ -10,6 +10,7 @@ import { AuthUser } from '../../common/auth-user.interface';
 import { Role } from '../../common/roles.enum';
 import { UsersService } from '../users/users.service';
 import { CustomersService } from '../customers/customers.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { WalletsService } from '../wallets/wallets.service';
 import {
@@ -39,6 +40,7 @@ export class AuthService {
     private readonly otpService: OtpService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async register(body: RegisterDto) {
@@ -108,6 +110,13 @@ export class AuthService {
       details: payload.addressDetails,
     });
     await this.walletsService.ensureWallet(String(customer.id));
+
+    void this.notificationsService
+      .notifyFromTemplate('USER_REGISTERED', [String(user.id)], {}, {
+        referenceType: 'user',
+        referenceId: String(user.id),
+      })
+      .catch(() => undefined);
 
     return this.issueAuthResponse(
       user,
@@ -210,6 +219,13 @@ export class AuthService {
         phone,
         'reset_password',
       );
+      void this.notificationsService
+        .notifyFromTemplate('PASSWORD_RESET', [String(user.id)], {}, {
+          referenceType: 'user',
+          referenceId: String(user.id),
+          category: 'security',
+        })
+        .catch(() => undefined);
       return response;
     }
 

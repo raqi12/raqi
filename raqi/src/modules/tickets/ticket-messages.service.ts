@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { Role } from '../../common/roles.enum';
+import { NotificationsService } from '../notifications/notifications.service';
+import { UsersService } from '../users/users.service';
 import {
   TicketMessage,
   TicketMessageDocument,
@@ -22,6 +25,8 @@ export class TicketMessagesService {
     @InjectModel(TicketMessage.name)
     private readonly messageModel: Model<TicketMessageDocument>,
     private readonly ticketsService: TicketsService,
+    private readonly notificationsService: NotificationsService,
+    private readonly usersService: UsersService,
   ) {}
 
   create(input: {
@@ -74,6 +79,32 @@ export class TicketMessagesService {
       ticket,
       input.senderRole,
     );
+
+    let recipientIds: string[] = [];
+    if (input.senderRole === 'admin') {
+      recipientIds = [String(ticket.userId)];
+    } else if (ticket.assigneeId) {
+      recipientIds = [String(ticket.assigneeId)];
+    } else {
+      const admins = await this.usersService.findByRole(Role.Admin);
+      recipientIds = admins.map((admin) => String(admin.id));
+    }
+    recipientIds = recipientIds.filter((id) => id && id !== input.senderId);
+    if (recipientIds.length) {
+      void this.notificationsService
+        .notifyFromTemplate(
+          'TICKET_REPLIED',
+          recipientIds,
+          { ticketNumber: ticket.ticketNumber },
+          {
+            referenceType: 'ticket',
+            referenceId: String(ticket.id),
+            actionUrl: `/tickets/${ticket.id}`,
+          },
+        )
+        .catch(() => undefined);
+    }
+
     return { message, ticket: updatedTicket };
   }
 

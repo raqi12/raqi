@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { BinsModule } from '../bins/bins.module';
 import { CustomersModule } from '../customers/customers.module';
 import { DriversModule } from '../drivers/drivers.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { PlansModule } from '../plans/plans.module';
 import { TasksModule } from '../tasks/tasks.module';
 import { WalletsModule } from '../wallets/wallets.module';
@@ -29,6 +30,7 @@ import { SubscriptionsService } from './subscriptions.service';
     BinsModule,
     WalletsModule,
     DriversModule,
+    NotificationsModule,
   ],
   controllers: [
     AdminSubscriptionsController,

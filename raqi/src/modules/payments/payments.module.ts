@@ -1,6 +1,9 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CustomersModule } from '../customers/customers.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
+import { WalletsModule } from '../wallets/wallets.module';
 import { Payment, PaymentSchema } from './schemas/payment.schema';
 import {
   AdminPaymentsController,
@@ -12,6 +15,9 @@ import { PaymentsService } from './payments.service';
   imports: [
     MongooseModule.forFeature([{ name: Payment.name, schema: PaymentSchema }]),
     forwardRef(() => CustomersModule),
+    forwardRef(() => SubscriptionsModule),
+    WalletsModule,
+    NotificationsModule,
   ],
   controllers: [AdminPaymentsController, CustomerPaymentsController],
   providers: [PaymentsService],

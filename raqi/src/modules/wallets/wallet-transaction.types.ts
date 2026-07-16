@@ -2,6 +2,7 @@ export const WALLET_TRANSACTION_TYPES = [
   'deposit',
   'admin_credit',
   'subscription_payment',
+  'payment',
   'refund',
 ] as const;
 
@@ -15,6 +16,7 @@ export type WalletTransactionDirection =
 export const WALLET_TRANSACTION_REFERENCE_TYPES = [
   'deposit_request',
   'subscription',
+  'payment',
   'manual',
 ] as const;
 

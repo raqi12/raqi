@@ -25,3 +25,5 @@ lerna-debug.log*
 
 # tests
 /test-results
+secrets/
+*firebase-adminsdk*.json

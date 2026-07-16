@@ -10,6 +10,7 @@ import { Model } from 'mongoose';
 import { BinsService } from '../bins/bins.service';
 import { CustomersService } from '../customers/customers.service';
 import { DriversService } from '../drivers/drivers.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PlansService } from '../plans/plans.service';
 import { TasksService } from '../tasks/tasks.service';
 import { WalletsService } from '../wallets/wallets.service';
@@ -38,7 +39,25 @@ export class SubscriptionsService {
     private readonly driversService: DriversService,
     @Inject(forwardRef(() => TasksService))
     private readonly tasksService: TasksService,
+    private readonly notificationsService: NotificationsService,
   ) {}
+
+  private async notifyCustomer(
+    customerId: string,
+    code: string,
+    variables: Record<string, string> = {},
+    extras?: { referenceId?: string; actionUrl?: string },
+  ) {
+    const customer = await this.customersService.findById(customerId);
+    if (!customer?.userId) return;
+    void this.notificationsService
+      .notifyFromTemplate(code, [String(customer.userId)], variables, {
+        referenceType: 'subscription',
+        referenceId: extras?.referenceId ?? null,
+        actionUrl: extras?.actionUrl ?? null,
+      })
+      .catch(() => undefined);
+  }
 
   private async resolveAddressLocation(
     customerId: string,
@@ -84,6 +103,15 @@ export class SubscriptionsService {
 
   findById(id: string): Promise<SubscriptionDocument | null> {
     return this.subscriptionModel.findById(id).exec();
+  }
+
+  async markPaymentPaid(subscriptionId: string): Promise<SubscriptionDocument> {
+    const subscription = await this.subscriptionModel.findById(subscriptionId).exec();
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+    subscription.paymentStatus = 'paid';
+    return subscription.save();
   }
 
   findCurrentForCustomer(
@@ -222,17 +250,39 @@ export class SubscriptionsService {
         subscription.expiresAt = addDays(new Date(), plan.durationDays);
       }
     }
-    return subscription.save();
+    const saved = await subscription.save();
+    await this.notifyCustomer(
+      String(saved.customerId),
+      'SUBSCRIPTION_ACTIVATED',
+      {},
+      {
+        referenceId: String(saved.id),
+        actionUrl: `/subscriptions/${saved.id}`,
+      },
+    );
+    return saved;
   }
 
-  setStatus(
+  async setStatus(
     id: string,
     status: SubscriptionStatus,
     extra: Partial<Subscription> = {},
   ): Promise<SubscriptionDocument | null> {
-    return this.subscriptionModel
+    const updated = await this.subscriptionModel
       .findByIdAndUpdate(id, { status, ...extra }, { new: true })
       .exec();
+    if (updated && status === SubscriptionStatus.Suspended) {
+      await this.notifyCustomer(
+        String(updated.customerId),
+        'SUBSCRIPTION_SUSPENDED',
+        {},
+        {
+          referenceId: String(updated.id),
+          actionUrl: `/subscriptions/${updated.id}`,
+        },
+      );
+    }
+    return updated;
   }
 
   async update(
@@ -339,6 +389,31 @@ export class SubscriptionsService {
       collectionDates: subscription.collectionDates ?? [],
       driverId,
     });
+
+    await this.notifyCustomer(
+      String(subscription.customerId),
+      'DRIVER_ASSIGNED',
+      {},
+      {
+        referenceId: String(subscription.id),
+        actionUrl: `/subscriptions/${subscription.id}`,
+      },
+    );
+
+    if (driver.userId) {
+      void this.notificationsService
+        .notifyFromTemplate(
+          'DRIVER_ASSIGNED',
+          [String(driver.userId)],
+          {},
+          {
+            referenceType: 'subscription',
+            referenceId: String(subscription.id),
+            actionUrl: `/subscriptions/${subscription.id}`,
+          },
+        )
+        .catch(() => undefined);
+    }
 
     return subscription;
   }

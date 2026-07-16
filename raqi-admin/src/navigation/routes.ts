@@ -19,6 +19,8 @@ export const ROUTE_PATHS: Record<SidebarTab, string> = {
   complaints: '/complaints',
   tickets: '/tickets',
   support: '/support',
+  notifications: '/notifications',
+  'send-notification': '/notifications/send',
 };
 
 const pathToTab = new Map(Object.entries(ROUTE_PATHS).map(([tab, path]) => [path, tab as SidebarTab]));
@@ -27,6 +29,12 @@ export function tabFromPathname(pathname: string): SidebarTab {
   const normalized = pathname.replace(/\/+$/, '') || '/overview';
   if (normalized === '/' || normalized === '') {
     return 'overview';
+  }
+  if (normalized.startsWith('/notifications/send')) {
+    return 'send-notification';
+  }
+  if (normalized.startsWith('/notifications')) {
+    return 'notifications';
   }
   return pathToTab.get(normalized) ?? 'overview';
 }
@@ -38,6 +46,8 @@ const TAB_NAV_GROUPS: Record<SidebarTab, string> = {
   tasks: 'العمليات',
   complaints: 'العمليات',
   tickets: 'العمليات',
+  notifications: 'العمليات',
+  'send-notification': 'العمليات',
   support: 'العمليات',
   users: 'الموارد',
   drivers: 'الموارد',

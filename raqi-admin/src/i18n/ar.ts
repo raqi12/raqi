@@ -15,6 +15,8 @@ export const TAB_LABELS = {
   complaints: 'الشكاوى',
   tickets: 'تذاكر الدعم',
   support: 'صفحة الدعم',
+  notifications: 'الإشعارات',
+  'send-notification': 'إرسال إشعار',
 } as const;
 
 export const COMMON = {

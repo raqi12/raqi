@@ -197,10 +197,15 @@ export type Payment = {
   _id?: string;
   id?: string;
   customerId?: string;
-  subscriptionId?: string;
+  subscriptionId?: string | null;
   amount?: number;
   method?: 'cash' | 'online';
-  status?: string;
+  status?: 'pending' | 'pending_gateway' | 'paid' | 'failed' | string;
+  walletTransactionId?: string | null;
+  recordedBy?: string | null;
+  description?: string | null;
+  paidAt?: string | null;
+  createdAt?: string;
 };
 
 export type Complaint = {
@@ -325,3 +330,132 @@ export type SupportPage = {
     lastUpdate: string;
   };
 };
+
+export type AppNotification = {
+  _id?: string;
+  id?: string;
+  userId?: string;
+  title?: string;
+  body?: string;
+  image?: string | null;
+  type?: string;
+  category?: string;
+  priority?: string;
+  targetType?: string;
+  targetId?: string | null;
+  referenceType?: string | null;
+  referenceId?: string | null;
+  isRead?: boolean;
+  isSent?: boolean;
+  sentAt?: string | null;
+  readAt?: string | null;
+  actionUrl?: string | null;
+  scheduledNotificationId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type NotificationList = {
+  items: AppNotification[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type NotificationLog = {
+  _id?: string;
+  id?: string;
+  notificationId?: string;
+  userId?: string;
+  channel?: 'in_app' | 'push';
+  status?: string;
+  errorMessage?: string | null;
+  deliveredAt?: string | null;
+  openedAt?: string | null;
+  createdAt?: string;
+};
+
+export type NotificationTemplate = {
+  _id?: string;
+  id?: string;
+  name?: string;
+  code?: string;
+  titleTemplate?: string;
+  bodyTemplate?: string;
+  variables?: string[];
+  type?: string;
+  category?: string;
+  isActive?: boolean;
+};
+
+export type ScheduledNotification = {
+  _id?: string;
+  id?: string;
+  title?: string;
+  body?: string;
+  image?: string | null;
+  type?: string;
+  category?: string;
+  priority?: string;
+  audience?: string;
+  userId?: string | null;
+  userIds?: string[];
+  role?: string | null;
+  referenceType?: string | null;
+  referenceId?: string | null;
+  actionUrl?: string | null;
+  scheduledAt?: string;
+  status?: 'draft' | 'scheduled' | 'sent' | 'cancelled';
+  createdBy?: string;
+  createdAt?: string;
+};
+
+export type NotificationPreference = {
+  _id?: string;
+  id?: string;
+  userId?: string;
+  enabled?: boolean;
+  pushEnabled?: boolean;
+  emailEnabled?: boolean;
+  categories?: Array<{
+    category: string;
+    inApp: boolean;
+    push: boolean;
+    email: boolean;
+  }>;
+};
+
+export type NotificationAnalytics = {
+  totalSent: number;
+  totalDelivered: number;
+  totalOpened: number;
+  failed: number;
+  deliveryRate: number;
+  openRate: number;
+  series: Array<{ date: string; sent: number; delivered: number; opened: number }>;
+  firebaseEnabled: boolean;
+};
+
+export type SendNotificationBody = {
+  title: string;
+  body: string;
+  image?: string;
+  type?: string;
+  category?: string;
+  priority?: string;
+  audience?: 'user' | 'users' | 'role' | 'roles' | 'all';
+  userId?: string;
+  userIds?: string[];
+  role?: string;
+  roles?: string[];
+  referenceType?: string;
+  referenceId?: string;
+  actionUrl?: string;
+};
+
+export type ScheduleNotificationBody = SendNotificationBody & {
+  scheduledAt: string;
+  status?: 'draft' | 'scheduled';
+};
+

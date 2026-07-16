@@ -123,7 +123,7 @@ export class CustomerWalletController {
   @ApiOptionalQuery('page', 'Page number (1-based)', { type: 'number', example: 1 })
   @ApiOptionalQuery('limit', 'Items per page (max 100)', { type: 'number', example: 20 })
   @ApiOptionalQuery('type', 'Filter by transaction type', {
-    enum: ['deposit', 'admin_credit', 'subscription_payment', 'refund'],
+    enum: ['deposit', 'admin_credit', 'subscription_payment', 'payment', 'refund'],
     example: 'deposit',
   })
   @ApiOkDataResponse(WalletTransactionListDto, 'Wallet transaction list')

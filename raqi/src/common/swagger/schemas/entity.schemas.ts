@@ -475,6 +475,15 @@ export class PaymentDto {
     example: 'paid',
   })
   status: string;
+
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439014' })
+  walletTransactionId?: string;
+
+  @ApiPropertyOptional({ example: 'دفعة نقدية' })
+  description?: string;
+
+  @ApiPropertyOptional({ example: '2026-07-16T10:00:00.000Z' })
+  paidAt?: string;
 }
 
 export class TaskDto {
@@ -740,8 +749,20 @@ export class NotificationDto {
   @ApiProperty({ example: 'تم تفعيل اشتراكك بنجاح' })
   body: string;
 
+  @ApiPropertyOptional({ example: 'subscription' })
+  type?: string;
+
+  @ApiPropertyOptional({ example: 'billing' })
+  category?: string;
+
+  @ApiPropertyOptional({ example: 'medium' })
+  priority?: string;
+
   @ApiProperty({ example: false })
   isRead: boolean;
+
+  @ApiPropertyOptional({ example: '/subscriptions/123' })
+  actionUrl?: string;
 }
 
 export class WalletDto {
@@ -771,7 +792,7 @@ export class WalletTransactionDto {
   customerId: string;
 
   @ApiProperty({
-    enum: ['deposit', 'admin_credit', 'subscription_payment', 'refund'],
+    enum: ['deposit', 'admin_credit', 'subscription_payment', 'payment', 'refund'],
     example: 'deposit',
   })
   type: string;
@@ -789,7 +810,7 @@ export class WalletTransactionDto {
   balanceAfter: number;
 
   @ApiPropertyOptional({
-    enum: ['deposit_request', 'subscription', 'manual'],
+    enum: ['deposit_request', 'subscription', 'payment', 'manual'],
     example: 'deposit_request',
   })
   referenceType?: string;

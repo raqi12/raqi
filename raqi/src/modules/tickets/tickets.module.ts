@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { UsersModule } from '../users/users.module';
 import { Ticket, TicketSchema } from './schemas/ticket.schema';
 import {
@@ -28,6 +29,7 @@ import { TicketsService } from './tickets.service';
       { name: TicketCounter.name, schema: TicketCounterSchema },
     ]),
     UsersModule,
+    NotificationsModule,
     JwtModule.register({}),
   ],
   controllers: [

@@ -20,6 +20,7 @@ import {
   TasksPage,
   TicketsPage,
 } from '../ModulePages';
+import { NotificationsPage } from '../module/NotificationsPage';
 
 export function AdminPageRoutes() {
   const admin = useAdmin();
@@ -49,6 +50,7 @@ export function AdminPageRoutes() {
     loading,
     loadAll,
     session,
+    setToast,
   } = admin;
 
   const loadCustomerDetails = useCallback(async (id: string) => {
@@ -250,7 +252,18 @@ export function AdminPageRoutes() {
         element={
           <PaymentsPage
             payments={payments}
-            onCreate={(body) => runMutation(() => AdminApi.payments.create(body), 'Payment created')}
+            customers={customers}
+            users={users}
+            subscriptions={subscriptions}
+            onCreate={(body) =>
+              runMutation(() => AdminApi.payments.create(body), 'تم تسجيل الدفعة وإيداع المحفظة')
+            }
+            onConfirm={(id) =>
+              runMutation(() => AdminApi.payments.confirm(id), 'تم تأكيد الدفعة')
+            }
+            onFail={(id) =>
+              runMutation(() => AdminApi.payments.fail(id), 'تم تعليم الدفعة كفاشلة')
+            }
           />
         }
       />
@@ -289,6 +302,15 @@ export function AdminPageRoutes() {
             onUpdate={(id, body) =>
               runMutation(() => AdminApi.tickets.update(id, body), 'تم تحديث التذكرة')
             }
+          />
+        }
+      />
+      <Route
+        path="/notifications/*"
+        element={
+          <NotificationsPage
+            users={users}
+            onToast={(message) => setToast({ message, type: 'success' })}
           />
         }
       />

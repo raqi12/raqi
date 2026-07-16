@@ -85,10 +85,10 @@ export class ListWalletTransactionsQueryDto {
   limit?: number;
 
   @ApiPropertyOptional({
-    enum: ['deposit', 'admin_credit', 'subscription_payment', 'refund'],
+    enum: ['deposit', 'admin_credit', 'subscription_payment', 'payment', 'refund'],
     example: 'deposit',
   })
   @IsOptional()
-  @IsIn(['deposit', 'admin_credit', 'subscription_payment', 'refund'])
-  type?: 'deposit' | 'admin_credit' | 'subscription_payment' | 'refund';
+  @IsIn(['deposit', 'admin_credit', 'subscription_payment', 'payment', 'refund'])
+  type?: 'deposit' | 'admin_credit' | 'subscription_payment' | 'payment' | 'refund';
 }

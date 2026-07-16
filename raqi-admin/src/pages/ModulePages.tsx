@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { DataTable } from '../components/DataTable';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import type { Address, Area, BankAccountSettings, Bin, City, Complaint, Customer, DepositRequest, Driver, Payment, Plan, Route, Subscription, Task, User, Wallet } from '../types';
-import { API_ORIGIN, areaLabel, getId } from './module/shared';
+import { API_ORIGIN, areaLabel, customerDisplayName, getId } from './module/shared';
 
 export { UsersPage } from './module/UsersPage';
 export { CustomersPage } from './module/CustomersPage';
@@ -16,46 +16,174 @@ export { SupportPage } from './module/SupportPage';
 
 type PaymentsPageProps = {
   payments: Payment[];
+  customers: Customer[];
+  users: User[];
+  subscriptions: Subscription[];
   onCreate: (body: {
     customerId: string;
     subscriptionId?: string;
     amount: number;
     method: 'cash' | 'online';
+    description?: string;
   }) => Promise<void>;
+  onConfirm: (id: string) => Promise<void>;
+  onFail: (id: string) => Promise<void>;
 };
 
-export function PaymentsPage({ payments, onCreate }: PaymentsPageProps) {
-  const [form, setForm] = useState({ customerId: '', subscriptionId: '', amount: 0, method: 'cash' as 'cash' | 'online' });
+export function PaymentsPage({
+  payments,
+  customers,
+  users,
+  subscriptions,
+  onCreate,
+  onConfirm,
+  onFail,
+}: PaymentsPageProps) {
+  const [form, setForm] = useState({
+    customerId: '',
+    subscriptionId: '',
+    amount: 0,
+    method: 'cash' as 'cash' | 'online',
+    description: '',
+  });
+
+  const customerSubscriptions = useMemo(
+    () =>
+      form.customerId
+        ? subscriptions.filter((s) => s.customerId === form.customerId)
+        : [],
+    [subscriptions, form.customerId],
+  );
+
   return (
     <>
       <section className="panel">
-        <h2>إنشاء دفعة</h2>
-        <form className="row-form" onSubmit={(e) => {
-          e.preventDefault();
-          void onCreate({
-            customerId: form.customerId,
-            subscriptionId: form.subscriptionId || undefined,
-            amount: Number(form.amount),
-            method: form.method,
-          });
-        }}>
-          <input placeholder="Customer ID" value={form.customerId} onChange={(e) => setForm({ ...form, customerId: e.target.value })} />
-          <input placeholder="Subscription ID (optional)" value={form.subscriptionId} onChange={(e) => setForm({ ...form, subscriptionId: e.target.value })} />
-          <input type="number" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} />
-          <select value={form.method} onChange={(e) => setForm({ ...form, method: e.target.value as 'cash' | 'online' })}>
-            <option value="cash">cash</option>
-            <option value="online">online</option>
-          </select>
-          <button>Create</button>
+        <h2>تسجيل دفعة</h2>
+        <p className="muted">
+          عند التسجيل كـ مدفوعة يتم إيداع المبلغ في محفظة العميل وإنشاء حركة محفظة، مع تحديث حالة الاشتراك إن وُجد.
+        </p>
+        <form
+          className="stack-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void onCreate({
+              customerId: form.customerId,
+              subscriptionId: form.subscriptionId || undefined,
+              amount: Number(form.amount),
+              method: form.method,
+              description: form.description || undefined,
+            }).then(() =>
+              setForm({
+                customerId: '',
+                subscriptionId: '',
+                amount: 0,
+                method: 'cash',
+                description: '',
+              }),
+            );
+          }}
+        >
+          <div className="row-form">
+            <select
+              required
+              value={form.customerId}
+              onChange={(e) =>
+                setForm({ ...form, customerId: e.target.value, subscriptionId: '' })
+              }
+            >
+              <option value="">اختر العميل</option>
+              {customers.map((customer) => (
+                <option key={getId(customer)} value={getId(customer)}>
+                  {customerDisplayName(customer, users)}
+                </option>
+              ))}
+            </select>
+            <select
+              value={form.subscriptionId}
+              onChange={(e) => setForm({ ...form, subscriptionId: e.target.value })}
+              disabled={!form.customerId}
+            >
+              <option value="">بدون اشتراك</option>
+              {customerSubscriptions.map((sub) => (
+                <option key={getId(sub)} value={getId(sub)}>
+                  {getId(sub).slice(-6)} · {sub.status} · {sub.paymentStatus}
+                </option>
+              ))}
+            </select>
+            <input
+              required
+              type="number"
+              min={0.01}
+              step="0.01"
+              placeholder="المبلغ"
+              value={form.amount || ''}
+              onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
+            />
+            <select
+              value={form.method}
+              onChange={(e) =>
+                setForm({ ...form, method: e.target.value as 'cash' | 'online' })
+              }
+            >
+              <option value="cash">نقدي</option>
+              <option value="online">إلكتروني</option>
+            </select>
+          </div>
+          <input
+            placeholder="وصف (اختياري)"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
+          <button type="submit">تسجيل وإيداع في المحفظة</button>
         </form>
       </section>
-      <DataTable title={`المدفوعات (${payments.length})`} rows={payments} columns={[
-        { key: 'id', label: 'ID', render: (r) => getId(r) },
-        { key: 'customerId', label: 'Customer ID' },
-        { key: 'amount', label: 'Amount', render: (r) => String(r.amount ?? '-') },
-        { key: 'method', label: 'Method' },
-        { key: 'status', label: 'Status' },
-      ]} />
+      <DataTable
+        title={`المدفوعات (${payments.length})`}
+        rows={payments.map((p) => ({ ...p, id: getId(p) }))}
+        columns={[
+          { key: 'id', label: 'ID', render: (r) => getId(r).slice(-8) },
+          {
+            key: 'customerId',
+            label: 'العميل',
+            render: (r) => {
+              const customer = customers.find((c) => getId(c) === r.customerId);
+              return customer ? customerDisplayName(customer, users) : r.customerId ?? '—';
+            },
+          },
+          { key: 'amount', label: 'المبلغ', render: (r) => String(r.amount ?? '-') },
+          {
+            key: 'method',
+            label: 'الطريقة',
+            render: (r) => (r.method === 'cash' ? 'نقدي' : 'إلكتروني'),
+          },
+          { key: 'status', label: 'الحالة' },
+          {
+            key: 'walletTransactionId',
+            label: 'حركة المحفظة',
+            render: (r) =>
+              r.walletTransactionId ? String(r.walletTransactionId).slice(-8) : '—',
+          },
+          {
+            key: 'actions',
+            label: 'إجراءات',
+            render: (r) => {
+              const pending =
+                r.status === 'pending' || r.status === 'pending_gateway';
+              if (!pending) return '—';
+              return (
+                <div className="row-form">
+                  <button type="button" onClick={() => void onConfirm(getId(r))}>
+                    تأكيد
+                  </button>
+                  <button type="button" onClick={() => void onFail(getId(r))}>
+                    فشل
+                  </button>
+                </div>
+              );
+            },
+          },
+        ]}
+      />
     </>
   );
 }

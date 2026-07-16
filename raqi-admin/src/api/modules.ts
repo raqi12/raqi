@@ -1,6 +1,7 @@
 import type {
   Address,
   Area,
+  AppNotification,
   BankAccountSettings,
   Bin,
   BinStats,
@@ -14,10 +15,18 @@ import type {
   DepositRequest,
   Driver,
   Faq,
+  NotificationAnalytics,
+  NotificationList,
+  NotificationLog,
+  NotificationPreference,
+  NotificationTemplate,
   Overview,
   Payment,
   Plan,
   Route,
+  ScheduleNotificationBody,
+  ScheduledNotification,
+  SendNotificationBody,
   Subscription,
   SubscriptionCost,
   SupportSettings,
@@ -241,11 +250,19 @@ export const AdminApi = {
       subscriptionId?: string;
       amount: number;
       method: 'cash' | 'online';
+      description?: string;
     }) =>
       apiRequest<Payment>('/admin/payments', {
         method: 'POST',
         body: JSON.stringify(body),
       }),
+    confirm: (id: string, body?: { description?: string }) =>
+      apiRequest<Payment>(`/admin/payments/${id}/confirm`, {
+        method: 'PATCH',
+        body: JSON.stringify(body ?? {}),
+      }),
+    fail: (id: string) =>
+      apiRequest<Payment>(`/admin/payments/${id}/fail`, { method: 'PATCH' }),
   },
   complaints: {
     list: () => apiRequest<Complaint[]>('/admin/complaints'),
@@ -376,5 +393,121 @@ export const AdminApi = {
         method: 'PATCH',
         body: JSON.stringify({ rejectionReason }),
       }),
+  },
+  notifications: {
+    inbox: {
+      list: (params?: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        type?: string;
+        category?: string;
+        isRead?: boolean;
+      }) => {
+        const query = new URLSearchParams();
+        if (params?.page) query.set('page', String(params.page));
+        if (params?.limit) query.set('limit', String(params.limit));
+        if (params?.search) query.set('search', params.search);
+        if (params?.type) query.set('type', params.type);
+        if (params?.category) query.set('category', params.category);
+        if (typeof params?.isRead === 'boolean') query.set('isRead', String(params.isRead));
+        const suffix = query.toString() ? `?${query.toString()}` : '';
+        return apiRequest<NotificationList>(`/notifications${suffix}`);
+      },
+      unreadCount: () => apiRequest<{ count: number }>('/notifications/unread-count'),
+      markRead: (id: string) =>
+        apiRequest<AppNotification>(`/notifications/${id}/read`, { method: 'PATCH' }),
+      markAllRead: () =>
+        apiRequest<{ modified: number }>('/notifications/read-all', { method: 'POST' }),
+      preferences: () => apiRequest<NotificationPreference>('/notifications/preferences'),
+      updatePreferences: (body: Partial<NotificationPreference>) =>
+        apiRequest<NotificationPreference>('/notifications/preferences', {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        }),
+    },
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      type?: string;
+      category?: string;
+      isRead?: boolean;
+    }) => {
+      const query = new URLSearchParams();
+      if (params?.page) query.set('page', String(params.page));
+      if (params?.limit) query.set('limit', String(params.limit));
+      if (params?.search) query.set('search', params.search);
+      if (params?.type) query.set('type', params.type);
+      if (params?.category) query.set('category', params.category);
+      if (typeof params?.isRead === 'boolean') query.set('isRead', String(params.isRead));
+      const suffix = query.toString() ? `?${query.toString()}` : '';
+      return apiRequest<NotificationList>(`/admin/notifications${suffix}`);
+    },
+    get: (id: string) =>
+      apiRequest<{ notification: AppNotification; logs: NotificationLog[] }>(
+        `/admin/notifications/${id}`,
+      ),
+    remove: (id: string) =>
+      apiRequest<AppNotification>(`/admin/notifications/${id}`, { method: 'DELETE' }),
+    bulkDelete: (ids: string[]) =>
+      apiRequest<{ deleted: number }>('/admin/notifications/bulk-delete', {
+        method: 'POST',
+        body: JSON.stringify({ ids }),
+      }),
+    send: (body: SendNotificationBody) =>
+      apiRequest<{ count: number }>('/admin/notifications/send', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    schedule: (body: ScheduleNotificationBody) =>
+      apiRequest<ScheduledNotification>('/admin/notifications/schedule', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    listScheduled: () =>
+      apiRequest<ScheduledNotification[]>('/admin/notifications/scheduled'),
+    updateScheduled: (id: string, body: Partial<ScheduleNotificationBody>) =>
+      apiRequest<ScheduledNotification>(`/admin/notifications/scheduled/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    cancelScheduled: (id: string) =>
+      apiRequest<ScheduledNotification>(`/admin/notifications/scheduled/${id}/cancel`, {
+        method: 'POST',
+      }),
+    templates: {
+      list: () => apiRequest<NotificationTemplate[]>('/admin/notifications/templates'),
+      create: (body: Partial<NotificationTemplate> & { name: string; code: string; titleTemplate: string; bodyTemplate: string }) =>
+        apiRequest<NotificationTemplate>('/admin/notifications/templates', {
+          method: 'POST',
+          body: JSON.stringify(body),
+        }),
+      update: (id: string, body: Partial<NotificationTemplate>) =>
+        apiRequest<NotificationTemplate>(`/admin/notifications/templates/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        }),
+      remove: (id: string) =>
+        apiRequest<NotificationTemplate>(`/admin/notifications/templates/${id}`, {
+          method: 'DELETE',
+        }),
+    },
+    analytics: (params?: {
+      from?: string;
+      to?: string;
+      granularity?: 'day' | 'week' | 'month';
+      type?: string;
+      role?: string;
+    }) => {
+      const query = new URLSearchParams();
+      if (params?.from) query.set('from', params.from);
+      if (params?.to) query.set('to', params.to);
+      if (params?.granularity) query.set('granularity', params.granularity);
+      if (params?.type) query.set('type', params.type);
+      if (params?.role) query.set('role', params.role);
+      const suffix = query.toString() ? `?${query.toString()}` : '';
+      return apiRequest<NotificationAnalytics>(`/admin/notifications/analytics${suffix}`);
+    },
   },
 };

@@ -4,6 +4,7 @@ import { AreasModule } from '../areas/areas.module';
 import { BinsModule } from '../bins/bins.module';
 import { CustomersModule } from '../customers/customers.module';
 import { DriversModule } from '../drivers/drivers.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { SupportModule } from '../support/support.module';
 import { Task, TaskSchema } from './schemas/task.schema';
@@ -23,6 +24,7 @@ import { TasksService } from './tasks.service';
     AreasModule,
     BinsModule,
     SupportModule,
+    NotificationsModule,
   ],
   controllers: [
     AdminTasksController,

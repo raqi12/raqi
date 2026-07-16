@@ -75,6 +75,7 @@ export function AdminLayout({
             theme={theme}
             onToggleTheme={toggleTheme}
             userEmail={session.user.email}
+            accessToken={session.accessToken}
             onOpenMenu={onOpenMobileNav}
           />
 

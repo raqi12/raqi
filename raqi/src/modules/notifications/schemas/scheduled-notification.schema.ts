@@ -1,24 +1,25 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import { Role } from '../../../common/roles.enum';
 import { baseSchemaOptions } from '../../../database/schema.options';
 import {
   NOTIFICATION_CATEGORIES,
   NOTIFICATION_PRIORITIES,
   NOTIFICATION_TARGET_TYPES,
   NOTIFICATION_TYPES,
+  SCHEDULED_NOTIFICATION_STATUSES,
   type NotificationCategory,
   type NotificationPriority,
   type NotificationTargetType,
   type NotificationType,
+  type ScheduledNotificationStatus,
 } from '../notification.enums';
 
-export type NotificationDocument = HydratedDocument<Notification>;
+export type ScheduledNotificationDocument =
+  HydratedDocument<ScheduledNotification>;
 
 @Schema(baseSchemaOptions)
-export class Notification {
-  @Prop({ required: true, index: true })
-  userId: string;
-
+export class ScheduledNotification {
   @Prop({ required: true })
   title: string;
 
@@ -32,8 +33,7 @@ export class Notification {
     type: String,
     required: true,
     enum: NOTIFICATION_TYPES,
-    default: 'system',
-    index: true,
+    default: 'announcement',
   })
   type: NotificationType;
 
@@ -42,7 +42,6 @@ export class Notification {
     required: true,
     enum: NOTIFICATION_CATEGORIES,
     default: 'general',
-    index: true,
   })
   category: NotificationCategory;
 
@@ -51,7 +50,6 @@ export class Notification {
     required: true,
     enum: NOTIFICATION_PRIORITIES,
     default: 'medium',
-    index: true,
   })
   priority: NotificationPriority;
 
@@ -59,38 +57,48 @@ export class Notification {
     type: String,
     required: true,
     enum: NOTIFICATION_TARGET_TYPES,
-    default: 'user',
+    default: 'all',
   })
   targetType: NotificationTargetType;
 
+  /** userId, role name, or null for all */
   @Prop({ type: String, default: null })
   targetId: string | null;
 
-  @Prop({ type: String, default: null, index: true })
+  @Prop({ type: [String], default: [] })
+  userIds: string[];
+
+  @Prop({ type: String, enum: Role, default: null })
+  targetRole: Role | null;
+
+  @Prop({ type: [String], enum: Role, default: [] })
+  targetRoles: Role[];
+
+  @Prop({ type: String, default: null })
   referenceType: string | null;
 
-  @Prop({ type: String, default: null, index: true })
+  @Prop({ type: String, default: null })
   referenceId: string | null;
 
   @Prop({ type: String, default: null })
   actionUrl: string | null;
 
-  @Prop({ type: String, default: null, index: true })
-  scheduledNotificationId: string | null;
+  @Prop({ type: Date, required: true, index: true })
+  scheduledAt: Date;
 
-  @Prop({ default: false, index: true })
-  isRead: boolean;
+  @Prop({
+    type: String,
+    required: true,
+    enum: SCHEDULED_NOTIFICATION_STATUSES,
+    default: 'scheduled',
+    index: true,
+  })
+  status: ScheduledNotificationStatus;
 
-  @Prop({ default: false })
-  isSent: boolean;
-
-  @Prop({ type: Date, default: null })
-  sentAt: Date | null;
-
-  @Prop({ type: Date, default: null })
-  readAt: Date | null;
+  @Prop({ required: true, index: true })
+  createdBy: string;
 }
 
-export const NotificationSchema = SchemaFactory.createForClass(Notification);
-NotificationSchema.index({ userId: 1, createdAt: -1 });
-NotificationSchema.index({ userId: 1, isRead: 1 });
+export const ScheduledNotificationSchema =
+  SchemaFactory.createForClass(ScheduledNotification);
+ScheduledNotificationSchema.index({ status: 1, scheduledAt: 1 });

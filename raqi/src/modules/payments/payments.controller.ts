@@ -3,6 +3,8 @@ import {
   Controller,
   Get,
   NotFoundException,
+  Param,
+  Patch,
   Post,
   UnauthorizedException,
   UseGuards,
@@ -16,13 +18,18 @@ import { Role } from '../../common/roles.enum';
 import type { AuthUser } from '../../common/auth-user.interface';
 import {
   ApiAdminAuth,
+  ApiMongoIdParam,
   ApiOkDataResponse,
   ApiStandardErrorResponses,
 } from '../../common/swagger/decorators';
 import { PaymentDto } from '../../common/swagger/schemas/entity.schemas';
 import { CustomersService } from '../customers/customers.service';
 import { PaymentsService } from './payments.service';
-import { CreateCustomerPaymentDto, CreatePaymentDto } from './dto/payment.dto';
+import {
+  ConfirmPaymentDto,
+  CreateCustomerPaymentDto,
+  CreatePaymentDto,
+} from './dto/payment.dto';
 
 @ApiTags('Admin - Payments')
 @ApiAdminAuth()
@@ -45,12 +52,56 @@ export class AdminPaymentsController {
   @Post()
   @ApiOperation({
     summary: 'Record manual payment',
-    description: 'Creates a payment record for cash or online settlement by admin.',
+    description:
+      'Creates a paid payment, credits the customer wallet (wallet transaction), and marks linked subscription as paid when provided.',
   })
   @ApiBody({ type: CreatePaymentDto })
   @ApiOkDataResponse(PaymentDto, 'Payment recorded', { status: 201 })
-  async create(@Body() body: CreatePaymentDto) {
-    return { data: await this.paymentsService.createManual(body) };
+  async create(
+    @Body() body: CreatePaymentDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    if (!user) throw new UnauthorizedException('User not found');
+    return {
+      data: await this.paymentsService.createManual({
+        ...body,
+        recordedBy: user.sub,
+      }),
+    };
+  }
+
+  @Patch(':id/confirm')
+  @ApiOperation({
+    summary: 'Confirm pending payment',
+    description:
+      'Marks a pending/gateway payment as paid, credits wallet, and updates subscription payment status.',
+  })
+  @ApiMongoIdParam('id')
+  @ApiBody({ type: ConfirmPaymentDto })
+  @ApiOkDataResponse(PaymentDto, 'Payment confirmed')
+  async confirm(
+    @Param('id') id: string,
+    @Body() body: ConfirmPaymentDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    if (!user) throw new UnauthorizedException('User not found');
+    return {
+      data: await this.paymentsService.confirmPaid(id, {
+        recordedBy: user.sub,
+        description: body.description,
+      }),
+    };
+  }
+
+  @Patch(':id/fail')
+  @ApiOperation({
+    summary: 'Mark payment as failed',
+    description: 'Fails a pending payment without wallet movement.',
+  })
+  @ApiMongoIdParam('id')
+  @ApiOkDataResponse(PaymentDto, 'Payment failed')
+  async fail(@Param('id') id: string) {
+    return { data: await this.paymentsService.markFailed(id) };
   }
 }
 
@@ -81,7 +132,7 @@ export class CustomerPaymentsController {
   @ApiOperation({
     summary: 'Initiate online payment',
     description:
-      'Creates a pending gateway payment intent for the authenticated customer.',
+      'Creates a pending gateway payment intent for the authenticated customer. Admin must confirm to credit wallet.',
   })
   @ApiBody({ type: CreateCustomerPaymentDto })
   @ApiOkDataResponse(PaymentDto, 'Payment intent created', { status: 201 })

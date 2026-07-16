@@ -1,6 +1,7 @@
 import { Button } from './ui/Button';
 import { IconChevron, IconMenu, IconMoon, IconRefresh, IconSun } from './ui/Icons';
 import { SearchInput } from './ui/SearchInput';
+import { NotificationBell } from './NotificationBell';
 import { TAB_LABELS } from '../i18n/ar';
 import { getNavGroupLabel, tabFromPathname } from '../navigation/routes';
 import { useLocation } from 'react-router-dom';
@@ -15,6 +16,7 @@ type TopBarProps = {
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
   userEmail: string;
+  accessToken: string;
   onOpenMenu?: () => void;
 };
 
@@ -28,6 +30,7 @@ export function TopBar({
   theme,
   onToggleTheme,
   userEmail,
+  accessToken,
   onOpenMenu,
 }: TopBarProps) {
   const location = useLocation();
@@ -80,6 +83,8 @@ export function TopBar({
 
       <div className="topbar__end">
         <div className="topbar__actions" role="toolbar" aria-label="إجراءات الشريط العلوي">
+          <NotificationBell accessToken={accessToken} />
+
           <Button
             type="button"
             variant="ghost"
