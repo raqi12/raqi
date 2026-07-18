@@ -89,6 +89,8 @@ export class FirebasePushService implements OnModuleInit {
         response.responses.forEach((result, index) => {
           if (!result.success) {
             const code = result.error?.code ?? '';
+            const message = result.error?.message ?? 'unknown';
+            this.logger.warn(`FCM token failed: ${code} — ${message}`);
             if (
               code.includes('registration-token-not-registered') ||
               code.includes('invalid-registration-token') ||

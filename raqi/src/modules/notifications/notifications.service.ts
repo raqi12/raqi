@@ -323,6 +323,10 @@ export class NotificationsService implements OnModuleInit {
 
   async send(dto: SendNotificationDto, options?: { scheduledNotificationId?: string }) {
     const userIds = await this.resolveAudience(dto);
+    if (!userIds.length) {
+      throw new BadRequestException('No recipients found for this audience');
+    }
+    await this.assertUsersHaveActiveFcm(userIds);
     return this.deliverToUsers({
       title: dto.title,
       body: dto.body,
@@ -348,8 +352,43 @@ export class NotificationsService implements OnModuleInit {
     });
   }
 
+  /** Admin/manual sends require every recipient to have an active FCM token. */
+  private async assertUsersHaveActiveFcm(userIds: string[]) {
+    if (!this.firebasePushService.isEnabled()) {
+      throw new BadRequestException(
+        'Firebase push is not configured; cannot send notification',
+      );
+    }
+
+    const withTokens = await this.deviceTokenModel.distinct('userId', {
+      userId: { $in: userIds },
+      isActive: true,
+    });
+    const withSet = new Set(withTokens.map(String));
+    const missingFcmUserIds = userIds.filter((id) => !withSet.has(id));
+
+    if (missingFcmUserIds.length) {
+      throw new BadRequestException({
+        message:
+          'Cannot send notification: one or more users have no FCM device token',
+        missingCount: missingFcmUserIds.length,
+        missingFcmUserIds,
+      });
+    }
+  }
+
   async deliverToUsers(payload: SendPayload) {
     const created: NotificationDocument[] = [];
+    const push = {
+      firebaseEnabled: this.firebasePushService.isEnabled(),
+      attempted: 0,
+      delivered: 0,
+      failed: 0,
+      skippedNoDevices: 0,
+      skippedPrefs: 0,
+      skippedFirebaseDisabled: 0,
+    };
+
     for (const userId of payload.userIds) {
       const category = payload.category ?? 'general';
       const allowInApp = await this.allowsChannel(userId, category, 'in_app');
@@ -388,23 +427,61 @@ export class NotificationsService implements OnModuleInit {
       this.emitRealtime(userId, 'notification_created', notification);
       this.emitRealtime(userId, 'unread_count', { count: unread });
 
-      void this.sendPushForNotification(notification);
+      const pushResult = await this.sendPushForNotification(notification);
+      if (pushResult.status === 'delivered') {
+        push.attempted += 1;
+        push.delivered += 1;
+      } else if (pushResult.status === 'failed') {
+        push.attempted += 1;
+        push.failed += 1;
+      } else if (pushResult.status === 'skipped_no_devices') {
+        push.skippedNoDevices += 1;
+      } else if (pushResult.status === 'skipped_prefs') {
+        push.skippedPrefs += 1;
+      } else if (pushResult.status === 'skipped_firebase_disabled') {
+        push.skippedFirebaseDisabled += 1;
+      }
     }
-    return { count: created.length, notifications: created };
+    return { count: created.length, notifications: created, push };
   }
 
-  private async sendPushForNotification(notification: NotificationDocument) {
+  private async sendPushForNotification(
+    notification: NotificationDocument,
+  ): Promise<{
+    status:
+      | 'delivered'
+      | 'failed'
+      | 'skipped_no_devices'
+      | 'skipped_prefs'
+      | 'skipped_firebase_disabled';
+  }> {
     const allowPush = await this.allowsChannel(
       notification.userId,
       notification.category,
       'push',
     );
-    if (!allowPush || !this.firebasePushService.isEnabled()) return;
+    if (!allowPush) {
+      this.logger.debug(
+        `Push skipped (prefs) for user ${notification.userId}`,
+      );
+      return { status: 'skipped_prefs' };
+    }
+    if (!this.firebasePushService.isEnabled()) {
+      this.logger.warn(
+        `Push skipped (Firebase disabled) for user ${notification.userId}`,
+      );
+      return { status: 'skipped_firebase_disabled' };
+    }
 
     const devices = await this.deviceTokenModel
       .find({ userId: notification.userId, isActive: true })
       .exec();
-    if (!devices.length) return;
+    if (!devices.length) {
+      this.logger.warn(
+        `Push skipped (no FCM device tokens) for user ${notification.userId}`,
+      );
+      return { status: 'skipped_no_devices' };
+    }
 
     const log = await this.logModel.create({
       notificationId: String(notification.id),
@@ -446,6 +523,10 @@ export class NotificationsService implements OnModuleInit {
         ? `failures=${result.failureCount}`
         : null;
     await log.save();
+
+    return {
+      status: result.successCount > 0 ? 'delivered' : 'failed',
+    };
   }
 
   async notifyFromTemplate(

@@ -155,10 +155,23 @@ export class AdminNotificationsController {
   @RequirePermissions('notifications.send')
   @ApiOperation({ summary: 'Send notification now' })
   @ApiBody({ type: SendNotificationDto })
-  @ApiOkEnvelopeResponse('Sent', { data: { count: 0 } })
+  @ApiOkEnvelopeResponse('Sent', {
+    data: {
+      count: 0,
+      push: {
+        firebaseEnabled: false,
+        attempted: 0,
+        delivered: 0,
+        failed: 0,
+        skippedNoDevices: 0,
+        skippedPrefs: 0,
+        skippedFirebaseDisabled: 0,
+      },
+    },
+  })
   async send(@Body() body: SendNotificationDto) {
     const result = await this.notificationsService.send(body);
-    return { data: { count: result.count } };
+    return { data: { count: result.count, push: result.push } };
   }
 
   @Post('bulk-delete')
