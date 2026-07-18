@@ -66,6 +66,7 @@ type SubscriptionsPageProps = {
   onActivate: (id: string) => Promise<void>;
   onSuspend: (id: string) => Promise<void>;
   onRenew: (id: string) => Promise<void>;
+  onReplaceBin: (id: string, newBinId: string) => Promise<void>;
 };
 
 const emptyForm = {
@@ -149,6 +150,7 @@ export function SubscriptionsPage({
   onActivate,
   onSuspend,
   onRenew,
+  onReplaceBin,
 }: SubscriptionsPageProps) {
   const [form, setForm] = useState(emptyForm);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -164,6 +166,7 @@ export function SubscriptionsPage({
     paymentStatus: 'unpaid' as 'paid' | 'unpaid',
   });
   const [assignDriverId, setAssignDriverId] = useState('');
+  const [replaceBinId, setReplaceBinId] = useState('');
   const [confirm, setConfirm] = useState<{ id: string; action: PendingAction } | null>(null);
   const [saving, setSaving] = useState(false);
   const [formCost, setFormCost] = useState<SubscriptionCost | null>(null);
@@ -263,6 +266,7 @@ export function SubscriptionsPage({
       setDetailAddresses([]);
       setEditForm({ planId: '', addressId: '', binId: '', paymentStatus: 'unpaid' });
       setAssignDriverId('');
+      setReplaceBinId('');
       return;
     }
     setAssignDriverId(selected.driverId ?? '');
@@ -357,6 +361,18 @@ export function SubscriptionsPage({
     setSaving(true);
     try {
       await onAssignDriver(getId(selected), assignDriverId);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function submitReplaceBin(e: FormEvent) {
+    e.preventDefault();
+    if (!selected || !replaceBinId) return;
+    setSaving(true);
+    try {
+      await onReplaceBin(getId(selected), replaceBinId);
+      setReplaceBinId('');
     } finally {
       setSaving(false);
     }
@@ -798,6 +814,10 @@ export function SubscriptionsPage({
                         <StatusBadge status={String(detailBin.status)} />
                       </dd>
                     </div>
+                    <div className="info-list__row">
+                      <dt>تاريخ التوصيل</dt>
+                      <dd dir="ltr">{detailBin.deliveryDate ?? '—'}</dd>
+                    </div>
                   </>
                 ) : null}
                 <div className="info-list__row">
@@ -809,6 +829,40 @@ export function SubscriptionsPage({
                   </dd>
                 </div>
               </dl>
+            </section>
+
+            <section className="detail-block">
+              <h4 className="detail-block__title">استبدال الصندوق</h4>
+              {selected.status !== 'active' ? (
+                <p className="field__hint">يمكن استبدال الصندوق للاشتراكات النشطة فقط.</p>
+              ) : (
+                <form className="detail-form" onSubmit={(e) => void submitReplaceBin(e)}>
+                  <Select
+                    label="صندوق جديد"
+                    value={replaceBinId}
+                    onChange={(e) => setReplaceBinId(e.target.value)}
+                    required
+                  >
+                    <option value="">اختر صندوقاً متاحاً</option>
+                    {availableBins.map((bin) => (
+                      <option key={getId(bin)} value={getId(bin)}>
+                        {bin.code ?? getId(bin)} ({bin.capacity ?? 0} لتر
+                        {bin.fee ? ` — ${bin.fee} د.ل` : ''})
+                      </option>
+                    ))}
+                  </Select>
+                  {!availableBins.length ? (
+                    <p className="field__hint">لا توجد صناديق متاحة للاستبدال.</p>
+                  ) : (
+                    <p className="field__hint">
+                      تاريخ التوصيل يبقى تاريخ بداية الاشتراك. لا يتم خصم رسوم إضافية.
+                    </p>
+                  )}
+                  <Button type="submit" disabled={saving || !replaceBinId || !availableBins.length}>
+                    استبدال الصندوق
+                  </Button>
+                </form>
+              )}
             </section>
 
             <section className="detail-block">

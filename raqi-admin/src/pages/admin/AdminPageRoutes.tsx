@@ -248,6 +248,12 @@ export function AdminPageRoutes() {
             onActivate={(id) => runMutation(() => AdminApi.subscriptions.activate(id), 'تم تفعيل الاشتراك')}
             onSuspend={(id) => runMutation(() => AdminApi.subscriptions.suspend(id), 'تم إيقاف الاشتراك')}
             onRenew={(id) => runMutation(() => AdminApi.subscriptions.renew(id), 'تم تجديد الاشتراك')}
+            onReplaceBin={(id, newBinId) =>
+              runMutation(
+                () => AdminApi.subscriptions.replaceBin(id, newBinId),
+                'تم استبدال الصندوق',
+              )
+            }
           />
         }
       />

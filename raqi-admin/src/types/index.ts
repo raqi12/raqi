@@ -99,6 +99,7 @@ export type Bin = {
   status?: 'available' | 'assigned' | 'maintenance';
   customerId?: string | null;
   active?: boolean;
+  deliveryDate?: string | null;
 };
 
 export type SubscriptionCost = {

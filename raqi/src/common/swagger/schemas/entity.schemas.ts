@@ -368,6 +368,13 @@ export class BinDto {
 
   @ApiProperty({ example: true })
   active: boolean;
+
+  @ApiPropertyOptional({
+    example: '2026-07-18',
+    description:
+      'Bin delivery date (YYYY-MM-DD), set to subscription start when assigned via subscription',
+  })
+  deliveryDate?: string | null;
 }
 
 export class BinStatsDto {

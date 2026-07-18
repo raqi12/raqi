@@ -42,6 +42,7 @@ export class BinsService {
     id: string,
     customerId: string,
     active = true,
+    options?: { deliveryDate?: string | null },
   ): Promise<BinDocument | null> {
     const existingActiveBin = await this.binModel.exists({
       _id: { $ne: id },
@@ -53,20 +54,27 @@ export class BinsService {
         'This customer already has an active assigned bin. Unassign the old one first.',
       );
     }
-    return this.binModel
-      .findByIdAndUpdate(
-        id,
-        { customerId, active, status: active ? 'assigned' : 'available' },
-        { new: true },
-      )
-      .exec();
+    const update: Partial<Bin> = {
+      customerId,
+      active,
+      status: active ? 'assigned' : 'available',
+    };
+    if (options && 'deliveryDate' in options) {
+      update.deliveryDate = options.deliveryDate ?? null;
+    }
+    return this.binModel.findByIdAndUpdate(id, update, { new: true }).exec();
   }
 
   unassign(id: string): Promise<BinDocument | null> {
     return this.binModel
       .findByIdAndUpdate(
         id,
-        { customerId: null, active: false, status: 'available' },
+        {
+          customerId: null,
+          active: false,
+          status: 'available',
+          deliveryDate: null,
+        },
         { new: true },
       )
       .exec();

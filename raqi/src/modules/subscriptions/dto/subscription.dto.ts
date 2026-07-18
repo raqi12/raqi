@@ -152,3 +152,12 @@ export class UpdateAdditionalCollectionSettingsDto {
   @IsBoolean()
   active?: boolean;
 }
+
+export class ReplaceBinDto {
+  @ApiProperty({
+    example: '507f1f77bcf86cd799439014',
+    description: 'Available bin MongoDB ID to assign to the subscription',
+  })
+  @IsMongoId()
+  newBinId: string;
+}

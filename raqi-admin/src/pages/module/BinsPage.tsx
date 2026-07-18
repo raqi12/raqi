@@ -78,6 +78,7 @@ export function BinsPage({
         capacityLabel: bin.capacity != null ? `${bin.capacity} لتر` : '—',
         feeLabel: bin.fee != null ? `${bin.fee.toLocaleString('ar-LY')} د.ل` : '0 د.ل',
         customerName: customerNameById(customers, users, bin.customerId),
+        deliveryDateLabel: bin.deliveryDate ?? '—',
         activeLabel: bin.active ? 'نشط' : 'غير نشط',
         activeKey: bin.active ? 'active' : 'inactive',
       })),
@@ -194,7 +195,7 @@ export function BinsPage({
         rows={tableRows}
         loading={loading}
         onSelect={setSelected}
-        searchKeys={['code', 'capacityLabel', 'status', 'customerName', 'activeLabel']}
+        searchKeys={['code', 'capacityLabel', 'status', 'customerName', 'activeLabel', 'deliveryDateLabel']}
         columns={[
           { key: 'code', label: 'الرمز' },
           { key: 'capacityLabel', label: 'السعة' },
@@ -206,6 +207,7 @@ export function BinsPage({
             sortable: false,
           },
           { key: 'customerName', label: 'العميل' },
+          { key: 'deliveryDateLabel', label: 'تاريخ التوصيل' },
           {
             key: 'activeKey',
             label: 'التفعيل',
@@ -248,6 +250,10 @@ export function BinsPage({
                 <div className="info-list__row">
                   <dt>العميل الحالي</dt>
                   <dd>{customerNameById(customers, users, selected.customerId)}</dd>
+                </div>
+                <div className="info-list__row">
+                  <dt>تاريخ التوصيل</dt>
+                  <dd dir="ltr">{selected.deliveryDate ?? '—'}</dd>
                 </div>
               </dl>
             </section>

@@ -31,6 +31,10 @@ export class Bin {
 
   @Prop({ default: false })
   active: boolean;
+
+  /** YYYY-MM-DD — delivery date equals subscription start when assigned via subscription */
+  @Prop({ type: String, default: null })
+  deliveryDate: string | null;
 }
 
 export const BinSchema = SchemaFactory.createForClass(Bin);

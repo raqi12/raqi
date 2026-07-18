@@ -43,6 +43,7 @@ import {
   UpdateAutoRenewDto,
   RequestAdditionalCollectionDto,
   UpdateAdditionalCollectionSettingsDto,
+  ReplaceBinDto,
 } from './dto/subscription.dto';
 
 @ApiTags('Admin - Subscriptions')
@@ -202,6 +203,21 @@ export class AdminSubscriptionsController {
     }
     return { data: subscription };
   }
+
+  @Post(':id/replace-bin')
+  @ApiOperation({
+    summary: 'Replace subscription bin',
+    description:
+      'Swaps the subscription bin with another available bin. Delivery date stays the subscription start date. No wallet charge.',
+  })
+  @ApiMongoIdParam('id', 'Subscription MongoDB ID')
+  @ApiBody({ type: ReplaceBinDto })
+  @ApiOkDataResponse(SubscriptionDto, 'Subscription bin replaced')
+  async replaceBin(@Param('id') id: string, @Body() body: ReplaceBinDto) {
+    return {
+      data: await this.subscriptionsService.replaceBin(id, body.newBinId),
+    };
+  }
 }
 
 @ApiTags('Admin - Additional Collection')
@@ -359,6 +375,27 @@ export class CustomerSubscriptionsController {
       data: await this.subscriptionsService.requestAdditionalCollection(
         customerId,
         body.collectionDate,
+      ),
+    };
+  }
+
+  @Post('current/replace-bin')
+  @ApiOperation({
+    summary: 'Replace current subscription bin',
+    description:
+      'Replaces the active subscription bin with another available bin. Delivery date remains the subscription start date. No wallet charge.',
+  })
+  @ApiBody({ type: ReplaceBinDto })
+  @ApiOkDataResponse(SubscriptionDto, 'Subscription bin replaced')
+  async replaceBin(
+    @Body() body: ReplaceBinDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    const customerId = await this.resolveCustomerId(user);
+    return {
+      data: await this.subscriptionsService.replaceBinForCustomer(
+        customerId,
+        body.newBinId,
       ),
     };
   }

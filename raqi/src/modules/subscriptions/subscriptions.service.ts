@@ -524,7 +524,9 @@ export class SubscriptionsService {
       }
 
       if (input.binId) {
-        await this.binsService.assign(input.binId, customerId, true);
+        await this.binsService.assign(input.binId, customerId, true, {
+          deliveryDate: toUtcDateString(now),
+        });
       }
 
       await this.tasksService.createForSubscription({
@@ -674,5 +676,73 @@ export class SubscriptionsService {
       }
       throw error;
     }
+  }
+
+  async replaceBin(
+    subscriptionId: string,
+    newBinId: string,
+  ): Promise<SubscriptionDocument> {
+    const subscription = await this.findById(subscriptionId);
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+    if (subscription.status !== SubscriptionStatus.Active) {
+      throw new BadRequestException(
+        'Only active subscriptions can replace a bin',
+      );
+    }
+
+    const newBin = await this.binsService.findById(newBinId);
+    if (!newBin || newBin.status !== 'available') {
+      throw new BadRequestException('Bin is not available');
+    }
+
+    if (subscription.binId && String(subscription.binId) === newBinId) {
+      throw new BadRequestException('Bin is already assigned to this subscription');
+    }
+
+    const createdAtValue = (
+      subscription as SubscriptionDocument & { createdAt?: Date }
+    ).createdAt;
+    const startDate = toUtcDateString(
+      createdAtValue ? new Date(createdAtValue) : new Date(),
+    );
+
+    const oldBinId = subscription.binId ? String(subscription.binId) : null;
+
+    if (oldBinId) {
+      await this.binsService.unassign(oldBinId);
+    }
+
+    try {
+      await this.binsService.assign(
+        newBinId,
+        subscription.customerId,
+        true,
+        { deliveryDate: startDate },
+      );
+      subscription.binId = newBinId;
+      return subscription.save();
+    } catch (error) {
+      if (oldBinId) {
+        await this.binsService
+          .assign(oldBinId, subscription.customerId, true, {
+            deliveryDate: startDate,
+          })
+          .catch(() => undefined);
+      }
+      throw error;
+    }
+  }
+
+  async replaceBinForCustomer(
+    customerId: string,
+    newBinId: string,
+  ): Promise<SubscriptionDocument> {
+    const subscription = await this.findActiveForCustomer(customerId);
+    if (!subscription) {
+      throw new NotFoundException('Active subscription not found');
+    }
+    return this.replaceBin(String(subscription.id), newBinId);
   }
 }

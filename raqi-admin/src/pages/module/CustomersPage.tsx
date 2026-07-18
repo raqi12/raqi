@@ -746,6 +746,7 @@ export function CustomersPage({
                           <div className="record-list__meta">
                             <span>السعة: {bin.capacity ?? 0} لتر</span>
                             <span>الرسوم: {formatMoney(bin.fee)}</span>
+                            <span>التوصيل: {bin.deliveryDate ?? '—'}</span>
                             <span>{bin.active ? 'نشط' : 'غير نشط'}</span>
                           </div>
                         </li>

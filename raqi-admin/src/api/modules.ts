@@ -246,6 +246,11 @@ export const AdminApi = {
         method: 'POST',
         body: JSON.stringify(body),
       }),
+    replaceBin: (id: string, newBinId: string) =>
+      apiRequest<Subscription>(`/admin/subscriptions/${id}/replace-bin`, {
+        method: 'POST',
+        body: JSON.stringify({ newBinId }),
+      }),
   },
   payments: {
     list: () => apiRequest<Payment[]>('/admin/payments'),
