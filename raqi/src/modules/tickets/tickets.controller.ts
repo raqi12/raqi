@@ -42,9 +42,10 @@ import { TicketsGateway } from './tickets.gateway';
 import { TicketsService } from './tickets.service';
 
 @ApiTags('Customer - Tickets')
+@ApiBearerAuth('access-token')
 @ApiStandardErrorResponses()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.Customer)
+@Roles(Role.Customer, Role.Driver)
 @Controller('customer/tickets')
 export class CustomerTicketsController {
   constructor(
@@ -53,10 +54,15 @@ export class CustomerTicketsController {
     private readonly ticketsGateway: TicketsGateway,
   ) {}
 
+  private senderRole(user: AuthUser): 'customer' | 'driver' {
+    return user.role === Role.Driver ? 'driver' : 'customer';
+  }
+
   @Post()
   @ApiOperation({
     summary: 'Create support ticket',
-    description: 'Creates a ticket and seeds the first message from the description.',
+    description:
+      'Creates a ticket and seeds the first message from the description. Accepts customer or driver JWT (prefer /driver/tickets for drivers).',
   })
   @ApiBody({ type: CreateTicketDto })
   @ApiOkDataResponse(TicketDto, 'Ticket created', { status: 201 })
@@ -76,6 +82,7 @@ export class CustomerTicketsController {
       String(ticket.id),
       user.sub,
       body.description,
+      this.senderRole(user),
     );
 
     return { data: toTicketDto(ticket) };
@@ -166,7 +173,7 @@ export class CustomerTicketsController {
       await this.ticketMessagesService.sendMessage({
       ticketId: id,
       senderId: user.sub,
-      senderRole: 'customer',
+      senderRole: this.senderRole(user),
       body: body.body,
     });
 

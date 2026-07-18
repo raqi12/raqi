@@ -22,6 +22,7 @@ import {
   FaqDto,
   GalleryItemDto,
   GalleryImageUrlDto,
+  ContentPageDto,
   BinDto,
   BinStatsDto,
   ComplaintDto,
@@ -129,6 +130,7 @@ const extraModels = [
   FaqDto,
   GalleryItemDto,
   GalleryImageUrlDto,
+  ContentPageDto,
 ];
 
 export function setupSwagger(app: INestApplication) {
@@ -216,11 +218,17 @@ Deposit evidence: \`multipart/form-data\` with field \`evidence\` (jpg, jpeg, pn
     .addTag('Customer - Complaints', 'Customer complaints')
     .addTag('Admin - Complaints', 'Complaint management')
     .addTag('Customer - Tickets', 'Customer support tickets and chat')
+    .addTag('Driver - Tickets', 'Driver support tickets and chat')
+    .addTag('Driver - Support', 'Driver support page content')
     .addTag('Admin - Tickets', 'Support ticket management and chat')
     .addTag('Notifications', 'In-app notifications')
     .addTag('Customer - Wallet', 'Wallet and deposit requests')
     .addTag('Admin - Wallet Settings', 'Bank account and deposit review')
     .addTag('Admin - Reports', 'Analytics and KPIs')
+    .addTag('Content Pages', 'Public privacy policy and app instructions')
+    .addTag('Customer - Content Pages', 'Customer privacy and instructions')
+    .addTag('Driver - Content Pages', 'Driver privacy and instructions')
+    .addTag('Admin - Content Pages', 'Edit privacy and instructions content')
     .build();
 
   const document = SwaggerModule.createDocument(app, config, { extraModels });

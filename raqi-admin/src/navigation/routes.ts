@@ -21,6 +21,8 @@ export const ROUTE_PATHS: Record<SidebarTab, string> = {
   tickets: '/tickets',
   support: '/support',
   gallery: '/gallery',
+  privacy: '/privacy',
+  instructions: '/instructions',
   notifications: '/notifications',
   'send-notification': '/notifications/send',
 };
@@ -52,6 +54,8 @@ const TAB_NAV_GROUPS: Record<SidebarTab, string> = {
   'send-notification': 'العمليات',
   support: 'العمليات',
   gallery: 'العمليات',
+  privacy: 'العمليات',
+  instructions: 'العمليات',
   users: 'الموارد',
   drivers: 'الموارد',
   plans: 'الموارد',

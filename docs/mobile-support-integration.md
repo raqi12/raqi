@@ -79,9 +79,22 @@ Twitter:  https://x.com/text            (handle without @)
 
 ## Related APIs (not this screen)
 
-- **Live chat:** `POST /customer/tickets`, Socket.io namespace `/tickets`
+- **Customer live chat:** `POST /customer/tickets`, Socket.io namespace `/tickets`
+- **Driver live chat:** `POST /driver/tickets` (Driver JWT required — do **not** use `/customer/tickets`), Socket.io namespace `/tickets`
 - **Wallet history:** `GET /customer/wallet/transactions`
 - **Deposit requests:** `POST /customer/deposit-requests`
+
+### Driver tickets (تطبيق السائق)
+
+| Method | Path | Auth |
+|--------|------|------|
+| `POST` | `/api/v1/driver/tickets` | Driver JWT |
+| `GET` | `/api/v1/driver/tickets` | Driver JWT |
+| `GET` | `/api/v1/driver/tickets/:id` | Driver JWT |
+| `GET` | `/api/v1/driver/tickets/:id/messages` | Driver JWT |
+| `POST` | `/api/v1/driver/tickets/:id/messages` | Driver JWT |
+
+Calling `/customer/tickets` with a driver token is also accepted (compat), but prefer `/driver/tickets`.
 
 ## Verification
 

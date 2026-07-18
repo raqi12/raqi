@@ -13,7 +13,7 @@ type NavGroup = {
 
 const NAV_GROUPS: NavGroup[] = [
   { title: 'رئيسي', items: ['overview'] },
-  { title: 'العمليات', items: ['customers', 'subscriptions', 'tasks', 'tickets', 'notifications', 'send-notification', 'support', 'gallery', 'complaints'] },
+  { title: 'العمليات', items: ['customers', 'subscriptions', 'tasks', 'tickets', 'notifications', 'send-notification', 'support', 'privacy', 'instructions', 'gallery', 'complaints'] },
   { title: 'الموارد', items: ['users', 'drivers', 'plans', 'bins', 'locations', 'routes'] },
   { title: 'المالية', items: ['payments', 'bank-account', 'additional-collection', 'deposit-requests'] },
 ];

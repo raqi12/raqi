@@ -24,6 +24,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { WalletsModule } from './modules/wallets/wallets.module';
 import { SupportModule } from './modules/support/support.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
+import { ContentPagesModule } from './modules/content-pages/content-pages.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { GalleryModule } from './modules/gallery/gallery.module';
     WalletsModule,
     SupportModule,
     GalleryModule,
+    ContentPagesModule,
   ],
 })
 export class AppModule {}

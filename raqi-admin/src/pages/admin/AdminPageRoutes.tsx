@@ -19,6 +19,7 @@ import {
   SubscriptionsPage,
   SupportPage,
   GalleryPage,
+  ContentPageEditor,
   TasksPage,
   TicketsPage,
 } from '../ModulePages';
@@ -41,6 +42,8 @@ export function AdminPageRoutes() {
     supportSettings,
     faqs,
     gallery,
+    privacyPage,
+    instructionsPage,
     binsStats,
     plans,
     bins,
@@ -356,6 +359,39 @@ export function AdminPageRoutes() {
             }
             onDeleteFaq={(id) =>
               runMutation(() => AdminApi.support.faqs.remove(id), 'تم حذف السؤال')
+            }
+          />
+        }
+      />
+      <Route
+        path="/privacy"
+        element={
+          <ContentPageEditor
+            slug="privacy"
+            heading="سياسة الخصوصية"
+            description="المحتوى الذي يظهر في شاشة سياسة الخصوصية داخل التطبيق."
+            page={privacyPage}
+            loading={loading}
+            onSave={(body) =>
+              runMutation(() => AdminApi.pages.update('privacy', body), 'تم حفظ سياسة الخصوصية')
+            }
+          />
+        }
+      />
+      <Route
+        path="/instructions"
+        element={
+          <ContentPageEditor
+            slug="instructions"
+            heading="تعليمات الاستخدام"
+            description="المحتوى الذي يظهر في شاشة تعليمات الاستخدام داخل التطبيق."
+            page={instructionsPage}
+            loading={loading}
+            onSave={(body) =>
+              runMutation(
+                () => AdminApi.pages.update('instructions', body),
+                'تم حفظ تعليمات الاستخدام',
+              )
             }
           />
         }

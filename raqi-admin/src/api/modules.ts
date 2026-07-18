@@ -17,6 +17,8 @@ import type {
   Driver,
   Faq,
   GalleryItem,
+  ContentPage,
+  ContentPageSlug,
   NotificationAnalytics,
   NotificationList,
   NotificationLog,
@@ -449,6 +451,15 @@ export const AdminApi = {
     remove: (id: string) =>
       apiRequest<GalleryItem>(`/admin/gallery/${id}`, {
         method: 'DELETE',
+      }),
+  },
+  pages: {
+    get: (slug: ContentPageSlug) =>
+      apiRequest<ContentPage>(`/admin/pages/${slug}`),
+    update: (slug: ContentPageSlug, body: { title: string; body: string }) =>
+      apiRequest<ContentPage>(`/admin/pages/${slug}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
       }),
   },
   depositRequests: {

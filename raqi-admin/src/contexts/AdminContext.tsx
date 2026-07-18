@@ -25,6 +25,7 @@ import type {
   Driver,
   Faq,
   GalleryItem,
+  ContentPage,
   Overview,
   Payment,
   Plan,
@@ -67,6 +68,8 @@ type AdminContextValue = {
   supportSettings: SupportSettings | null;
   faqs: Faq[];
   gallery: GalleryItem[];
+  privacyPage: ContentPage | null;
+  instructionsPage: ContentPage | null;
   binsStats: BinStats | null;
   plans: Plan[];
   bins: Bin[];
@@ -124,6 +127,8 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
   const [supportSettings, setSupportSettings] = useState<SupportSettings | null>(null);
   const [faqs, setFaqs] = useState<Faq[]>([]);
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
+  const [privacyPage, setPrivacyPage] = useState<ContentPage | null>(null);
+  const [instructionsPage, setInstructionsPage] = useState<ContentPage | null>(null);
   const [binsStats, setBinsStats] = useState<BinStats | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [bins, setBins] = useState<Bin[]>([]);
@@ -185,6 +190,8 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
         supportSettingsRes,
         faqsRes,
         galleryRes,
+        privacyPageRes,
+        instructionsPageRes,
         bankAccountRes,
         additionalCollectionRes,
         depositRequestsRes,
@@ -207,6 +214,8 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
         AdminApi.support.settings.get(),
         AdminApi.support.faqs.list(),
         AdminApi.gallery.list(),
+        AdminApi.pages.get('privacy'),
+        AdminApi.pages.get('instructions'),
         AdminApi.settings.bankAccount.get(),
         AdminApi.settings.additionalCollection.get(),
         AdminApi.depositRequests.list(),
@@ -229,6 +238,8 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       setSupportSettings(supportSettingsRes.data);
       setFaqs(faqsRes.data);
       setGallery(galleryRes.data);
+      setPrivacyPage(privacyPageRes.data);
+      setInstructionsPage(instructionsPageRes.data);
       setBankAccount(bankAccountRes.data);
       setAdditionalCollectionSettings(additionalCollectionRes.data);
       setDepositRequests(depositRequestsRes.data);
@@ -305,6 +316,8 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       supportSettings,
       faqs,
       gallery,
+      privacyPage,
+      instructionsPage,
       binsStats,
       plans,
       bins,
@@ -339,6 +352,8 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       supportSettings,
       faqs,
       gallery,
+      privacyPage,
+      instructionsPage,
       binsStats,
       plans,
       bins,

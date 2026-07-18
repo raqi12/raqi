@@ -17,6 +17,8 @@ export const TAB_LABELS = {
   tickets: 'تذاكر الدعم',
   support: 'صفحة الدعم',
   gallery: 'معرض الصور',
+  privacy: 'سياسة الخصوصية',
+  instructions: 'تعليمات الاستخدام',
   notifications: 'الإشعارات',
   'send-notification': 'إرسال إشعار',
 } as const;

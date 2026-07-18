@@ -14,6 +14,7 @@ export { TasksPage } from './module/TasksPage';
 export { TicketsPage } from './module/TicketsPage';
 export { SupportPage } from './module/SupportPage';
 export { GalleryPage } from './module/GalleryPage';
+export { ContentPageEditor } from './module/ContentPageEditor';
 
 type PaymentsPageProps = {
   payments: Payment[];

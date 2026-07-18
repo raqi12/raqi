@@ -243,7 +243,7 @@ export type TicketMessage = {
   id?: string;
   ticketId?: string;
   senderId?: string;
-  senderRole?: 'customer' | 'admin';
+  senderRole?: 'customer' | 'driver' | 'admin';
   body?: string;
   createdAt?: string;
 };
@@ -327,6 +327,15 @@ export type GalleryItem = {
   linkUrl?: string;
   sortOrder?: number;
   active?: boolean;
+};
+
+export type ContentPageSlug = 'privacy' | 'instructions';
+
+export type ContentPage = {
+  slug: ContentPageSlug;
+  title: string;
+  body: string;
+  updatedAt?: string | null;
 };
 
 export type SupportPage = {

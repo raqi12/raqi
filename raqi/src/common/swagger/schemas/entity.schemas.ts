@@ -1194,6 +1194,22 @@ export class GalleryImageUrlDto {
   imageUrl: string;
 }
 
+export class ContentPageDto {
+  @ApiProperty({ enum: ['privacy', 'instructions'], example: 'privacy' })
+  slug: string;
+
+  @ApiProperty({ example: 'سياسة الخصوصية' })
+  title: string;
+
+  @ApiProperty({
+    example: 'نص سياسة الخصوصية الكامل الذي يظهر في التطبيق...',
+  })
+  body: string;
+
+  @ApiPropertyOptional({ example: '2026-07-18T18:00:00.000Z', nullable: true })
+  updatedAt?: string | null;
+}
+
 export class RegisterPendingDto {
   @ApiProperty({ example: true })
   otpSent: boolean;

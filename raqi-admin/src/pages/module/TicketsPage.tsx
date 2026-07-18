@@ -84,15 +84,20 @@ export function TicketsPage({
 
   const tableRows = useMemo(
     () =>
-      tickets.map((ticket) => ({
-        ...ticket,
-        customerName: ticket.userName ?? userNameById(users, ticket.userId),
-        assigneeName: ticket.assigneeId
-          ? userNameById(users, ticket.assigneeId)
-          : '—',
-        priorityLabel: PRIORITY_LABELS[ticket.priority ?? 'medium'] ?? ticket.priority,
-        lastMessageLabel: formatDateTime(ticket.lastMessageAt),
-      })),
+      tickets.map((ticket) => {
+        const owner = users.find((u) => getId(u) === ticket.userId);
+        const isDriver = owner?.role === 'driver';
+        return {
+          ...ticket,
+          customerName: ticket.userName ?? userNameById(users, ticket.userId),
+          ownerTypeLabel: isDriver ? 'سائق' : 'عميل',
+          assigneeName: ticket.assigneeId
+            ? userNameById(users, ticket.assigneeId)
+            : '—',
+          priorityLabel: PRIORITY_LABELS[ticket.priority ?? 'medium'] ?? ticket.priority,
+          lastMessageLabel: formatDateTime(ticket.lastMessageAt),
+        };
+      }),
     [tickets, users],
   );
 
@@ -205,6 +210,7 @@ export function TicketsPage({
         searchKeys={[
           'ticketNumber',
           'customerName',
+          'ownerTypeLabel',
           'subject',
           'status',
           'priorityLabel',
@@ -212,7 +218,8 @@ export function TicketsPage({
         ]}
         columns={[
           { key: 'ticketNumber', label: 'رقم التذكرة' },
-          { key: 'customerName', label: 'العميل' },
+          { key: 'customerName', label: 'الاسم' },
+          { key: 'ownerTypeLabel', label: 'النوع' },
           { key: 'subject', label: 'الموضوع' },
           {
             key: 'status',
@@ -242,7 +249,12 @@ export function TicketsPage({
               <h4 className="detail-block__title">معلومات التذكرة</h4>
               <dl className="info-list">
                 <div className="info-list__row">
-                  <dt>العميل</dt>
+                  <dt>
+                    {users.find((u) => getId(u) === selected.userId)?.role ===
+                    'driver'
+                      ? 'السائق'
+                      : 'العميل'}
+                  </dt>
                   <dd>{selected.userName ?? userNameById(users, selected.userId)}</dd>
                 </div>
                 <div className="info-list__row">
@@ -322,6 +334,7 @@ export function TicketsPage({
                   ) : (
                     messages.map((message) => {
                       const isAdmin = message.senderRole === 'admin';
+                      const isDriver = message.senderRole === 'driver';
                       return (
                         <div
                           key={getId(message)}
@@ -333,7 +346,9 @@ export function TicketsPage({
                             <strong>
                               {isAdmin
                                 ? userNameById(users, message.senderId)
-                                : 'العميل'}
+                                : isDriver
+                                  ? 'السائق'
+                                  : 'العميل'}
                             </strong>
                             <span>{formatDateTime(message.createdAt)}</span>
                           </div>
