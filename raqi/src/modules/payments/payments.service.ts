@@ -9,7 +9,23 @@ import { CustomersService } from '../customers/customers.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { WalletsService } from '../wallets/wallets.service';
+import { WalletTransactionsService } from '../wallets/wallet-transactions.service';
 import { Payment, PaymentDocument } from './schemas/payment.schema';
+
+export type CustomerPaymentHistoryItem = {
+  id: string;
+  customerId: string;
+  subscriptionId: string | null;
+  amount: number;
+  method: 'cash' | 'online' | 'wallet';
+  status: 'pending' | 'pending_gateway' | 'paid' | 'failed';
+  direction: 'credit' | 'debit';
+  type: string;
+  walletTransactionId: string | null;
+  description: string | null;
+  paidAt: string | null;
+  createdAt: string | null;
+};
 
 @Injectable()
 export class PaymentsService {
@@ -18,6 +34,7 @@ export class PaymentsService {
     private readonly paymentModel: Model<PaymentDocument>,
     private readonly customersService: CustomersService,
     private readonly walletsService: WalletsService,
+    private readonly walletTransactionsService: WalletTransactionsService,
     private readonly subscriptionsService: SubscriptionsService,
     private readonly notificationsService: NotificationsService,
   ) {}
@@ -31,6 +48,89 @@ export class PaymentsService {
       .find({ customerId })
       .sort({ createdAt: -1 })
       .exec();
+  }
+
+  /**
+   * Customer finance history: pending Payment intents + full wallet ledger
+   * (subscribe, deposits, admin credits, refunds, additional collections, etc.).
+   */
+  async findCustomerHistory(
+    customerId: string,
+  ): Promise<CustomerPaymentHistoryItem[]> {
+    const [pendingPayments, walletPage] = await Promise.all([
+      this.paymentModel
+        .find({
+          customerId,
+          status: { $in: ['pending', 'pending_gateway'] },
+        })
+        .sort({ createdAt: -1 })
+        .exec(),
+      this.walletTransactionsService.findByCustomer(customerId, {
+        page: 1,
+        limit: 100,
+      }),
+    ]);
+
+    const pendingItems: CustomerPaymentHistoryItem[] = pendingPayments.map(
+      (payment) => {
+        const createdAt = (
+          payment as PaymentDocument & { createdAt?: Date }
+        ).createdAt;
+        return {
+          id: String(payment.id),
+          customerId: String(payment.customerId),
+          subscriptionId: payment.subscriptionId
+            ? String(payment.subscriptionId)
+            : null,
+          amount: payment.amount,
+          method: payment.method,
+          status: payment.status,
+          direction: 'credit' as const,
+          type: 'payment',
+          walletTransactionId: payment.walletTransactionId
+            ? String(payment.walletTransactionId)
+            : null,
+          description: payment.description,
+          paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
+          createdAt: createdAt ? createdAt.toISOString() : null,
+        };
+      },
+    );
+
+    const walletItems: CustomerPaymentHistoryItem[] = walletPage.items.map(
+      (tx) => {
+        const createdAt = (tx as typeof tx & { createdAt?: Date }).createdAt;
+        const subscriptionId =
+          tx.referenceType === 'subscription' && tx.referenceId
+            ? String(tx.referenceId)
+            : null;
+        return {
+          id: String(tx.id),
+          customerId: String(tx.customerId),
+          subscriptionId,
+          amount: tx.amount,
+          method: this.methodFromWalletType(tx.type),
+          status: 'paid' as const,
+          direction: tx.direction as 'credit' | 'debit',
+          type: tx.type,
+          walletTransactionId: String(tx.id),
+          description: tx.description,
+          paidAt: createdAt ? createdAt.toISOString() : null,
+          createdAt: createdAt ? createdAt.toISOString() : null,
+        };
+      },
+    );
+
+    return [...pendingItems, ...walletItems].sort((a, b) => {
+      const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
+      const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
+      return bTime - aTime;
+    });
+  }
+
+  private methodFromWalletType(type: string): 'cash' | 'online' | 'wallet' {
+    if (type === 'payment' || type === 'deposit') return 'online';
+    return 'wallet';
   }
 
   async findById(id: string): Promise<PaymentDocument> {
@@ -180,8 +280,7 @@ export class PaymentsService {
       referenceType: 'payment',
       referenceId: String(payment.id),
       description:
-        payment.description ??
-        `دفعة مستلمة (${methodLabel})`,
+        payment.description ?? `دفعة مستلمة (${methodLabel})`,
       createdBy: recordedBy ?? payment.recordedBy ?? null,
     });
 

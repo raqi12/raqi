@@ -22,7 +22,7 @@ import {
   ApiOkDataResponse,
   ApiStandardErrorResponses,
 } from '../../common/swagger/decorators';
-import { PaymentDto } from '../../common/swagger/schemas/entity.schemas';
+import { PaymentDto, CustomerPaymentHistoryItemDto } from '../../common/swagger/schemas/entity.schemas';
 import { CustomersService } from '../customers/customers.service';
 import { PaymentsService } from './payments.service';
 import {
@@ -152,12 +152,15 @@ export class CustomerPaymentsController {
 
   @Get()
   @ApiOperation({
-    summary: 'List customer payments',
-    description: 'Returns payment history for the authenticated customer.',
+    summary: 'List customer payment history',
+    description:
+      'Returns finance history for the authenticated customer: pending payment intents plus wallet ledger entries (subscription payments, deposits, refunds, additional collections, admin credits).',
   })
-  @ApiOkDataResponse(PaymentDto, 'Customer payment list', { isArray: true })
+  @ApiOkDataResponse(CustomerPaymentHistoryItemDto, 'Customer payment history', {
+    isArray: true,
+  })
   async list(@CurrentUser() user?: AuthUser) {
     const customerId = await this.resolveCustomerId(user);
-    return { data: await this.paymentsService.findByCustomer(customerId) };
+    return { data: await this.paymentsService.findCustomerHistory(customerId) };
   }
 }

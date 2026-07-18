@@ -499,6 +499,51 @@ export class PaymentDto {
   paidAt?: string;
 }
 
+export class CustomerPaymentHistoryItemDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
+  id: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439012' })
+  customerId: string;
+
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439013', nullable: true })
+  subscriptionId?: string | null;
+
+  @ApiProperty({ example: 150 })
+  amount: number;
+
+  @ApiProperty({ enum: ['cash', 'online', 'wallet'], example: 'wallet' })
+  method: string;
+
+  @ApiProperty({
+    enum: ['pending', 'pending_gateway', 'paid', 'failed'],
+    example: 'paid',
+  })
+  status: string;
+
+  @ApiProperty({ enum: ['credit', 'debit'], example: 'debit' })
+  direction: string;
+
+  @ApiProperty({
+    example: 'subscription_payment',
+    description:
+      'Ledger type: deposit, admin_credit, subscription_payment, additional_collection_payment, payment, refund',
+  })
+  type: string;
+
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439014', nullable: true })
+  walletTransactionId?: string | null;
+
+  @ApiPropertyOptional({ example: 'دفع اشتراك - شهري', nullable: true })
+  description?: string | null;
+
+  @ApiPropertyOptional({ example: '2026-07-16T10:00:00.000Z', nullable: true })
+  paidAt?: string | null;
+
+  @ApiPropertyOptional({ example: '2026-07-16T10:00:00.000Z', nullable: true })
+  createdAt?: string | null;
+}
+
 export class TaskDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439011' })
   id: string;
