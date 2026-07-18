@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { DataTable } from '../components/DataTable';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import type { Address, Area, BankAccountSettings, Bin, City, Complaint, Customer, DepositRequest, Driver, Payment, Plan, Route, Subscription, Task, User, Wallet } from '../types';
+import type { Address, Area, AdditionalCollectionSettings, BankAccountSettings, Bin, City, Complaint, Customer, DepositRequest, Driver, Payment, Plan, Route, Subscription, Task, User, Wallet } from '../types';
 import { API_ORIGIN, areaLabel, customerDisplayName, getId } from './module/shared';
 
 export { UsersPage } from './module/UsersPage';
@@ -13,6 +13,7 @@ export { RoutesPage } from './module/RoutesPage';
 export { TasksPage } from './module/TasksPage';
 export { TicketsPage } from './module/TicketsPage';
 export { SupportPage } from './module/SupportPage';
+export { GalleryPage } from './module/GalleryPage';
 
 type PaymentsPageProps = {
   payments: Payment[];
@@ -249,9 +250,6 @@ export function BankAccountPage({ bankAccount, onUpdate }: BankAccountPageProps)
   });
 
   useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7507/ingest/e05eb89e-9cfa-4057-adc1-4bbb50888184',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1c8176'},body:JSON.stringify({sessionId:'1c8176',location:'BankAccountPage.tsx:form-sync-effect',message:'BankAccountPage form synced from props',data:{bankName:bankAccount?.bankName??null},timestamp:Date.now(),hypothesisId:'D',runId:'pre-fix'})}).catch(()=>{});
-    // #endregion
     setForm({
       bankName: bankAccount?.bankName ?? '',
       accountHolder: bankAccount?.accountHolder ?? '',
@@ -290,6 +288,63 @@ export function BankAccountPage({ bankAccount, onUpdate }: BankAccountPageProps)
           <option value="inactive">inactive</option>
         </select>
         <button type="submit">Save</button>
+      </form>
+    </section>
+  );
+}
+
+type AdditionalCollectionPageProps = {
+  settings: AdditionalCollectionSettings | null;
+  onUpdate: (body: { price: number; active?: boolean }) => Promise<void>;
+};
+
+export function AdditionalCollectionPage({
+  settings,
+  onUpdate,
+}: AdditionalCollectionPageProps) {
+  const [form, setForm] = useState({
+    price: settings?.price != null ? String(settings.price) : '',
+    active: settings?.active ?? true,
+  });
+
+  useEffect(() => {
+    setForm({
+      price: settings?.price != null ? String(settings.price) : '',
+      active: settings?.active ?? true,
+    });
+  }, [settings]);
+
+  return (
+    <section className="panel">
+      <h2>سعر الجمع الإضافي</h2>
+      <p className="muted">
+        سعر ثابت يُخصم من محفظة العميل عند طلب يوم جمع إضافي خلال فترة الاشتراك.
+      </p>
+      <form
+        className="row-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const price = Number(form.price);
+          if (Number.isNaN(price) || price < 0) return;
+          void onUpdate({ price, active: form.active });
+        }}
+      >
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="السعر (د.ل)"
+          value={form.price}
+          onChange={(e) => setForm({ ...form, price: e.target.value })}
+        />
+        <select
+          value={form.active ? 'active' : 'inactive'}
+          onChange={(e) => setForm({ ...form, active: e.target.value === 'active' })}
+        >
+          <option value="active">مفعّل</option>
+          <option value="inactive">متوقف</option>
+        </select>
+        <button type="submit">حفظ</button>
       </form>
     </section>
   );

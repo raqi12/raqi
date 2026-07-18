@@ -4,6 +4,7 @@ import {
   LuBanknote,
   LuClipboardList,
   LuLandmark,
+  LuCalendarPlus,
   LuLayoutDashboard,
   LuLogOut,
   LuMap,
@@ -13,6 +14,7 @@ import {
   LuBell,
   LuSend,
   LuLifeBuoy,
+  LuImages,
   LuPackage,
   LuPanelLeftClose,
   LuPanelLeftOpen,
@@ -34,6 +36,7 @@ export const TAB_ICONS: Record<SidebarTab, IconType> = {
   notifications: LuBell,
   'send-notification': LuSend,
   support: LuLifeBuoy,
+  gallery: LuImages,
   users: LuUserCog,
   drivers: LuTruck,
   plans: LuPackage,
@@ -42,6 +45,7 @@ export const TAB_ICONS: Record<SidebarTab, IconType> = {
   routes: LuMap,
   payments: LuBanknote,
   'bank-account': LuLandmark,
+  'additional-collection': LuCalendarPlus,
   'deposit-requests': LuWallet,
 };
 

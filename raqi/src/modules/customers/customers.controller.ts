@@ -76,7 +76,7 @@ export class AdminCustomersController {
   @ApiOperation({
     summary: 'Create customer',
     description:
-      'Creates a customer user account, customer profile (requires `cityId` and `areaId`), and initializes an empty wallet. Use `GET /admin/cities` and `GET /admin/areas?cityId=` to resolve valid location IDs.',
+      'Creates a customer user account, customer profile (requires `cityId`, `areaId`, `lat`, and `lng`), and initializes an empty wallet. Use `GET /admin/cities` and `GET /admin/areas?cityId=` to resolve valid location IDs.',
   })
   @ApiBody({ type: CreateCustomerDto })
   @ApiOkDataResponse(CustomerDto, 'Customer created', { status: 201 })
@@ -99,6 +99,8 @@ export class AdminCustomersController {
     await this.customersService.createInitialAddress(String(customer.id), {
       cityId: body.cityId,
       areaId: body.areaId,
+      lat: body.lat,
+      lng: body.lng,
     });
     await this.walletsService.ensureWallet(String(customer.id));
     return {

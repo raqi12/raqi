@@ -23,6 +23,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { ReportsModule } from './modules/reports/reports.module';
 import { WalletsModule } from './modules/wallets/wallets.module';
 import { SupportModule } from './modules/support/support.module';
+import { GalleryModule } from './modules/gallery/gallery.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { SupportModule } from './modules/support/support.module';
     ReportsModule,
     WalletsModule,
     SupportModule,
+    GalleryModule,
   ],
 })
 export class AppModule {}

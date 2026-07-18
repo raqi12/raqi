@@ -61,6 +61,8 @@ export class AuthService {
       password: body.password,
       cityId: body.cityId,
       areaId: body.areaId,
+      lat: body.lat,
+      lng: body.lng,
       addressDetails: body.addressDetails,
     });
 
@@ -87,6 +89,16 @@ export class AuthService {
     if (!payload) {
       throw new BadRequestException('Invalid registration OTP');
     }
+    if (
+      typeof payload.lat !== 'number' ||
+      typeof payload.lng !== 'number' ||
+      Number.isNaN(payload.lat) ||
+      Number.isNaN(payload.lng)
+    ) {
+      throw new BadRequestException(
+        'Registration OTP is missing location coordinates; please register again',
+      );
+    }
 
     const existing = await this.usersService.findByPhone(phone);
     if (existing) {
@@ -107,6 +119,8 @@ export class AuthService {
     await this.customersService.createInitialAddress(String(customer.id), {
       cityId: payload.cityId,
       areaId: payload.areaId,
+      lat: payload.lat,
+      lng: payload.lng,
       details: payload.addressDetails,
     });
     await this.walletsService.ensureWallet(String(customer.id));

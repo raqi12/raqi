@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { Model } from 'mongoose';
@@ -9,19 +15,29 @@ import {
   OtpPurpose,
   RegisterOtpPayload,
 } from './schemas/otp.schema';
+import { SmsService } from './sms.service';
 
 const OTP_EXPIRES_SECONDS = 300;
 const MAX_OTP_ATTEMPTS = 5;
-
-/** Fixed OTP for testing — replace with SMS provider before production. */
 const DEV_OTP_CODE = '123456';
-const USE_DEV_OTP = true;
 
 @Injectable()
 export class OtpService {
+  private readonly logger = new Logger(OtpService.name);
+
   constructor(
     @InjectModel(Otp.name) private readonly otpModel: Model<OtpDocument>,
+    private readonly smsService: SmsService,
+    private readonly configService: ConfigService,
   ) {}
+
+  private useDevOtp(): boolean {
+    const flag = this.configService.get<string>('OTP_DEV_MODE');
+    if (flag === 'true') return true;
+    if (flag === 'false') return false;
+    // Default: dev OTP only when SMS is not enabled
+    return !this.smsService.isEnabled();
+  }
 
   async createOtp(
     phone: string,
@@ -41,6 +57,27 @@ export class OtpService {
       expiresAt,
       attempts: 0,
     });
+
+    if (this.smsService.isEnabled()) {
+      try {
+        await this.smsService.sendOtp(normalizedPhone, purpose, code);
+      } catch (error) {
+        await this.otpModel
+          .deleteMany({ phone: normalizedPhone, purpose })
+          .exec();
+        this.logger.error('Failed to send OTP SMS', error);
+        throw new ServiceUnavailableException(
+          'تعذر إرسال رمز التحقق عبر الرسائل القصيرة',
+        );
+      }
+    } else if (!this.useDevOtp()) {
+      await this.otpModel
+        .deleteMany({ phone: normalizedPhone, purpose })
+        .exec();
+      throw new ServiceUnavailableException(
+        'خدمة الرسائل القصيرة غير مُعدّة. أضف ISEND_API_TOKEN.',
+      );
+    }
 
     return {
       code,
@@ -81,7 +118,7 @@ export class OtpService {
   }
 
   private generateCode(): string {
-    if (USE_DEV_OTP) {
+    if (this.useDevOtp()) {
       return DEV_OTP_CODE;
     }
     return String(Math.floor(100000 + Math.random() * 900000));
@@ -102,10 +139,10 @@ export class OtpService {
       expiresIn,
     };
 
-    if (USE_DEV_OTP) {
+    if (this.useDevOtp()) {
       response.otp = code;
       response.debugOtp = code;
-      console.log(
+      this.logger.log(
         `[OTP dev] purpose=${purpose ?? 'unknown'} code=${code} expiresIn=${expiresIn}s`,
       );
     }

@@ -14,6 +14,7 @@ import { formatApiError } from '../i18n/ar';
 import type {
   Area,
   BankAccountSettings,
+  AdditionalCollectionSettings,
   Bin,
   BinStats,
   City,
@@ -23,6 +24,7 @@ import type {
   DepositRequest,
   Driver,
   Faq,
+  GalleryItem,
   Overview,
   Payment,
   Plan,
@@ -64,6 +66,7 @@ type AdminContextValue = {
   tickets: Ticket[];
   supportSettings: SupportSettings | null;
   faqs: Faq[];
+  gallery: GalleryItem[];
   binsStats: BinStats | null;
   plans: Plan[];
   bins: Bin[];
@@ -71,6 +74,7 @@ type AdminContextValue = {
   areas: Area[];
   routes: Route[];
   bankAccount: BankAccountSettings | null;
+  additionalCollectionSettings: AdditionalCollectionSettings | null;
   depositRequests: DepositRequest[];
   pendingDeposits: number;
   activity: ActivityLog;
@@ -119,6 +123,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [supportSettings, setSupportSettings] = useState<SupportSettings | null>(null);
   const [faqs, setFaqs] = useState<Faq[]>([]);
+  const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [binsStats, setBinsStats] = useState<BinStats | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [bins, setBins] = useState<Bin[]>([]);
@@ -126,6 +131,8 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
   const [areas, setAreas] = useState<Area[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [bankAccount, setBankAccount] = useState<BankAccountSettings | null>(null);
+  const [additionalCollectionSettings, setAdditionalCollectionSettings] =
+    useState<AdditionalCollectionSettings | null>(null);
   const [depositRequests, setDepositRequests] = useState<DepositRequest[]>([]);
   const activity = useActivityLog();
 
@@ -177,7 +184,9 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
         ticketsRes,
         supportSettingsRes,
         faqsRes,
+        galleryRes,
         bankAccountRes,
+        additionalCollectionRes,
         depositRequestsRes,
       ] = await Promise.all([
         AdminApi.overview(),
@@ -197,7 +206,9 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
         AdminApi.tickets.list(),
         AdminApi.support.settings.get(),
         AdminApi.support.faqs.list(),
+        AdminApi.gallery.list(),
         AdminApi.settings.bankAccount.get(),
+        AdminApi.settings.additionalCollection.get(),
         AdminApi.depositRequests.list(),
       ]);
       setOverview(overviewRes.data);
@@ -217,7 +228,9 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       setTickets(ticketsRes.data);
       setSupportSettings(supportSettingsRes.data);
       setFaqs(faqsRes.data);
+      setGallery(galleryRes.data);
       setBankAccount(bankAccountRes.data);
+      setAdditionalCollectionSettings(additionalCollectionRes.data);
       setDepositRequests(depositRequestsRes.data);
       setLastSync(new Date().toLocaleTimeString());
       // #region agent log
@@ -291,6 +304,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       tickets,
       supportSettings,
       faqs,
+      gallery,
       binsStats,
       plans,
       bins,
@@ -298,6 +312,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       areas,
       routes,
       bankAccount,
+      additionalCollectionSettings,
       depositRequests,
       pendingDeposits,
       activity,
@@ -323,6 +338,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       tickets,
       supportSettings,
       faqs,
+      gallery,
       binsStats,
       plans,
       bins,
@@ -330,6 +346,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       areas,
       routes,
       bankAccount,
+      additionalCollectionSettings,
       depositRequests,
       pendingDeposits,
       activity,

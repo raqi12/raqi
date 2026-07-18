@@ -1,9 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsEmail,
   IsIn,
+  IsNumber,
   IsOptional,
   IsString,
+  Max,
+  Min,
   MinLength,
   ValidateIf,
 } from 'class-validator';
@@ -40,6 +44,26 @@ export class RegisterDto {
   })
   @IsString()
   areaId: string;
+
+  @ApiProperty({
+    example: 32.8872,
+    description: 'Initial address latitude (-90 to 90). Required on register.',
+  })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  lat: number;
+
+  @ApiProperty({
+    example: 13.1913,
+    description: 'Initial address longitude (-180 to 180). Required on register.',
+  })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  lng: number;
 
   @ApiPropertyOptional({
     example: 'شارع الجمهورية، بجوار المسجد',

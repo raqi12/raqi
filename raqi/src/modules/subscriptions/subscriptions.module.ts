@@ -7,6 +7,11 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { PlansModule } from '../plans/plans.module';
 import { TasksModule } from '../tasks/tasks.module';
 import { WalletsModule } from '../wallets/wallets.module';
+import { AdditionalCollectionSettingsService } from './additional-collection-settings.service';
+import {
+  AdditionalCollectionSettings,
+  AdditionalCollectionSettingsSchema,
+} from './schemas/additional-collection-settings.schema';
 import {
   Subscription,
   SubscriptionSchema,
@@ -14,6 +19,7 @@ import {
 import { SubscriptionRenewalCron } from './subscription-renewal.cron';
 import { SubscriptionRenewalService } from './subscription-renewal.service';
 import {
+  AdminAdditionalCollectionSettingsController,
   AdminSubscriptionsController,
   CustomerSubscriptionsController,
 } from './subscriptions.controller';
@@ -23,6 +29,10 @@ import { SubscriptionsService } from './subscriptions.service';
   imports: [
     MongooseModule.forFeature([
       { name: Subscription.name, schema: SubscriptionSchema },
+      {
+        name: AdditionalCollectionSettings.name,
+        schema: AdditionalCollectionSettingsSchema,
+      },
     ]),
     forwardRef(() => CustomersModule),
     forwardRef(() => TasksModule),
@@ -34,13 +44,19 @@ import { SubscriptionsService } from './subscriptions.service';
   ],
   controllers: [
     AdminSubscriptionsController,
+    AdminAdditionalCollectionSettingsController,
     CustomerSubscriptionsController,
   ],
   providers: [
     SubscriptionsService,
     SubscriptionRenewalService,
     SubscriptionRenewalCron,
+    AdditionalCollectionSettingsService,
   ],
-  exports: [SubscriptionsService, SubscriptionRenewalService],
+  exports: [
+    SubscriptionsService,
+    SubscriptionRenewalService,
+    AdditionalCollectionSettingsService,
+  ],
 })
 export class SubscriptionsModule {}

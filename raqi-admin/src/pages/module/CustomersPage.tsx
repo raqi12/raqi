@@ -53,6 +53,8 @@ type CustomersPageProps = {
     password: string;
     cityId: string;
     areaId: string;
+    lat: number;
+    lng: number;
   }) => Promise<void>;
   onLoadDetails: (id: string) => Promise<CustomerDetails>;
   onDeposit: (id: string, amount: number) => Promise<void>;
@@ -72,6 +74,8 @@ const emptyForm = {
   password: '',
   cityId: '',
   areaId: '',
+  lat: '',
+  lng: '',
 };
 
 function formatMoney(amount?: number) {
@@ -215,9 +219,20 @@ export function CustomersPage({
   async function submitCreate(e: FormEvent) {
     e.preventDefault();
     if (!form.cityId || !form.areaId) return;
+    const lat = Number(form.lat);
+    const lng = Number(form.lng);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) return;
     setSaving(true);
     try {
-      await onCreate(form);
+      await onCreate({
+        email: form.email,
+        name: form.name,
+        password: form.password,
+        cityId: form.cityId,
+        areaId: form.areaId,
+        lat,
+        lng,
+      });
       setForm(emptyForm);
     } finally {
       setSaving(false);
@@ -367,6 +382,24 @@ export function CustomersPage({
               </option>
             ))}
           </Select>
+          <Input
+            label="خط العرض (lat)"
+            type="number"
+            step="any"
+            dir="ltr"
+            value={form.lat}
+            onChange={(e) => setForm({ ...form, lat: e.target.value })}
+            required
+          />
+          <Input
+            label="خط الطول (lng)"
+            type="number"
+            step="any"
+            dir="ltr"
+            value={form.lng}
+            onChange={(e) => setForm({ ...form, lng: e.target.value })}
+            required
+          />
         </div>
         {!hasLocations ? (
           <p className="field__hint">أضف مدنًا ومناطق من صفحة المدن والمناطق قبل إنشاء عميل.</p>
@@ -771,6 +804,11 @@ export function CustomersPage({
                           </div>
                           <div className="record-list__meta">
                             <span>{addressLocationLabel(address, cities, areas)}</span>
+                            {address.lat != null && address.lng != null ? (
+                              <span dir="ltr">
+                                {address.lat}, {address.lng}
+                              </span>
+                            ) : null}
                           </div>
                           {address.details ? (
                             <p className="record-list__details">{address.details}</p>

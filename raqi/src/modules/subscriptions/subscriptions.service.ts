@@ -24,7 +24,10 @@ import {
 import {
   addDays,
   normalizeCollectionDates,
+  parseUtcDateString,
+  toUtcDateString,
 } from './subscription.utils';
+import { AdditionalCollectionSettingsService } from './additional-collection-settings.service';
 
 @Injectable()
 export class SubscriptionsService {
@@ -40,6 +43,7 @@ export class SubscriptionsService {
     @Inject(forwardRef(() => TasksService))
     private readonly tasksService: TasksService,
     private readonly notificationsService: NotificationsService,
+    private readonly additionalCollectionSettingsService: AdditionalCollectionSettingsService,
   ) {}
 
   private async notifyCustomer(
@@ -541,6 +545,131 @@ export class SubscriptionsService {
           amount: cost.total,
           referenceType: 'subscription',
           description: `استرداد - فشل تفعيل الاشتراك (${plan.name})`,
+        });
+      }
+      throw error;
+    }
+  }
+
+  async getAdditionalCollectionPrice(): Promise<{
+    price: number;
+    active: boolean;
+    currency: string;
+  }> {
+    const settings =
+      await this.additionalCollectionSettingsService.getOrEmpty();
+    return {
+      price: settings?.price ?? 0,
+      active: settings?.active ?? false,
+      currency: 'LYD',
+    };
+  }
+
+  async requestAdditionalCollection(
+    customerId: string,
+    collectionDate: string,
+  ): Promise<SubscriptionDocument> {
+    const subscription = await this.findActiveForCustomer(customerId);
+    if (!subscription) {
+      throw new NotFoundException('Active subscription not found');
+    }
+    if (!subscription.expiresAt) {
+      throw new BadRequestException('Subscription period end date is missing');
+    }
+    if (!subscription.areaId) {
+      throw new BadRequestException('Subscription area is missing');
+    }
+
+    const settings =
+      await this.additionalCollectionSettingsService.getActive();
+    if (!settings || settings.price < 0) {
+      throw new BadRequestException(
+        'Additional collection is not available right now',
+      );
+    }
+    if (settings.price <= 0) {
+      throw new BadRequestException(
+        'Additional collection price is not configured',
+      );
+    }
+
+    const dateStr = collectionDate.slice(0, 10);
+    parseUtcDateString(dateStr);
+
+    const todayStr = toUtcDateString(new Date());
+    const createdAtValue = (subscription as SubscriptionDocument & { createdAt?: Date })
+      .createdAt;
+    const startStr = toUtcDateString(
+      createdAtValue ? new Date(createdAtValue) : new Date(),
+    );
+    const endStr = toUtcDateString(new Date(subscription.expiresAt));
+    const earliestAllowed = startStr > todayStr ? startStr : todayStr;
+
+    if (dateStr < earliestAllowed) {
+      throw new BadRequestException(
+        `Collection date ${dateStr} must be on or after ${earliestAllowed}`,
+      );
+    }
+    if (dateStr > endStr) {
+      throw new BadRequestException(
+        `Collection date ${dateStr} is after the subscription end (${endStr})`,
+      );
+    }
+
+    const existingDates = subscription.collectionDates ?? [];
+    if (existingDates.includes(dateStr)) {
+      throw new BadRequestException(
+        `Collection date ${dateStr} is already scheduled`,
+      );
+    }
+
+    const wallet = await this.walletsService.ensureWallet(customerId);
+    if (wallet.balance < settings.price) {
+      throw new BadRequestException('Insufficient wallet balance');
+    }
+
+    let debited = false;
+    let dateAdded = false;
+    try {
+      await this.walletsService.applyMovement({
+        customerId,
+        type: 'additional_collection_payment',
+        direction: 'debit',
+        amount: settings.price,
+        referenceType: 'subscription',
+        referenceId: String(subscription.id),
+        description: `جمع إضافي - ${dateStr}`,
+      });
+      debited = true;
+
+      const nextDates = [...existingDates, dateStr].sort();
+      subscription.collectionDates = nextDates;
+      await subscription.save();
+      dateAdded = true;
+
+      await this.tasksService.createForSubscription({
+        subscriptionId: String(subscription.id),
+        customerId,
+        areaId: subscription.areaId,
+        collectionDates: [dateStr],
+        driverId: subscription.driverId,
+      });
+
+      return subscription;
+    } catch (error) {
+      if (dateAdded) {
+        subscription.collectionDates = existingDates;
+        await subscription.save().catch(() => undefined);
+      }
+      if (debited) {
+        await this.walletsService.applyMovement({
+          customerId,
+          type: 'refund',
+          direction: 'credit',
+          amount: settings.price,
+          referenceType: 'subscription',
+          referenceId: String(subscription.id),
+          description: `استرداد - فشل إضافة جمع إضافي (${dateStr})`,
         });
       }
       throw error;

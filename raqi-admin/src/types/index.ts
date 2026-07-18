@@ -55,6 +55,8 @@ export type Address = {
   isActive?: boolean;
   label?: string;
   details?: string;
+  lat?: number;
+  lng?: number;
 };
 
 export type Wallet = {
@@ -264,6 +266,14 @@ export type BankAccountSettings = {
   active?: boolean;
 };
 
+export type AdditionalCollectionSettings = {
+  _id?: string;
+  id?: string;
+  key?: string;
+  price?: number;
+  active?: boolean;
+};
+
 export type DepositRequest = {
   _id?: string;
   id?: string;
@@ -303,6 +313,17 @@ export type Faq = {
   id?: string;
   question?: string;
   answer?: string;
+  sortOrder?: number;
+  active?: boolean;
+};
+
+export type GalleryItem = {
+  _id?: string;
+  id?: string;
+  title?: string;
+  imageUrl?: string;
+  caption?: string;
+  linkUrl?: string;
   sortOrder?: number;
   active?: boolean;
 };

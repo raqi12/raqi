@@ -59,7 +59,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Register customer (step 1 — send OTP)',
     description:
-      'Starts customer self-registration. Requires a valid `cityId` and `areaId` (resolve via `GET /cities` and `GET /areas?cityId=`). Validates phone uniqueness and location, sends OTP via SMS, and stores the pending registration payload. Complete with `POST /auth/verify-otp`.',
+      'Starts customer self-registration. Requires a valid `cityId`, `areaId`, `lat`, and `lng` (resolve city/area via `GET /cities` and `GET /areas?cityId=`). Validates phone uniqueness and location, sends OTP via SMS, and stores the pending registration payload. Complete with `POST /auth/verify-otp`.',
   })
   @ApiBody({ type: RegisterDto })
   @ApiOkDataResponse(RegisterPendingDto, 'OTP sent successfully', { status: 201 })
@@ -72,7 +72,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Verify registration OTP (step 2)',
     description:
-      'Verifies OTP for purpose `register`, creates user + customer profile + active address (including `cityId` and `areaId` from step 1) + wallet, and returns JWT tokens.',
+      'Verifies OTP for purpose `register`, creates user + customer profile + active address (including `cityId`, `areaId`, `lat`, and `lng` from step 1) + wallet, and returns JWT tokens.',
   })
   @ApiBody({ type: VerifyOtpDto })
   @ApiOkDataResponse(AuthTokensDto, 'Registration completed, tokens issued')
@@ -252,7 +252,7 @@ export class CustomerAccountController {
   @ApiOperation({
     summary: 'Request OTP for account deletion',
     description:
-      'Sends a one-time code to the customer verified phone. In dev/test, the fixed code is returned in `data.otp` and `data.debugOtp` (currently `123456`) until SMS is integrated.',
+      'Sends a one-time code to the customer verified phone via SMS (iSend). In OTP_DEV_MODE, the code is also returned in `data.otp` / `data.debugOtp`.',
   })
   @ApiOkDataResponse(OtpSentDataDto, 'OTP sent')
   @ApiStandardErrorResponses()

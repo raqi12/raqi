@@ -1,8 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsEmail,
+  IsNumber,
   IsOptional,
   IsString,
+  Max,
+  Min,
   MinLength,
 } from 'class-validator';
 
@@ -33,6 +37,26 @@ export class CreateCustomerDto {
   })
   @IsString()
   areaId: string;
+
+  @ApiProperty({
+    example: 32.8872,
+    description: 'Address latitude (-90 to 90)',
+  })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  lat: number;
+
+  @ApiProperty({
+    example: 13.1913,
+    description: 'Address longitude (-180 to 180)',
+  })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  lng: number;
 }
 
 export class CreateAddressDto {
@@ -50,6 +74,26 @@ export class CreateAddressDto {
   })
   @IsString()
   areaId: string;
+
+  @ApiProperty({
+    example: 32.8872,
+    description: 'Address latitude (-90 to 90)',
+  })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  lat: number;
+
+  @ApiProperty({
+    example: 13.1913,
+    description: 'Address longitude (-180 to 180)',
+  })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  lng: number;
 
   @ApiPropertyOptional({
     example: 'شارع الجمهورية، بجوار المسجد',
@@ -76,6 +120,28 @@ export class UpdateAddressDto {
   @IsOptional()
   @IsString()
   areaId?: string;
+
+  @ApiPropertyOptional({
+    example: 32.8872,
+    description: 'Address latitude (-90 to 90)',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  lat?: number;
+
+  @ApiPropertyOptional({
+    example: 13.1913,
+    description: 'Address longitude (-180 to 180)',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  lng?: number;
 
   @ApiPropertyOptional({ example: 'شارع عمر المختار، الطابق الثاني', description: 'Street and landmark details' })
   @IsOptional()

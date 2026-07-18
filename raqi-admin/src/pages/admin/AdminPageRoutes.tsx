@@ -8,6 +8,7 @@ import { DriversPage } from '../module/DriversPage';
 import { UsersPage } from '../module/UsersPage';
 import {
   BankAccountPage,
+  AdditionalCollectionPage,
   BinsPage,
   ComplaintsPage,
   CustomersPage,
@@ -17,6 +18,7 @@ import {
   RoutesPage,
   SubscriptionsPage,
   SupportPage,
+  GalleryPage,
   TasksPage,
   TicketsPage,
 } from '../ModulePages';
@@ -38,11 +40,13 @@ export function AdminPageRoutes() {
     tickets,
     supportSettings,
     faqs,
+    gallery,
     binsStats,
     plans,
     bins,
     routes,
     bankAccount,
+    additionalCollectionSettings,
     depositRequests,
     pendingDeposits,
     activity,
@@ -279,6 +283,20 @@ export function AdminPageRoutes() {
         }
       />
       <Route
+        path="/additional-collection"
+        element={
+          <AdditionalCollectionPage
+            settings={additionalCollectionSettings}
+            onUpdate={(body) =>
+              runMutation(
+                () => AdminApi.settings.additionalCollection.update(body),
+                'تم حفظ سعر الجمع الإضافي',
+              )
+            }
+          />
+        }
+      />
+      <Route
         path="/deposit-requests"
         element={
           <DepositRequestsPage
@@ -332,6 +350,31 @@ export function AdminPageRoutes() {
             }
             onDeleteFaq={(id) =>
               runMutation(() => AdminApi.support.faqs.remove(id), 'تم حذف السؤال')
+            }
+          />
+        }
+      />
+      <Route
+        path="/gallery"
+        element={
+          <GalleryPage
+            items={gallery}
+            loading={loading}
+            onCreate={(body) =>
+              runMutation(() => AdminApi.gallery.create(body), 'تم إضافة عنصر المعرض')
+            }
+            onCreateWithImage={(formData) =>
+              runMutation(() => AdminApi.gallery.createWithImage(formData), 'تم إضافة عنصر المعرض')
+            }
+            onUpdate={(id, body) =>
+              runMutation(() => AdminApi.gallery.update(id, body), 'تم تحديث عنصر المعرض')
+            }
+            onUpload={async (file) => {
+              const res = await AdminApi.gallery.upload(file);
+              return res.data.imageUrl;
+            }}
+            onDelete={(id) =>
+              runMutation(() => AdminApi.gallery.remove(id), 'تم حذف عنصر المعرض')
             }
           />
         }

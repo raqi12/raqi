@@ -93,6 +93,8 @@ export class CustomersService {
     input: {
       cityId: string;
       areaId: string;
+      lat: number;
+      lng: number;
       label?: string;
       details?: string;
     },
@@ -102,6 +104,8 @@ export class CustomersService {
       customerId,
       cityId: input.cityId,
       areaId: input.areaId,
+      lat: input.lat,
+      lng: input.lng,
       label: input.label ?? DEFAULT_ADDRESS_LABEL,
       details: input.details ?? '',
       isActive: true,
@@ -114,6 +118,8 @@ export class CustomersService {
       label: string;
       cityId: string;
       areaId: string;
+      lat: number;
+      lng: number;
       details?: string;
     },
   ): Promise<AddressDocument> {
@@ -122,6 +128,8 @@ export class CustomersService {
       customerId,
       cityId: input.cityId,
       areaId: input.areaId,
+      lat: input.lat,
+      lng: input.lng,
       label: input.label,
       details: input.details ?? '',
       isActive: false,
@@ -145,7 +153,9 @@ export class CustomersService {
 
   async updateAddress(
     id: string,
-    patch: Partial<Pick<Address, 'label' | 'cityId' | 'areaId' | 'details'>>,
+    patch: Partial<
+      Pick<Address, 'label' | 'cityId' | 'areaId' | 'details' | 'lat' | 'lng'>
+    >,
   ): Promise<AddressDocument | null> {
     const existing = await this.addressModel.findById(id).exec();
     if (!existing) {

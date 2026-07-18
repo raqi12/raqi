@@ -3,6 +3,7 @@ import type {
   Area,
   AppNotification,
   BankAccountSettings,
+  AdditionalCollectionSettings,
   Bin,
   BinStats,
   City,
@@ -15,6 +16,7 @@ import type {
   DepositRequest,
   Driver,
   Faq,
+  GalleryItem,
   NotificationAnalytics,
   NotificationList,
   NotificationLog,
@@ -136,6 +138,8 @@ export const AdminApi = {
       password: string;
       cityId: string;
       areaId: string;
+      lat: number;
+      lng: number;
     }) =>
       apiRequest<Customer>('/admin/customers', { method: 'POST', body: JSON.stringify(body) }),
     getWallet: (id: string) => apiRequest<Wallet>(`/admin/customers/${id}/wallet`),
@@ -329,6 +333,20 @@ export const AdminApi = {
           body: JSON.stringify(body),
         }),
     },
+    additionalCollection: {
+      get: () =>
+        apiRequest<AdditionalCollectionSettings | null>(
+          '/admin/settings/additional-collection',
+        ),
+      update: (body: { price: number; active?: boolean }) =>
+        apiRequest<AdditionalCollectionSettings>(
+          '/admin/settings/additional-collection',
+          {
+            method: 'PATCH',
+            body: JSON.stringify(body),
+          },
+        ),
+    },
   },
   support: {
     settings: {
@@ -380,6 +398,53 @@ export const AdminApi = {
           method: 'DELETE',
         }),
     },
+  },
+  gallery: {
+    list: () => apiRequest<GalleryItem[]>('/admin/gallery'),
+    create: (body: {
+      title: string;
+      imageUrl: string;
+      caption?: string;
+      linkUrl?: string;
+      sortOrder?: number;
+      active?: boolean;
+    }) =>
+      apiRequest<GalleryItem>('/admin/gallery', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    createWithImage: (formData: FormData) =>
+      apiRequest<GalleryItem>('/admin/gallery/with-image', {
+        method: 'POST',
+        body: formData,
+      }),
+    upload: (file: File) => {
+      const formData = new FormData();
+      formData.append('image', file);
+      return apiRequest<{ imageUrl: string }>('/admin/gallery/upload', {
+        method: 'POST',
+        body: formData,
+      });
+    },
+    update: (
+      id: string,
+      body: {
+        title?: string;
+        imageUrl?: string;
+        caption?: string;
+        linkUrl?: string;
+        sortOrder?: number;
+        active?: boolean;
+      },
+    ) =>
+      apiRequest<GalleryItem>(`/admin/gallery/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    remove: (id: string) =>
+      apiRequest<GalleryItem>(`/admin/gallery/${id}`, {
+        method: 'DELETE',
+      }),
   },
   depositRequests: {
     list: (status?: 'pending' | 'approved' | 'rejected') =>

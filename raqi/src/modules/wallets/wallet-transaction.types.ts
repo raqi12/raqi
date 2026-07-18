@@ -2,6 +2,7 @@ export const WALLET_TRANSACTION_TYPES = [
   'deposit',
   'admin_credit',
   'subscription_payment',
+  'additional_collection_payment',
   'payment',
   'refund',
 ] as const;

@@ -10,6 +10,8 @@ export type RegisterOtpPayload = {
   password: string;
   cityId: string;
   areaId: string;
+  lat: number;
+  lng: number;
   addressDetails?: string;
 };
 

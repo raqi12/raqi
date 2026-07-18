@@ -17,7 +17,11 @@ import {
   AreaDto,
   AuthTokensDto,
   BankAccountSettingsDto,
+  AdditionalCollectionSettingsDto,
+  AdditionalCollectionPriceDto,
   FaqDto,
+  GalleryItemDto,
+  GalleryImageUrlDto,
   BinDto,
   BinStatsDto,
   ComplaintDto,
@@ -109,6 +113,8 @@ const extraModels = [
   WalletTransactionDto,
   WalletTransactionListDto,
   BankAccountSettingsDto,
+  AdditionalCollectionSettingsDto,
+  AdditionalCollectionPriceDto,
   DepositRequestDto,
   OverviewReportDto,
   WorkingHoursRangeDto,
@@ -119,6 +125,8 @@ const extraModels = [
   SupportPageDto,
   SupportSettingsDto,
   FaqDto,
+  GalleryItemDto,
+  GalleryImageUrlDto,
 ];
 
 export function setupSwagger(app: INestApplication) {

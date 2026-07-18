@@ -5,9 +5,11 @@ import {
   IsBoolean,
   IsIn,
   IsMongoId,
+  IsNumber,
   IsOptional,
   IsString,
   Matches,
+  Min,
 } from 'class-validator';
 
 export class CreateSubscriptionDto {
@@ -118,4 +120,35 @@ export class UpdateAutoRenewDto {
   @ApiProperty({ example: true, description: 'Enable or disable automatic subscription renewal' })
   @IsBoolean()
   autoRenew: boolean;
+}
+
+export class RequestAdditionalCollectionDto {
+  @ApiProperty({
+    example: '2026-07-22',
+    description:
+      'Additional collection date (YYYY-MM-DD) within the active subscription period',
+  })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'collectionDate must be YYYY-MM-DD',
+  })
+  collectionDate: string;
+}
+
+export class UpdateAdditionalCollectionSettingsDto {
+  @ApiProperty({
+    example: 25,
+    minimum: 0,
+    description: 'Fixed price in LYD for one additional collection',
+  })
+  @IsNumber()
+  @Min(0)
+  price: number;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Whether customers can request additional collections',
+  })
+  @IsOptional()
+  @IsBoolean()
+  active?: boolean;
 }

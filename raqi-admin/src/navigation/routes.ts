@@ -15,10 +15,12 @@ export const ROUTE_PATHS: Record<SidebarTab, string> = {
   subscriptions: '/subscriptions',
   payments: '/payments',
   'bank-account': '/bank-account',
+  'additional-collection': '/additional-collection',
   'deposit-requests': '/deposit-requests',
   complaints: '/complaints',
   tickets: '/tickets',
   support: '/support',
+  gallery: '/gallery',
   notifications: '/notifications',
   'send-notification': '/notifications/send',
 };
@@ -49,6 +51,7 @@ const TAB_NAV_GROUPS: Record<SidebarTab, string> = {
   notifications: 'العمليات',
   'send-notification': 'العمليات',
   support: 'العمليات',
+  gallery: 'العمليات',
   users: 'الموارد',
   drivers: 'الموارد',
   plans: 'الموارد',
@@ -57,6 +60,7 @@ const TAB_NAV_GROUPS: Record<SidebarTab, string> = {
   routes: 'الموارد',
   payments: 'المالية',
   'bank-account': 'المالية',
+  'additional-collection': 'المالية',
   'deposit-requests': 'المالية',
 };
 

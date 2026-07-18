@@ -11,10 +11,12 @@ export const TAB_LABELS = {
   subscriptions: 'الاشتراكات',
   payments: 'المدفوعات',
   'bank-account': 'الحساب البنكي',
+  'additional-collection': 'الجمع الإضافي',
   'deposit-requests': 'طلبات الإيداع',
   complaints: 'الشكاوى',
   tickets: 'تذاكر الدعم',
   support: 'صفحة الدعم',
+  gallery: 'معرض الصور',
   notifications: 'الإشعارات',
   'send-notification': 'إرسال إشعار',
 } as const;

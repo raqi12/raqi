@@ -100,6 +100,12 @@ export class AddressDto {
 
   @ApiProperty({ example: 'شارع الجمهورية، بجوار المسجد' })
   details: string;
+
+  @ApiProperty({ example: 32.8872, description: 'Latitude' })
+  lat: number;
+
+  @ApiProperty({ example: 13.1913, description: 'Longitude' })
+  lng: number;
 }
 
 export class DriverDto {
@@ -792,7 +798,14 @@ export class WalletTransactionDto {
   customerId: string;
 
   @ApiProperty({
-    enum: ['deposit', 'admin_credit', 'subscription_payment', 'payment', 'refund'],
+    enum: [
+      'deposit',
+      'admin_credit',
+      'subscription_payment',
+      'additional_collection_payment',
+      'payment',
+      'refund',
+    ],
     example: 'deposit',
   })
   type: string;
@@ -866,6 +879,31 @@ export class BankAccountSettingsDto {
 
   @ApiProperty({ example: true })
   active: boolean;
+}
+
+export class AdditionalCollectionSettingsDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
+  id: string;
+
+  @ApiProperty({ example: 'default' })
+  key: string;
+
+  @ApiProperty({ example: 25, description: 'Fixed price in LYD' })
+  price: number;
+
+  @ApiProperty({ example: true })
+  active: boolean;
+}
+
+export class AdditionalCollectionPriceDto {
+  @ApiProperty({ example: 25 })
+  price: number;
+
+  @ApiProperty({ example: true })
+  active: boolean;
+
+  @ApiProperty({ example: 'LYD' })
+  currency: string;
 }
 
 export class DepositRequestDto {
@@ -1074,6 +1112,34 @@ export class FaqDto {
 
   @ApiProperty({ example: true })
   active: boolean;
+}
+
+export class GalleryItemDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
+  id: string;
+
+  @ApiProperty({ example: 'خدمة الجمع المنزلي' })
+  title: string;
+
+  @ApiProperty({ example: '/uploads/gallery/abc.jpg' })
+  imageUrl: string;
+
+  @ApiProperty({ example: 'جمع النفايات من المنازل أسبوعياً' })
+  caption: string;
+
+  @ApiProperty({ example: 'https://raqii.com.ly' })
+  linkUrl: string;
+
+  @ApiProperty({ example: 0 })
+  sortOrder: number;
+
+  @ApiProperty({ example: true })
+  active: boolean;
+}
+
+export class GalleryImageUrlDto {
+  @ApiProperty({ example: '/uploads/gallery/abc.jpg' })
+  imageUrl: string;
 }
 
 export class RegisterPendingDto {

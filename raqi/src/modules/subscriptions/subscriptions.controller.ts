@@ -25,8 +25,11 @@ import {
 import {
   CustomerSubscriptionCurrentDto,
   SubscriptionDto,
+  AdditionalCollectionSettingsDto,
+  AdditionalCollectionPriceDto,
 } from '../../common/swagger/schemas/entity.schemas';
 import { CustomersService } from '../customers/customers.service';
+import { AdditionalCollectionSettingsService } from './additional-collection-settings.service';
 import { SubscriptionRenewalService } from './subscription-renewal.service';
 import { SubscriptionsService } from './subscriptions.service';
 import { SubscriptionStatus } from './schemas/subscription.schema';
@@ -38,6 +41,8 @@ import {
   AssignSubscriptionDriverDto,
   UpdateSubscriptionDto,
   UpdateAutoRenewDto,
+  RequestAdditionalCollectionDto,
+  UpdateAdditionalCollectionSettingsDto,
 } from './dto/subscription.dto';
 
 @ApiTags('Admin - Subscriptions')
@@ -199,6 +204,50 @@ export class AdminSubscriptionsController {
   }
 }
 
+@ApiTags('Admin - Additional Collection')
+@ApiAdminAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.Admin)
+@Controller('admin/settings')
+export class AdminAdditionalCollectionSettingsController {
+  constructor(
+    private readonly additionalCollectionSettingsService: AdditionalCollectionSettingsService,
+  ) {}
+
+  @Get('additional-collection')
+  @ApiOperation({
+    summary: 'Get additional collection settings',
+    description:
+      'Returns the fixed price customers pay for an extra collection during an active subscription.',
+  })
+  @ApiOkDataResponse(
+    AdditionalCollectionSettingsDto,
+    'Additional collection settings (may be null)',
+  )
+  async getSettings() {
+    return {
+      data: await this.additionalCollectionSettingsService.getOrEmpty(),
+    };
+  }
+
+  @Patch('additional-collection')
+  @ApiOperation({
+    summary: 'Update additional collection settings',
+    description:
+      'Sets the fixed wallet charge for requesting an additional collection day.',
+  })
+  @ApiBody({ type: UpdateAdditionalCollectionSettingsDto })
+  @ApiOkDataResponse(
+    AdditionalCollectionSettingsDto,
+    'Additional collection settings updated',
+  )
+  async updateSettings(@Body() body: UpdateAdditionalCollectionSettingsDto) {
+    return {
+      data: await this.additionalCollectionSettingsService.upsert(body),
+    };
+  }
+}
+
 @ApiTags('Customer - Subscriptions')
 @ApiBearerAuth('access-token')
 @ApiStandardErrorResponses()
@@ -277,6 +326,40 @@ export class CustomerSubscriptionsController {
     const customerId = await this.resolveCustomerId(user);
     return {
       data: await this.subscriptionsService.getCurrentWithPlan(customerId),
+    };
+  }
+
+  @Get('additional-collection/price')
+  @ApiOperation({
+    summary: 'Get additional collection price',
+    description:
+      'Returns the fixed dashboard-configured price for requesting an extra collection day.',
+  })
+  @ApiOkDataResponse(AdditionalCollectionPriceDto, 'Additional collection price')
+  async additionalCollectionPrice() {
+    return {
+      data: await this.subscriptionsService.getAdditionalCollectionPrice(),
+    };
+  }
+
+  @Post('current/additional-collection')
+  @ApiOperation({
+    summary: 'Request additional collection',
+    description:
+      'Adds one extra collection date within the active subscription period, creates a task, and debits the fixed price from the customer wallet.',
+  })
+  @ApiBody({ type: RequestAdditionalCollectionDto })
+  @ApiOkDataResponse(SubscriptionDto, 'Additional collection scheduled')
+  async requestAdditionalCollection(
+    @Body() body: RequestAdditionalCollectionDto,
+    @CurrentUser() user?: AuthUser,
+  ) {
+    const customerId = await this.resolveCustomerId(user);
+    return {
+      data: await this.subscriptionsService.requestAdditionalCollection(
+        customerId,
+        body.collectionDate,
+      ),
     };
   }
 

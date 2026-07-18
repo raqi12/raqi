@@ -23,7 +23,14 @@ export class Address {
 
   @Prop({ default: '' })
   details: string;
+
+  @Prop({ required: true, type: Number, min: -90, max: 90 })
+  lat: number;
+
+  @Prop({ required: true, type: Number, min: -180, max: 180 })
+  lng: number;
 }
 
 export const AddressSchema = SchemaFactory.createForClass(Address);
 AddressSchema.index({ customerId: 1, isActive: 1 });
+AddressSchema.index({ lat: 1, lng: 1 });

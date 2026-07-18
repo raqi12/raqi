@@ -20,11 +20,13 @@ export function setRefreshHandler(handler: (() => Promise<string | null>) | null
 }
 
 export async function apiRequest<T>(path: string, init?: RequestInit): Promise<ApiEnvelope<T>> {
+  const isFormData = typeof FormData !== 'undefined' && init?.body instanceof FormData;
+
   const execute = async (token?: string | null) =>
     fetch(`${API_BASE}${path}`, {
       ...init,
       headers: {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...(init?.headers ?? {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
