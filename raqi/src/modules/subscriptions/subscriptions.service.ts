@@ -429,6 +429,20 @@ export class SubscriptionsService {
     return this.assignPlan(customerId, input, { deductWallet: true });
   }
 
+  /**
+   * Ends an active/requested subscription when the customer changes plan:
+   * cancel open tasks and mark subscription expired as of now.
+   */
+  private async endSubscriptionForReplace(
+    subscription: SubscriptionDocument,
+  ): Promise<void> {
+    await this.tasksService.cancelOpenForSubscription(String(subscription.id));
+    subscription.status = SubscriptionStatus.Expired;
+    subscription.autoRenew = false;
+    subscription.expiresAt = new Date();
+    await subscription.save();
+  }
+
   async assignPlan(
     customerId: string,
     input: SubscribePlanDto,
@@ -437,29 +451,36 @@ export class SubscriptionsService {
     const deductWallet = options.deductWallet ?? false;
 
     const existing = await this.findCurrentForCustomer(customerId);
-    if (
+    const replacing = Boolean(
       existing &&
-      (existing.status === SubscriptionStatus.Active ||
-        existing.status === SubscriptionStatus.Requested)
-    ) {
-      throw new BadRequestException(
-        'Customer already has an active or pending subscription',
-      );
-    }
+        (existing.status === SubscriptionStatus.Active ||
+          existing.status === SubscriptionStatus.Requested),
+    );
+    const oldBinId =
+      replacing && existing?.binId ? String(existing.binId) : null;
+    const requestedBinId = input.binId ? String(input.binId) : null;
+    const resolvedBinId = requestedBinId ?? oldBinId;
+    const reusingBin = Boolean(
+      resolvedBinId && oldBinId && resolvedBinId === oldBinId,
+    );
 
     const plan = await this.plansService.findById(input.planId);
     if (!plan || !plan.active) {
       throw new BadRequestException('Plan is not available');
     }
 
-    if (input.binId) {
-      const bin = await this.binsService.findById(input.binId);
+    if (requestedBinId && !reusingBin) {
+      const bin = await this.binsService.findById(requestedBinId);
       if (!bin || bin.status !== 'available') {
         throw new BadRequestException('Bin is not available');
       }
     }
 
-    const cost = await this.plansService.calculateCost(input.planId, input.binId);
+    // Reusing an existing bin does not charge bin fee again.
+    const cost = await this.plansService.calculateCost(
+      input.planId,
+      reusingBin ? undefined : requestedBinId ?? undefined,
+    );
 
     const { cityId, areaId } = await this.resolveAddressLocation(
       customerId,
@@ -474,6 +495,7 @@ export class SubscriptionsService {
       now,
       expiresAt,
     );
+    const deliveryDate = toUtcDateString(now);
 
     if (deductWallet) {
       const wallet = await this.walletsService.ensureWallet(customerId);
@@ -482,12 +504,19 @@ export class SubscriptionsService {
       }
     }
 
+    if (replacing && existing) {
+      await this.endSubscriptionForReplace(existing);
+    }
+
     let debited = false;
     let debitTransactionId: string | null = null;
+    let previousBinUnassigned: string | null = null;
     const paymentDescription =
       cost.binFee > 0
         ? `دفع اشتراك - ${plan.name} + رسوم حاوية (${cost.binFee} د.ل)`
-        : `دفع اشتراك - ${plan.name}`;
+        : replacing
+          ? `تغيير خطة - ${plan.name}`
+          : `دفع اشتراك - ${plan.name}`;
     try {
       if (deductWallet) {
         const { transaction } = await this.walletsService.applyMovement({
@@ -502,10 +531,26 @@ export class SubscriptionsService {
         debitTransactionId = String(transaction.id);
       }
 
+      if (resolvedBinId) {
+        if (reusingBin) {
+          await this.binsService.assign(resolvedBinId, customerId, true, {
+            deliveryDate,
+          });
+        } else {
+          if (oldBinId) {
+            await this.binsService.unassign(oldBinId);
+            previousBinUnassigned = oldBinId;
+          }
+          await this.binsService.assign(resolvedBinId, customerId, true, {
+            deliveryDate,
+          });
+        }
+      }
+
       const subscription = await this.subscriptionModel.create({
         customerId,
         planId: input.planId,
-        binId: input.binId ?? null,
+        binId: resolvedBinId,
         addressId: input.addressId,
         cityId,
         areaId,
@@ -523,12 +568,6 @@ export class SubscriptionsService {
         );
       }
 
-      if (input.binId) {
-        await this.binsService.assign(input.binId, customerId, true, {
-          deliveryDate: toUtcDateString(now),
-        });
-      }
-
       await this.tasksService.createForSubscription({
         subscriptionId: String(subscription.id),
         customerId,
@@ -539,6 +578,13 @@ export class SubscriptionsService {
 
       return subscription;
     } catch (error) {
+      if (previousBinUnassigned) {
+        await this.binsService
+          .assign(previousBinUnassigned, customerId, true, {
+            deliveryDate,
+          })
+          .catch(() => undefined);
+      }
       if (debited) {
         await this.walletsService.applyMovement({
           customerId,
@@ -546,7 +592,9 @@ export class SubscriptionsService {
           direction: 'credit',
           amount: cost.total,
           referenceType: 'subscription',
-          description: `استرداد - فشل تفعيل الاشتراك (${plan.name})`,
+          description: replacing
+            ? `استرداد - فشل تغيير الخطة (${plan.name})`
+            : `استرداد - فشل تفعيل الاشتراك (${plan.name})`,
         });
       }
       throw error;

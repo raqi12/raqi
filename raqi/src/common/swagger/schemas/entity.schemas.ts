@@ -519,7 +519,7 @@ export class TaskDto {
   scheduledDate: string;
 
   @ApiProperty({
-    enum: ['pending', 'assigned', 'in_progress', 'completed', 'skipped'],
+    enum: ['pending', 'assigned', 'in_progress', 'completed', 'skipped', 'cancelled'],
     example: 'assigned',
   })
   status: string;

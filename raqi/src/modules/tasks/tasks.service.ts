@@ -164,6 +164,23 @@ export class TasksService {
     return this.taskModel.find({ subscriptionId }).exec();
   }
 
+  /**
+   * Cancels open (pending/assigned) tasks for a subscription when the plan is replaced.
+   * Leaves completed, in-progress, and skipped tasks unchanged.
+   */
+  async cancelOpenForSubscription(subscriptionId: string): Promise<number> {
+    const result = await this.taskModel
+      .updateMany(
+        {
+          subscriptionId,
+          status: { $in: [TaskStatus.Pending, TaskStatus.Assigned] },
+        },
+        { status: TaskStatus.Cancelled },
+      )
+      .exec();
+    return result.modifiedCount;
+  }
+
   countCompleted(): Promise<number> {
     return this.taskModel.countDocuments({ status: TaskStatus.Completed }).exec();
   }
@@ -366,6 +383,7 @@ export class TasksService {
       case TaskStatus.Completed:
         return 'completed';
       case TaskStatus.Skipped:
+      case TaskStatus.Cancelled:
         return 'skipped';
       case TaskStatus.Assigned:
       case TaskStatus.Pending:

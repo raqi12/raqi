@@ -10,6 +10,7 @@ export enum TaskStatus {
   InProgress = 'in_progress',
   Completed = 'completed',
   Skipped = 'skipped',
+  Cancelled = 'cancelled',
 }
 
 @Schema(baseSchemaOptions)

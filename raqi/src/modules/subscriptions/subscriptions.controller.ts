@@ -88,7 +88,7 @@ export class AdminSubscriptionsController {
   @ApiOperation({
     summary: 'Assign plan to customer',
     description:
-      'Assigns a plan and address to a customer with exact collectionDates (count must equal plan.numberOfCollections). Creates collection tasks upfront. Bin is optional; when provided, bin fee is included in optional wallet deduction.',
+      'Assigns a plan and address to a customer with exact collectionDates (count must equal plan.numberOfCollections). Creates collection tasks upfront. Bin is optional; when provided, bin fee is included in optional wallet deduction. If the customer already has an active or requested subscription, it is expired immediately (open tasks cancelled) and replaced by the new plan starting today.',
   })
   @ApiBody({ type: AdminAssignPlanDto })
   @ApiOkDataResponse(SubscriptionDto, 'Plan assigned and subscription created')
@@ -291,7 +291,7 @@ export class CustomerSubscriptionsController {
   @ApiOperation({
     summary: 'Subscribe with wallet',
     description:
-      'Creates an active subscription using plan, address, and collectionDates (count must equal plan.numberOfCollections). Creates collection tasks upfront. Bin is optional; when provided, bin fee is added to the wallet debit.',
+      'Creates an active subscription using plan, address, and collectionDates (count must equal plan.numberOfCollections). Creates collection tasks upfront. Bin is optional; when provided, bin fee is added to the wallet debit. If the customer already has an active or requested subscription, it is expired immediately (open tasks cancelled) and replaced by the new plan starting today (full new plan price charged; no refund of the old plan).',
   })
   @ApiBody({ type: SubscribePlanDto })
   @ApiOkDataResponse(SubscriptionDto, 'Subscription created via wallet payment')
