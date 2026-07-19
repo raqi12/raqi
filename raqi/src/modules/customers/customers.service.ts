@@ -44,9 +44,31 @@ export class CustomersService {
       customers.map((customer) => String(customer.userId)),
     );
     const userById = new Map(users.map((user) => [String(user.id), user]));
-    return customers.map((customer) =>
-      this.toAdminView(customer, userById.get(String(customer.userId))),
-    );
+    return customers
+      .filter((customer) => {
+        const user = userById.get(String(customer.userId));
+        return !user?.deletedAt;
+      })
+      .map((customer) =>
+        this.toAdminView(customer, userById.get(String(customer.userId))),
+      );
+  }
+
+  async softDeleteAccount(customerId: string): Promise<Record<string, unknown>> {
+    const customer = await this.findById(customerId);
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+    const user = await this.usersService.findById(String(customer.userId));
+    if (!user) {
+      throw new NotFoundException('User account not found');
+    }
+    if (user.deletedAt) {
+      throw new BadRequestException('Customer account is already deleted');
+    }
+    await this.usersService.softDelete(String(customer.userId));
+    const deleted = await this.usersService.findById(String(customer.userId));
+    return this.toAdminView(customer, deleted);
   }
 
   async findByIdForAdmin(id: string): Promise<Record<string, unknown> | null> {
@@ -60,7 +82,12 @@ export class CustomersService {
 
   private toAdminView(
     customer: CustomerDocument,
-    user?: { name: string; email: string; status?: string } | null,
+    user?: {
+      name: string;
+      email: string;
+      status?: string;
+      deletedAt?: Date | null;
+    } | null,
   ): Record<string, unknown> {
     const json = customer.toJSON() as unknown as Record<string, unknown>;
     if (user) {
@@ -69,6 +96,7 @@ export class CustomersService {
       if (user.status) {
         json.status = user.status;
       }
+      json.deletedAt = user.deletedAt ?? null;
     }
     return json;
   }

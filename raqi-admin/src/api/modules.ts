@@ -163,6 +163,8 @@ export const AdminApi = {
     },
     listAddresses: (id: string) => apiRequest<Address[]>(`/admin/customers/${id}/addresses`),
     getDetails: (id: string) => apiRequest<CustomerDetails>(`/admin/customers/${id}/details`),
+    remove: (id: string) =>
+      apiRequest<Customer>(`/admin/customers/${id}`, { method: 'DELETE' }),
   },
   drivers: {
     list: () => apiRequest<Driver[]>('/admin/drivers'),
@@ -187,6 +189,8 @@ export const AdminApi = {
         method: 'PATCH',
         body: JSON.stringify({ status }),
       }),
+    remove: (id: string) =>
+      apiRequest<Driver>(`/admin/drivers/${id}`, { method: 'DELETE' }),
   },
   tasks: {
     list: () => apiRequest<Task[]>('/admin/tasks'),

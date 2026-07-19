@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AdminApi } from '../../api/modules';
 import { DataTable } from '../../components/DataTable';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { DetailPanel } from '../../components/forms/DetailPanel';
 import { FormCard } from '../../components/forms/FormCard';
 import { Button } from '../../components/ui/Button';
@@ -66,6 +67,7 @@ type CustomersPageProps = {
     collectionDates: string[];
     deductWallet?: boolean;
   }) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 };
 
 const emptyForm = {
@@ -131,6 +133,7 @@ export function CustomersPage({
   onLoadDetails,
   onDeposit,
   onAssignPlan,
+  onDelete,
 }: CustomersPageProps) {
   const [form, setForm] = useState(emptyForm);
   const [selected, setSelected] = useState<Customer | null>(null);
@@ -147,6 +150,7 @@ export function CustomersPage({
   const [collectionDateDraft, setCollectionDateDraft] = useState('');
   const [saving, setSaving] = useState(false);
   const [assignCost, setAssignCost] = useState<SubscriptionCost | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const formAreas = useMemo(() => areasForCity(areas, form.cityId), [areas, form.cityId]);
   const hasLocations = cities.length > 0 && areas.length > 0;
@@ -430,6 +434,11 @@ export function CustomersPage({
           title={selectedName}
           subtitle={selectedEmail !== '—' ? selectedEmail : undefined}
           onClose={() => setSelected(null)}
+          footer={
+            <Button type="button" variant="ghost" onClick={() => setDeleteId(getId(selectedCustomer))}>
+              حذف الحساب
+            </Button>
+          }
         >
           {detailsLoading && !details ? (
             <p className="detail-block__muted">{COMMON.loading}</p>
@@ -823,6 +832,21 @@ export function CustomersPage({
           )}
         </DetailPanel>
       ) : null}
+
+      <ConfirmDialog
+        open={Boolean(deleteId)}
+        title="حذف حساب العميل"
+        description="سيتم حذف الحساب نهائياً ولن يتمكن العميل من تسجيل الدخول. هل أنت متأكد؟"
+        onCancel={() => setDeleteId(null)}
+        onConfirm={() => {
+          if (!deleteId) return;
+          void onDelete(deleteId).then(() => {
+            setDeleteId(null);
+            setSelected(null);
+            setDetails(null);
+          });
+        }}
+      />
     </div>
   );
 }

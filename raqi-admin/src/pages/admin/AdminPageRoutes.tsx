@@ -128,6 +128,9 @@ export function AdminPageRoutes() {
             onAssignPlan={(body) =>
               runMutation(() => AdminApi.subscriptions.assignPlan(body), 'تم تعيين الاشتراك')
             }
+            onDelete={(id) =>
+              runMutation(() => AdminApi.customers.remove(id), 'تم حذف حساب العميل')
+            }
           />
         }
       />
@@ -147,6 +150,9 @@ export function AdminPageRoutes() {
                 () => AdminApi.drivers.setStatus(id, status),
                 status === 'active' ? 'تم تفعيل السائق' : 'تم تعطيل السائق',
               )
+            }
+            onDelete={(id) =>
+              runMutation(() => AdminApi.drivers.remove(id), 'تم حذف حساب السائق')
             }
           />
         }

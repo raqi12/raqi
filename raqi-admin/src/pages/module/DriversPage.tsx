@@ -36,6 +36,7 @@ type DriversPageProps = {
     body: { vehicleNumber?: string; cityId?: string; areaId?: string },
   ) => Promise<void>;
   onSetStatus: (id: string, status: 'active' | 'inactive') => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 };
 
 const emptyForm = {
@@ -56,10 +57,12 @@ export function DriversPage({
   onCreate,
   onUpdate,
   onSetStatus,
+  onDelete,
 }: DriversPageProps) {
   const [form, setForm] = useState(emptyForm);
   const [selected, setSelected] = useState<Driver | null>(null);
   const [confirm, setConfirm] = useState<{ id: string; status: 'active' | 'inactive' } | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const formAreas = useMemo(() => areasForCity(areas, form.cityId), [areas, form.cityId]);
@@ -217,18 +220,23 @@ export function DriversPage({
           subtitle={userNameById(users, selected.userId)}
           onClose={() => setSelected(null)}
           footer={
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() =>
-                setConfirm({
-                  id: getId(selected),
-                  status: selected.status === 'active' ? 'inactive' : 'active',
-                })
-              }
-            >
-              {selected.status === 'active' ? 'تعطيل الحساب' : 'تفعيل الحساب'}
-            </Button>
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() =>
+                  setConfirm({
+                    id: getId(selected),
+                    status: selected.status === 'active' ? 'inactive' : 'active',
+                  })
+                }
+              >
+                {selected.status === 'active' ? 'تعطيل الحساب' : 'تفعيل الحساب'}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setDeleteId(getId(selected))}>
+                حذف الحساب
+              </Button>
+            </>
           }
         >
           <form className="form-grid" onSubmit={submitUpdate}>
@@ -283,6 +291,20 @@ export function DriversPage({
           if (!confirm) return;
           void onSetStatus(confirm.id, confirm.status);
           setConfirm(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteId)}
+        title="حذف حساب السائق"
+        description="سيتم حذف الحساب نهائياً ولن يتمكن السائق من تسجيل الدخول. هل أنت متأكد؟"
+        onCancel={() => setDeleteId(null)}
+        onConfirm={() => {
+          if (!deleteId) return;
+          void onDelete(deleteId).then(() => {
+            setDeleteId(null);
+            setSelected(null);
+          });
         }}
       />
     </div>

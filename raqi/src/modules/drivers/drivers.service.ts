@@ -7,6 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AreasService } from '../areas/areas.service';
 import { CitiesService } from '../cities/cities.service';
+import { UsersService } from '../users/users.service';
 import { Driver, DriverDocument } from './schemas/driver.schema';
 
 @Injectable()
@@ -15,6 +16,7 @@ export class DriversService {
     @InjectModel(Driver.name) private readonly driverModel: Model<DriverDocument>,
     private readonly citiesService: CitiesService,
     private readonly areasService: AreasService,
+    private readonly usersService: UsersService,
   ) {}
 
   async create(input: {
@@ -35,6 +37,17 @@ export class DriversService {
 
   findAll(): Promise<DriverDocument[]> {
     return this.driverModel.find().exec();
+  }
+
+  async findAllForAdmin(): Promise<DriverDocument[]> {
+    const drivers = await this.findAll();
+    const users = await this.usersService.findByIds(
+      drivers.map((driver) => String(driver.userId)),
+    );
+    const deletedUserIds = new Set(
+      users.filter((user) => user.deletedAt).map((user) => String(user.id)),
+    );
+    return drivers.filter((driver) => !deletedUserIds.has(String(driver.userId)));
   }
 
   findById(id: string): Promise<DriverDocument | null> {

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Param,
@@ -106,6 +107,19 @@ export class AdminCustomersController {
     return {
       data: await this.customersService.findByIdForAdmin(String(customer.id)),
     };
+  }
+
+  @Roles(Role.Admin)
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Delete customer account',
+    description:
+      'Soft-deletes the linked user account so the customer can no longer sign in. Profile history is retained but anonymized.',
+  })
+  @ApiMongoIdParam('id', 'Customer MongoDB ID')
+  @ApiOkDataResponse(CustomerDto, 'Customer account deleted')
+  async remove(@Param('id') id: string) {
+    return { data: await this.customersService.softDeleteAccount(id) };
   }
 
   @Roles(Role.Admin)

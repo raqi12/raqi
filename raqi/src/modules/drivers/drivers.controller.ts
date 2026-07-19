@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Param,
@@ -46,7 +47,7 @@ export class DriversController {
   })
   @ApiOkDataResponse(DriverDto, 'Driver list', { isArray: true })
   async list() {
-    return { data: await this.driversService.findAll() };
+    return { data: await this.driversService.findAllForAdmin() };
   }
 
   @Post()
@@ -119,5 +120,29 @@ export class DriversController {
       throw new NotFoundException('Driver not found');
     }
     return { data: driver };
+  }
+
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Delete driver account',
+    description:
+      'Soft-deletes the linked user account and deactivates the driver profile. The driver can no longer sign in.',
+  })
+  @ApiMongoIdParam('id', 'Driver MongoDB ID')
+  @ApiOkDataResponse(DriverDto, 'Driver deleted')
+  async remove(@Param('id') id: string) {
+    const driver = await this.driversService.findById(id);
+    if (!driver) {
+      throw new NotFoundException('Driver not found');
+    }
+
+    const user = await this.usersService.findById(driver.userId);
+    if (user?.deletedAt) {
+      throw new BadRequestException('Driver account is already deleted');
+    }
+
+    await this.usersService.softDelete(driver.userId);
+    const updated = await this.driversService.update(id, { status: 'inactive' });
+    return { data: updated ?? driver };
   }
 }
