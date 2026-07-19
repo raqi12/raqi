@@ -32,6 +32,7 @@ import {
   CityDto,
   CustomerDto,
   DepositRequestDto,
+  CashTopupRequestDto,
   DriverDto,
   DriverProfileDto,
   DriverWeekStatsDto,
@@ -119,6 +120,7 @@ const extraModels = [
   AdditionalCollectionSettingsDto,
   AdditionalCollectionPriceDto,
   DepositRequestDto,
+  CashTopupRequestDto,
   OverviewReportDto,
   WorkingHoursRangeDto,
   SupportContactsDto,
@@ -223,6 +225,8 @@ Deposit evidence: \`multipart/form-data\` with field \`evidence\` (jpg, jpeg, pn
     .addTag('Admin - Tickets', 'Support ticket management and chat')
     .addTag('Notifications', 'In-app notifications')
     .addTag('Customer - Wallet', 'Wallet and deposit requests')
+    .addTag('Customer - Cash Topups', 'Cash courier wallet top-up requests')
+    .addTag('Admin - Cash Topups', 'Manage cash courier top-ups and confirm credit')
     .addTag('Admin - Wallet Settings', 'Bank account and deposit review')
     .addTag('Admin - Reports', 'Analytics and KPIs')
     .addTag('Content Pages', 'Public privacy policy and app instructions')

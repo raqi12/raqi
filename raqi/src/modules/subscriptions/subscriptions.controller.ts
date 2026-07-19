@@ -345,6 +345,22 @@ export class CustomerSubscriptionsController {
     };
   }
 
+  @Get('previous')
+  @ApiOperation({
+    summary: 'List previous ended subscriptions',
+    description:
+      'Returns expired and suspended subscriptions for the authenticated customer, newest first, each with plan summary when available.',
+  })
+  @ApiOkDataResponse(CustomerSubscriptionCurrentDto, 'Previous ended subscriptions', {
+    isArray: true,
+  })
+  async previous(@CurrentUser() user?: AuthUser) {
+    const customerId = await this.resolveCustomerId(user);
+    return {
+      data: await this.subscriptionsService.getPreviousWithPlan(customerId),
+    };
+  }
+
   @Get('additional-collection/price')
   @ApiOperation({
     summary: 'Get additional collection price',

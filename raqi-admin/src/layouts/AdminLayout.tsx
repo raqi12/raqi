@@ -39,6 +39,7 @@ export function AdminLayout({
     loadAll,
     logout,
     pendingDeposits,
+    pendingCashTopups,
   } = useAdmin();
 
   const activeTab = tabFromPathname(location.pathname);
@@ -57,6 +58,7 @@ export function AdminLayout({
           }}
           userEmail={session.user.email}
           pendingDeposits={pendingDeposits}
+          pendingCashTopups={pendingCashTopups}
           collapsed={sidebarCollapsed}
           onToggleCollapse={onToggleSidebar}
           onLogout={logout}

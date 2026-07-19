@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsEmail,
   IsIn,
@@ -100,4 +100,14 @@ export class DriverMonthlyStatsQueryDto {
   @Min(1)
   @Max(12)
   month?: number;
+}
+
+export class UpdateDriverProfileDto {
+  @ApiPropertyOptional({ example: 'أحمد محمد السالم' })
+  @IsOptional()
+  @Transform(({ value }) =>
+    value === '' || value === null || value === undefined ? undefined : value,
+  )
+  @IsString()
+  name?: string;
 }

@@ -287,6 +287,38 @@ export type DepositRequest = {
   rejectionReason?: string | null;
 };
 
+export type CashTopupStatus =
+  | 'pending'
+  | 'dispatched'
+  | 'collected'
+  | 'completed'
+  | 'cancelled';
+
+export type CashTopupRequest = {
+  _id?: string;
+  id?: string;
+  customerId?: string;
+  addressId?: string;
+  amount?: number;
+  addressLabel?: string;
+  addressDetails?: string;
+  cityId?: string;
+  areaId?: string;
+  lat?: number;
+  lng?: number;
+  status?: CashTopupStatus;
+  courierName?: string | null;
+  courierPhone?: string | null;
+  dispatchedAt?: string | null;
+  collectedAt?: string | null;
+  completedAt?: string | null;
+  cancelledAt?: string | null;
+  reviewedBy?: string | null;
+  cancellationReason?: string | null;
+  walletTransactionId?: string | null;
+  createdAt?: string;
+};
+
 export type WorkingHoursRange = {
   label: string;
   startTime: string;

@@ -14,6 +14,8 @@ import type {
   Customer,
   CustomerDetails,
   DepositRequest,
+  CashTopupRequest,
+  CashTopupStatus,
   Driver,
   Faq,
   GalleryItem,
@@ -473,6 +475,29 @@ export const AdminApi = {
       apiRequest<DepositRequest>(`/admin/deposit-requests/${id}/reject`, {
         method: 'PATCH',
         body: JSON.stringify({ rejectionReason }),
+      }),
+  },
+  cashTopups: {
+    list: (status?: CashTopupStatus) =>
+      apiRequest<CashTopupRequest[]>(
+        status ? `/admin/cash-topups?status=${status}` : '/admin/cash-topups',
+      ),
+    get: (id: string) => apiRequest<CashTopupRequest>(`/admin/cash-topups/${id}`),
+    assign: (id: string, body: { courierName: string; courierPhone: string }) =>
+      apiRequest<CashTopupRequest>(`/admin/cash-topups/${id}/assign`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    dispatch: (id: string) =>
+      apiRequest<CashTopupRequest>(`/admin/cash-topups/${id}/dispatch`, { method: 'PATCH' }),
+    collect: (id: string) =>
+      apiRequest<CashTopupRequest>(`/admin/cash-topups/${id}/collect`, { method: 'PATCH' }),
+    confirm: (id: string) =>
+      apiRequest<CashTopupRequest>(`/admin/cash-topups/${id}/confirm`, { method: 'PATCH' }),
+    cancel: (id: string, reason?: string) =>
+      apiRequest<CashTopupRequest>(`/admin/cash-topups/${id}/cancel`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reason }),
       }),
   },
   notifications: {

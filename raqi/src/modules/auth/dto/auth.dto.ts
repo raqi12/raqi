@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsEmail,
   IsIn,
@@ -116,11 +116,17 @@ export class RefreshDto {
 export class UpdateMeDto {
   @ApiPropertyOptional({ example: 'مصطفى عيسى' })
   @IsOptional()
+  @Transform(({ value }) =>
+    value === '' || value === null || value === undefined ? undefined : value,
+  )
   @IsString()
   name?: string;
 
   @ApiPropertyOptional({ example: 'user@example.com' })
   @IsOptional()
+  @Transform(({ value }) =>
+    value === '' || value === null || value === undefined ? undefined : value,
+  )
   @IsEmail()
   email?: string;
 }

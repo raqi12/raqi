@@ -22,6 +22,7 @@ import type {
   Ticket,
   Customer,
   DepositRequest,
+  CashTopupRequest,
   Driver,
   Faq,
   GalleryItem,
@@ -79,7 +80,9 @@ type AdminContextValue = {
   bankAccount: BankAccountSettings | null;
   additionalCollectionSettings: AdditionalCollectionSettings | null;
   depositRequests: DepositRequest[];
+  cashTopups: CashTopupRequest[];
   pendingDeposits: number;
+  pendingCashTopups: number;
   activity: ActivityLog;
 };
 
@@ -139,6 +142,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
   const [additionalCollectionSettings, setAdditionalCollectionSettings] =
     useState<AdditionalCollectionSettings | null>(null);
   const [depositRequests, setDepositRequests] = useState<DepositRequest[]>([]);
+  const [cashTopups, setCashTopups] = useState<CashTopupRequest[]>([]);
   const activity = useActivityLog();
 
   const applySession = useCallback(
@@ -195,6 +199,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
         bankAccountRes,
         additionalCollectionRes,
         depositRequestsRes,
+        cashTopupsRes,
       ] = await Promise.all([
         AdminApi.overview(),
         AdminApi.bins.stats(),
@@ -219,6 +224,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
         AdminApi.settings.bankAccount.get(),
         AdminApi.settings.additionalCollection.get(),
         AdminApi.depositRequests.list(),
+        AdminApi.cashTopups.list(),
       ]);
       setOverview(overviewRes.data);
       setBinsStats(binsStatsRes.data);
@@ -243,6 +249,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       setBankAccount(bankAccountRes.data);
       setAdditionalCollectionSettings(additionalCollectionRes.data);
       setDepositRequests(depositRequestsRes.data);
+      setCashTopups(cashTopupsRes.data);
       setLastSync(new Date().toLocaleTimeString());
       // #region agent log
       fetch('http://127.0.0.1:7507/ingest/e05eb89e-9cfa-4057-adc1-4bbb50888184',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1c8176'},body:JSON.stringify({sessionId:'1c8176',location:'AdminContext.tsx:loadAll-done',message:'loadAll completed',data:{pathname:window.location.pathname,customersCount:customersRes.data.length},timestamp:Date.now(),hypothesisId:'A',runId:'post-fix'})}).catch(()=>{});
@@ -288,6 +295,7 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
   }
 
   const pendingDeposits = depositRequests.filter((r) => r.status === 'pending').length;
+  const pendingCashTopups = cashTopups.filter((r) => r.status === 'pending').length;
   const pollSubtitle = lastSync ? `آخر مزامنة ${lastSync}` : 'اضغط تحديث لمزامنة البيانات';
 
   const value = useMemo<AdminContextValue>(
@@ -327,7 +335,9 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       bankAccount,
       additionalCollectionSettings,
       depositRequests,
+      cashTopups,
       pendingDeposits,
+      pendingCashTopups,
       activity,
     }),
     [
@@ -363,7 +373,9 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       bankAccount,
       additionalCollectionSettings,
       depositRequests,
+      cashTopups,
       pendingDeposits,
+      pendingCashTopups,
       activity,
     ],
   );

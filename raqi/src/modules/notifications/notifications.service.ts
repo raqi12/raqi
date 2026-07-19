@@ -719,6 +719,43 @@ export class NotificationsService implements OnModuleInit {
         type: 'user',
         category: 'security',
       },
+      {
+        code: 'CASH_TOPUP_CREATED',
+        name: 'Cash top-up created',
+        titleTemplate: 'طلب شحن نقدي جديد',
+        bodyTemplate: 'طلب شحن محفظة نقداً بقيمة {{amount}} د.ل.',
+        variables: ['amount'],
+        type: 'payment',
+        category: 'billing',
+      },
+      {
+        code: 'CASH_TOPUP_DISPATCHED',
+        name: 'Cash top-up dispatched',
+        titleTemplate: 'المندوب في الطريق',
+        bodyTemplate:
+          'تم إرسال المندوب {{courierName}} لتحصيل {{amount}} د.ل. من عنوانك.',
+        variables: ['amount', 'courierName'],
+        type: 'payment',
+        category: 'billing',
+      },
+      {
+        code: 'CASH_TOPUP_COMPLETED',
+        name: 'Cash top-up completed',
+        titleTemplate: 'تم شحن المحفظة',
+        bodyTemplate: 'تم اعتماد استلام {{amount}} د.ل. وشحن محفظتك.',
+        variables: ['amount'],
+        type: 'payment',
+        category: 'billing',
+      },
+      {
+        code: 'CASH_TOPUP_CANCELLED',
+        name: 'Cash top-up cancelled',
+        titleTemplate: 'تم إلغاء طلب الشحن النقدي',
+        bodyTemplate: 'تم إلغاء طلب شحن {{amount}} د.ل. {{reason}}',
+        variables: ['amount', 'reason'],
+        type: 'payment',
+        category: 'billing',
+      },
     ];
 
     for (const seed of seeds) {

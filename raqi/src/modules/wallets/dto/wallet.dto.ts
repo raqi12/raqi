@@ -92,3 +92,44 @@ export class ListWalletTransactionsQueryDto {
   @IsIn(['deposit', 'admin_credit', 'subscription_payment', 'payment', 'refund'])
   type?: 'deposit' | 'admin_credit' | 'subscription_payment' | 'payment' | 'refund';
 }
+
+export class CreateCashTopupDto {
+  @ApiProperty({ example: 200, minimum: 0.01, description: 'Top-up amount in LYD' })
+  @IsNumber()
+  @Min(0.01)
+  amount: number;
+
+  @ApiProperty({
+    example: '507f1f77bcf86cd799439011',
+    description: 'Customer address ID for cash collection',
+  })
+  @IsString()
+  addressId: string;
+}
+
+export class AssignCashTopupCourierDto {
+  @ApiProperty({ example: 'محمد المندوب', description: 'Courier display name' })
+  @IsString()
+  courierName: string;
+
+  @ApiProperty({ example: '+218912345678', description: 'Courier phone' })
+  @IsString()
+  courierPhone: string;
+}
+
+export class CancelCashTopupDto {
+  @ApiPropertyOptional({ example: 'العميل غير متاح', description: 'Cancellation reason' })
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
+export class ListCashTopupsQueryDto {
+  @ApiPropertyOptional({
+    enum: ['pending', 'dispatched', 'collected', 'completed', 'cancelled'],
+    example: 'pending',
+  })
+  @IsOptional()
+  @IsIn(['pending', 'dispatched', 'collected', 'completed', 'cancelled'])
+  status?: 'pending' | 'dispatched' | 'collected' | 'completed' | 'cancelled';
+}

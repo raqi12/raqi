@@ -25,6 +25,7 @@ import {
   LuUserCog,
   LuUsers,
   LuWallet,
+  LuHandCoins,
 } from 'react-icons/lu';
 import type { SidebarTab } from './routes';
 
@@ -51,6 +52,7 @@ export const TAB_ICONS: Record<SidebarTab, IconType> = {
   'bank-account': LuLandmark,
   'additional-collection': LuCalendarPlus,
   'deposit-requests': LuWallet,
+  'cash-topups': LuHandCoins,
 };
 
 export { LuLogOut, LuPanelLeftClose, LuPanelLeftOpen };

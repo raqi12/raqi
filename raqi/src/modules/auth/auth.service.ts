@@ -200,8 +200,20 @@ export class AuthService {
     return this.usersService.sanitize(user);
   }
 
-  async updateMe(userId: string, body: UpdateMeDto) {
-    const user = await this.usersService.update(userId, body);
+  async updateMe(
+    userId: string,
+    body: UpdateMeDto,
+    avatarUrl?: string | null,
+  ) {
+    const patch: Partial<{ name: string; email: string; avatarUrl: string }> =
+      {};
+    if (body.name !== undefined) patch.name = body.name;
+    if (body.email !== undefined) patch.email = body.email;
+    if (avatarUrl !== undefined && avatarUrl !== null) {
+      patch.avatarUrl = avatarUrl;
+    }
+
+    const user = await this.usersService.update(userId, patch);
     if (!user) {
       throw new UnauthorizedException('User not found');
     }

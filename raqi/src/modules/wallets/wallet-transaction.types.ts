@@ -16,6 +16,7 @@ export type WalletTransactionDirection =
 
 export const WALLET_TRANSACTION_REFERENCE_TYPES = [
   'deposit_request',
+  'cash_topup',
   'subscription',
   'payment',
   'manual',

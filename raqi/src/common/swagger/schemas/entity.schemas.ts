@@ -18,6 +18,13 @@ export class UserDto {
   @ApiProperty({ example: 'مدير النظام' })
   name: string;
 
+  @ApiPropertyOptional({
+    example: '/uploads/avatars/uuid.jpg',
+    nullable: true,
+    description: 'Public profile image URL',
+  })
+  avatarUrl?: string | null;
+
   @ApiProperty({ enum: Role, example: Role.Admin })
   role: Role;
 
@@ -151,6 +158,13 @@ export class DriverProfileDto {
 
   @ApiProperty({ example: 'أحمد محمد السالم' })
   name: string;
+
+  @ApiPropertyOptional({
+    example: '/uploads/avatars/uuid.jpg',
+    nullable: true,
+    description: 'Public profile image URL',
+  })
+  avatarUrl?: string | null;
 
   @ApiPropertyOptional({ example: '+218912345678', nullable: true })
   phone?: string | null;
@@ -979,6 +993,71 @@ export class DepositRequestDto {
 
   @ApiPropertyOptional({ example: 'صورة غير واضحة' })
   rejectionReason?: string;
+}
+
+export class CashTopupRequestDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
+  id: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439012' })
+  customerId: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439013' })
+  addressId: string;
+
+  @ApiProperty({ example: 200 })
+  amount: number;
+
+  @ApiProperty({ example: 'المنزل' })
+  addressLabel: string;
+
+  @ApiPropertyOptional({ example: 'شارع الجمهورية' })
+  addressDetails?: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439014' })
+  cityId: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439015' })
+  areaId: string;
+
+  @ApiProperty({ example: 32.8872 })
+  lat: number;
+
+  @ApiProperty({ example: 13.1913 })
+  lng: number;
+
+  @ApiProperty({
+    enum: ['pending', 'dispatched', 'collected', 'completed', 'cancelled'],
+    example: 'pending',
+  })
+  status: string;
+
+  @ApiPropertyOptional({ example: 'محمد المندوب', nullable: true })
+  courierName?: string | null;
+
+  @ApiPropertyOptional({ example: '+218912345678', nullable: true })
+  courierPhone?: string | null;
+
+  @ApiPropertyOptional({ example: '2026-07-19T10:00:00.000Z', nullable: true })
+  dispatchedAt?: string | null;
+
+  @ApiPropertyOptional({ example: '2026-07-19T11:00:00.000Z', nullable: true })
+  collectedAt?: string | null;
+
+  @ApiPropertyOptional({ example: '2026-07-19T12:00:00.000Z', nullable: true })
+  completedAt?: string | null;
+
+  @ApiPropertyOptional({ example: '2026-07-19T12:30:00.000Z', nullable: true })
+  cancelledAt?: string | null;
+
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439016', nullable: true })
+  reviewedBy?: string | null;
+
+  @ApiPropertyOptional({ example: 'العميل غير متاح', nullable: true })
+  cancellationReason?: string | null;
+
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439017', nullable: true })
+  walletTransactionId?: string | null;
 }
 
 export class CustomerDetailsDto {

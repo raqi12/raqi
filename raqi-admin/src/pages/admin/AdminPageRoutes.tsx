@@ -13,6 +13,7 @@ import {
   ComplaintsPage,
   CustomersPage,
   DepositRequestsPage,
+  CashTopupsPage,
   PaymentsPage,
   PlansPage,
   RoutesPage,
@@ -51,6 +52,7 @@ export function AdminPageRoutes() {
     bankAccount,
     additionalCollectionSettings,
     depositRequests,
+    cashTopups,
     pendingDeposits,
     activity,
     runMutation,
@@ -313,6 +315,31 @@ export function AdminPageRoutes() {
             onApprove={(id) => runMutation(() => AdminApi.depositRequests.approve(id), 'Deposit approved')}
             onReject={(id, reason) =>
               runMutation(() => AdminApi.depositRequests.reject(id, reason), 'Deposit rejected')
+            }
+          />
+        }
+      />
+      <Route
+        path="/cash-topups"
+        element={
+          <CashTopupsPage
+            cashTopups={cashTopups}
+            customers={customers}
+            loading={loading}
+            onAssign={(id, body) =>
+              runMutation(() => AdminApi.cashTopups.assign(id, body), 'تم تعيين المندوب')
+            }
+            onDispatch={(id) =>
+              runMutation(() => AdminApi.cashTopups.dispatch(id), 'تم إرسال المندوب')
+            }
+            onCollect={(id) =>
+              runMutation(() => AdminApi.cashTopups.collect(id), 'تم تأكيد التحصيل')
+            }
+            onConfirm={(id) =>
+              runMutation(() => AdminApi.cashTopups.confirm(id), 'تم شحن المحفظة')
+            }
+            onCancel={(id, reason) =>
+              runMutation(() => AdminApi.cashTopups.cancel(id, reason), 'تم إلغاء الطلب')
             }
           />
         }

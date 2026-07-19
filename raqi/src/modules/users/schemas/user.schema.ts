@@ -19,6 +19,9 @@ export class User {
   @Prop({ required: true })
   name: string;
 
+  @Prop({ type: String, default: null })
+  avatarUrl: string | null;
+
   @Prop({ required: true })
   passwordHash: string;
 

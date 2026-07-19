@@ -5,14 +5,18 @@ import {
   Patch,
   Post,
   UnauthorizedException,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from '../../common/current-user.decorator';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { RolesGuard } from '../../common/roles.guard';
@@ -35,6 +39,12 @@ import {
   RegisterPendingDto,
   UserDto,
 } from '../../common/swagger/schemas/entity.schemas';
+import { UpdateProfileWithImageDto } from '../../common/swagger/schemas/upload.schemas';
+import {
+  avatarImageFilter,
+  avatarImageStorage,
+  buildAvatarUrl,
+} from '../users/upload.config';
 import { AuthService } from './auth.service';
 import {
   ChangePasswordDto,
@@ -145,17 +155,33 @@ export class AuthController {
   @Patch('me')
   @ApiOperation({
     summary: 'Update current user profile',
-    description: 'Updates name and/or email for the authenticated user.',
+    description:
+      'Updates name and/or email for the authenticated user. Optionally upload a profile image via multipart form-data field `image`.',
   })
-  @ApiBody({ type: UpdateMeDto })
+  @ApiConsumes('multipart/form-data', 'application/json')
+  @ApiBody({ type: UpdateProfileWithImageDto })
   @ApiBearerAuth('access-token')
   @ApiStandardErrorResponses()
   @ApiOkDataResponse(UserDto, 'Profile updated')
-  async updateMe(@Body() body: UpdateMeDto, @CurrentUser() user?: AuthUser) {
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: avatarImageStorage,
+      fileFilter: avatarImageFilter,
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  async updateMe(
+    @Body() body: UpdateMeDto,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @CurrentUser() user?: AuthUser,
+  ) {
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
-    return { data: await this.authService.updateMe(user.sub, body) };
+    const avatarUrl = file ? buildAvatarUrl(file.filename) : undefined;
+    return {
+      data: await this.authService.updateMe(user.sub, body, avatarUrl),
+    };
   }
 
   @ApiBearerAuth('access-token')

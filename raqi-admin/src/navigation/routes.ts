@@ -17,6 +17,7 @@ export const ROUTE_PATHS: Record<SidebarTab, string> = {
   'bank-account': '/bank-account',
   'additional-collection': '/additional-collection',
   'deposit-requests': '/deposit-requests',
+  'cash-topups': '/cash-topups',
   complaints: '/complaints',
   tickets: '/tickets',
   support: '/support',
@@ -66,6 +67,7 @@ const TAB_NAV_GROUPS: Record<SidebarTab, string> = {
   'bank-account': 'المالية',
   'additional-collection': 'المالية',
   'deposit-requests': 'المالية',
+  'cash-topups': 'المالية',
 };
 
 export function getNavGroupLabel(tab: SidebarTab): string {

@@ -49,3 +49,30 @@ export class GalleryCreateWithImageDto {
   })
   image: string;
 }
+
+export class UpdateProfileWithImageDto {
+  @ApiPropertyOptional({ example: 'مصطفى عيسى' })
+  name?: string;
+
+  @ApiPropertyOptional({ example: 'user@example.com' })
+  email?: string;
+
+  @ApiPropertyOptional({
+    type: 'string',
+    format: 'binary',
+    description: 'Profile image (jpg, jpeg, png, webp). Max 5MB.',
+  })
+  image?: string;
+}
+
+export class UpdateDriverProfileWithImageDto {
+  @ApiPropertyOptional({ example: 'أحمد محمد السالم' })
+  name?: string;
+
+  @ApiPropertyOptional({
+    type: 'string',
+    format: 'binary',
+    description: 'Profile image (jpg, jpeg, png, webp). Max 5MB.',
+  })
+  image?: string;
+}

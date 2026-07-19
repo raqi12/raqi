@@ -13,6 +13,7 @@ export const TAB_LABELS = {
   'bank-account': 'الحساب البنكي',
   'additional-collection': 'الجمع الإضافي',
   'deposit-requests': 'طلبات الإيداع',
+  'cash-topups': 'شحن نقدي بالمندوب',
   complaints: 'الشكاوى',
   tickets: 'تذاكر الدعم',
   support: 'صفحة الدعم',

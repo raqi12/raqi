@@ -166,12 +166,21 @@ export class SubscriptionsService {
     return subscription.save();
   }
 
-  async getCurrentWithPlan(customerId: string) {
-    const subscription = await this.findCurrentForCustomer(customerId);
-    if (!subscription) {
-      return null;
-    }
-    await this.ensureExpiresAt(subscription);
+  findEndedForCustomer(
+    customerId: string,
+  ): Promise<SubscriptionDocument[]> {
+    return this.subscriptionModel
+      .find({
+        customerId,
+        status: {
+          $in: [SubscriptionStatus.Expired, SubscriptionStatus.Suspended],
+        },
+      })
+      .sort({ createdAt: -1 })
+      .exec();
+  }
+
+  private async withPlanSummary(subscription: SubscriptionDocument) {
     const result = subscription.toJSON();
     if (!subscription.planId) {
       return result;
@@ -190,6 +199,22 @@ export class SubscriptionsService {
         frequency: plan.frequency,
       },
     };
+  }
+
+  async getCurrentWithPlan(customerId: string) {
+    const subscription = await this.findCurrentForCustomer(customerId);
+    if (!subscription) {
+      return null;
+    }
+    await this.ensureExpiresAt(subscription);
+    return this.withPlanSummary(subscription);
+  }
+
+  async getPreviousWithPlan(customerId: string) {
+    const subscriptions = await this.findEndedForCustomer(customerId);
+    return Promise.all(
+      subscriptions.map((subscription) => this.withPlanSummary(subscription)),
+    );
   }
 
   async setAutoRenew(

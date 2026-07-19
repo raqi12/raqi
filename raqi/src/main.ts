@@ -8,10 +8,12 @@ import { setupSwagger } from './common/swagger/setup';
 import { AppModule } from './app.module';
 import { ensureDepositsUploadDir } from './modules/wallets/upload.config';
 import { ensureGalleryUploadDir } from './modules/gallery/upload.config';
+import { ensureAvatarUploadDir } from './modules/users/upload.config';
 
 async function bootstrap() {
   ensureDepositsUploadDir();
   ensureGalleryUploadDir();
+  ensureAvatarUploadDir();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.useWebSocketAdapter(new IoAdapter(app));
   const configService = app.get(ConfigService);

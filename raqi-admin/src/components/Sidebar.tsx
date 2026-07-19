@@ -15,7 +15,7 @@ const NAV_GROUPS: NavGroup[] = [
   { title: 'رئيسي', items: ['overview'] },
   { title: 'العمليات', items: ['customers', 'subscriptions', 'tasks', 'tickets', 'notifications', 'send-notification', 'support', 'privacy', 'instructions', 'gallery', 'complaints'] },
   { title: 'الموارد', items: ['users', 'drivers', 'plans', 'bins', 'locations', 'routes'] },
-  { title: 'المالية', items: ['payments', 'bank-account', 'additional-collection', 'deposit-requests'] },
+  { title: 'المالية', items: ['payments', 'bank-account', 'additional-collection', 'deposit-requests', 'cash-topups'] },
 ];
 
 type SidebarProps = {
@@ -26,6 +26,7 @@ type SidebarProps = {
   onToggleCollapse: () => void;
   onLogout: () => void;
   pendingDeposits?: number;
+  pendingCashTopups?: number;
   mobileOpen: boolean;
   onCloseMobile: () => void;
 };
@@ -38,6 +39,7 @@ export function Sidebar({
   onToggleCollapse,
   onLogout,
   pendingDeposits = 0,
+  pendingCashTopups = 0,
   mobileOpen,
   onCloseMobile,
 }: SidebarProps) {
@@ -95,7 +97,11 @@ export function Sidebar({
                   const active = activeTab === tab;
                   const path = ROUTE_PATHS[tab];
                   const Icon = TAB_ICONS[tab];
-                  const showBadge = tab === 'deposit-requests' && pendingDeposits > 0;
+                  const showBadge =
+                    (tab === 'deposit-requests' && pendingDeposits > 0) ||
+                    (tab === 'cash-topups' && pendingCashTopups > 0);
+                  const badgeCount =
+                    tab === 'cash-topups' ? pendingCashTopups : pendingDeposits;
 
                   return (
                     <li key={tab}>
@@ -115,10 +121,10 @@ export function Sidebar({
                         {!collapsed ? (
                           <>
                             <span className="sidebar__link-label">{TAB_LABELS[tab]}</span>
-                            {showBadge ? <Badge tone="danger">{pendingDeposits}</Badge> : null}
+                            {showBadge ? <Badge tone="danger">{badgeCount}</Badge> : null}
                           </>
                         ) : showBadge ? (
-                          <span className="sidebar__badge-dot" aria-label={`${pendingDeposits} طلب معلق`} />
+                          <span className="sidebar__badge-dot" aria-label={`${badgeCount} طلب معلق`} />
                         ) : null}
                       </a>
                     </li>
