@@ -104,13 +104,13 @@ export class OtpSentDataDto {
   phone?: string;
 
   @ApiPropertyOptional({
-    example: '123456',
+    example: '1111',
     description: 'رمز تحقق للاختطوير حتى يتم دمج الرسائل النصية',
   })
   otp?: string;
 
   @ApiPropertyOptional({
-    example: '123456',
+    example: '1111',
     description: 'اسم بديل لرمز التحقق أثناء التطوير',
   })
   debugOtp?: string;

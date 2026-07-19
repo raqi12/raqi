@@ -19,7 +19,8 @@ import { SmsService } from './sms.service';
 
 const OTP_EXPIRES_SECONDS = 300;
 const MAX_OTP_ATTEMPTS = 5;
-const DEV_OTP_CODE = '123456';
+/** Fixed OTP used for all send/verify flows. */
+const FIXED_OTP_CODE = '1111';
 
 @Injectable()
 export class OtpService {
@@ -35,7 +36,7 @@ export class OtpService {
     const flag = this.configService.get<string>('OTP_DEV_MODE');
     if (flag === 'true') return true;
     if (flag === 'false') return false;
-    // Default: dev OTP only when SMS is not enabled
+    // Default: allow OTP flow when SMS is not enabled
     return !this.smsService.isEnabled();
   }
 
@@ -45,7 +46,7 @@ export class OtpService {
     payload: RegisterOtpPayload | null = null,
   ) {
     const normalizedPhone = normalizePhone(phone);
-    const code = this.generateCode();
+    const code = FIXED_OTP_CODE;
     const expiresAt = new Date(Date.now() + OTP_EXPIRES_SECONDS * 1000);
 
     await this.otpModel.deleteMany({ phone: normalizedPhone, purpose }).exec();
@@ -117,13 +118,6 @@ export class OtpService {
     return payload as RegisterOtpPayload | null;
   }
 
-  private generateCode(): string {
-    if (this.useDevOtp()) {
-      return DEV_OTP_CODE;
-    }
-    return String(Math.floor(100000 + Math.random() * 900000));
-  }
-
   private buildOtpResponse(
     code: string,
     expiresIn: number,
@@ -137,15 +131,13 @@ export class OtpService {
     } = {
       otpSent: true,
       expiresIn,
+      otp: code,
+      debugOtp: code,
     };
 
-    if (this.useDevOtp()) {
-      response.otp = code;
-      response.debugOtp = code;
-      this.logger.log(
-        `[OTP dev] purpose=${purpose ?? 'unknown'} code=${code} expiresIn=${expiresIn}s`,
-      );
-    }
+    this.logger.log(
+      `[OTP] purpose=${purpose ?? 'unknown'} code=${code} expiresIn=${expiresIn}s`,
+    );
 
     return response;
   }

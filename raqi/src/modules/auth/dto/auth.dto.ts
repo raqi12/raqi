@@ -79,7 +79,7 @@ export class VerifyOtpDto {
   @IsString()
   phone: string;
 
-  @ApiProperty({ example: '123456', description: '6-digit OTP code' })
+  @ApiProperty({ example: '1111', description: 'OTP code (fixed 1111 in current environment)' })
   @IsString()
   otp: string;
 
@@ -153,7 +153,7 @@ export class ResetPasswordDto {
   @IsString()
   phone: string;
 
-  @ApiProperty({ example: '123456' })
+  @ApiProperty({ example: '1111' })
   @IsString()
   otp: string;
 
@@ -179,7 +179,7 @@ export class DeleteAccountDto {
   @IsString()
   password: string;
 
-  @ApiProperty({ example: '123456', description: 'OTP sent to registered phone' })
+  @ApiProperty({ example: '1111', description: 'OTP sent to registered phone' })
   @IsString()
   otp: string;
 }
