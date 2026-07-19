@@ -7,15 +7,17 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuthUser } from './auth-user.interface';
+import { UsersService } from '../modules/users/users.service';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly usersService: UsersService,
   ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<{
       headers: { authorization?: string };
       user?: AuthUser;
@@ -29,9 +31,16 @@ export class JwtAuthGuard implements CanActivate {
       const payload = this.jwtService.verify<AuthUser>(token, {
         secret: this.configService.get<string>('jwtSecret'),
       });
+      const user = await this.usersService.findById(payload.sub);
+      if (!user || user.deletedAt) {
+        throw new UnauthorizedException('Invalid access token');
+      }
       request.user = payload;
       return true;
-    } catch {
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
       throw new UnauthorizedException('Invalid access token');
     }
   }

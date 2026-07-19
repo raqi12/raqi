@@ -12,6 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import type { AuthUser } from '../../common/auth-user.interface';
 import { Role } from '../../common/roles.enum';
+import { UsersService } from '../users/users.service';
 import { TicketMessagesService } from './ticket-messages.service';
 import { SendTicketMessageSocketDto } from './dto/ticket.dto';
 import { TicketsService } from './tickets.service';
@@ -35,13 +36,14 @@ export class TicketsGateway implements OnGatewayConnection {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly usersService: UsersService,
     private readonly ticketsService: TicketsService,
     private readonly ticketMessagesService: TicketMessagesService,
   ) {}
 
   async handleConnection(client: TicketSocket) {
     try {
-      client.user = this.authenticate(client);
+      client.user = await this.authenticate(client);
     } catch {
       this.logger.warn(`Rejected socket connection ${client.id}`);
       client.disconnect(true);
@@ -116,7 +118,7 @@ export class TicketsGateway implements OnGatewayConnection {
     this.server.to(this.roomName(ticketId)).emit('message_created', messageDto);
   }
 
-  private authenticate(client: TicketSocket): AuthUser {
+  private async authenticate(client: TicketSocket): Promise<AuthUser> {
     const token =
       (client.handshake.auth?.token as string | undefined) ??
       this.extractBearer(client.handshake.headers.authorization);
@@ -125,9 +127,14 @@ export class TicketsGateway implements OnGatewayConnection {
       throw new UnauthorizedException('Missing access token');
     }
 
-    return this.jwtService.verify<AuthUser>(token, {
+    const payload = this.jwtService.verify<AuthUser>(token, {
       secret: this.configService.get<string>('jwtSecret'),
     });
+    const user = await this.usersService.findById(payload.sub);
+    if (!user || user.deletedAt) {
+      throw new UnauthorizedException('Invalid access token');
+    }
+    return payload;
   }
 
   private extractBearer(authHeader?: string): string | null {

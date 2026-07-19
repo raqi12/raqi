@@ -2,7 +2,6 @@ import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import {
-  ConnectedSocket,
   OnGatewayConnection,
   OnGatewayInit,
   WebSocketGateway,
@@ -10,6 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import type { AuthUser } from '../../common/auth-user.interface';
+import { UsersService } from '../users/users.service';
 import { NotificationsService } from './notifications.service';
 
 type NotificationSocket = Socket & { user?: AuthUser };
@@ -32,6 +32,7 @@ export class NotificationsGateway
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly usersService: UsersService,
     private readonly notificationsService: NotificationsService,
   ) {}
 
@@ -45,7 +46,7 @@ export class NotificationsGateway
 
   async handleConnection(client: NotificationSocket) {
     try {
-      client.user = this.authenticate(client);
+      client.user = await this.authenticate(client);
       await client.join(this.userRoom(client.user.sub));
     } catch {
       this.logger.warn(`Rejected notifications socket ${client.id}`);
@@ -57,7 +58,7 @@ export class NotificationsGateway
     return `user:${userId}`;
   }
 
-  private authenticate(client: NotificationSocket): AuthUser {
+  private async authenticate(client: NotificationSocket): Promise<AuthUser> {
     const authHeader =
       (client.handshake.auth?.token as string | undefined) ||
       (client.handshake.headers.authorization as string | undefined) ||
@@ -69,12 +70,18 @@ export class NotificationsGateway
       throw new Error('Missing token');
     }
     const secret =
-      this.configService.get<string>('JWT_SECRET') || 'dev-secret-change-me';
+      this.configService.get<string>('jwtSecret') ||
+      this.configService.get<string>('JWT_SECRET') ||
+      'dev-secret-change-me';
     const payload = this.jwtService.verify<{
       sub: string;
       role: AuthUser['role'];
       email?: string;
     }>(token, { secret });
+    const user = await this.usersService.findById(payload.sub);
+    if (!user || user.deletedAt) {
+      throw new Error('Deleted user');
+    }
     return {
       sub: payload.sub,
       role: payload.role,

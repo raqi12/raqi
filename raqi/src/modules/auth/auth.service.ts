@@ -163,7 +163,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    this.assertCustomerCanAuthenticate(user);
+    this.assertUserCanAuthenticate(user);
 
     return this.issueAuthResponse(user);
   }
@@ -178,7 +178,7 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Invalid refresh token');
     }
-    this.assertCustomerCanAuthenticate(user);
+    this.assertUserCanAuthenticate(user);
     const accessToken = await this.signAccessToken({
       sub: payload.sub,
       role: payload.role,
@@ -380,16 +380,13 @@ export class AuthService {
     }
   }
 
-  private assertCustomerCanAuthenticate(
+  private assertUserCanAuthenticate(
     user: NonNullable<Awaited<ReturnType<UsersService['findById']>>>,
   ) {
-    if (user.role !== Role.Customer) {
-      return;
-    }
     if (user.deletedAt) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    if (user.status === 'inactive') {
+    if (user.role === Role.Customer && user.status === 'inactive') {
       throw new UnauthorizedException('Account is deactivated');
     }
   }
