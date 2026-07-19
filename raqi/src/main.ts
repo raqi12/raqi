@@ -4,6 +4,8 @@ import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { join } from 'path';
+import { ArabicHttpExceptionFilter } from './common/i18n/arabic-http.exception-filter';
+import { arabicValidationExceptionFactory } from './common/i18n/arabic-validation';
 import { setupSwagger } from './common/swagger/setup';
 import { AppModule } from './app.module';
 import { ensureDepositsUploadDir } from './modules/wallets/upload.config';
@@ -46,10 +48,12 @@ async function bootstrap() {
   });
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
   app.setGlobalPrefix('api/v1');
+  app.useGlobalFilters(new ArabicHttpExceptionFilter());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       transform: true,
+      exceptionFactory: arabicValidationExceptionFactory,
     }),
   );
 

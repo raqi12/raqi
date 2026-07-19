@@ -43,6 +43,7 @@ export const COMMON = {
   actions: 'إجراءات',
   status: 'الحالة',
   email: 'البريد الإلكتروني',
+  phone: 'رقم الهاتف',
   name: 'الاسم',
   password: 'كلمة المرور',
   role: 'الدور',
@@ -110,6 +111,7 @@ export function formatApiError(message: string): string {
   if (message.startsWith('Request failed')) {
     return 'فشل الطلب. تحقق من بيانات الدخول أو حالة الخادم.';
   }
+  // API already returns Arabic messages; pass through as-is.
   return message;
 }
 

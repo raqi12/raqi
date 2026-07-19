@@ -273,6 +273,7 @@ export class AdminAdditionalCollectionSettingsController {
 export class CustomerSubscriptionsController {
   constructor(
     private readonly subscriptionsService: SubscriptionsService,
+    private readonly subscriptionRenewalService: SubscriptionRenewalService,
     private readonly customersService: CustomersService,
   ) {}
 
@@ -433,6 +434,24 @@ export class CustomerSubscriptionsController {
       data: await this.subscriptionsService.setAutoRenew(
         customerId,
         body.autoRenew,
+      ),
+    };
+  }
+
+  @Patch(':id/renew')
+  @ApiOperation({
+    summary: 'Renew subscription',
+    description:
+      'Debits the plan price from the wallet, extends the subscription period, and recreates collection tasks. Allowed for active, suspended, or expired subscriptions owned by the customer.',
+  })
+  @ApiMongoIdParam('id', 'Subscription MongoDB ID')
+  @ApiOkDataResponse(SubscriptionDto, 'Subscription renewed')
+  async renew(@Param('id') id: string, @CurrentUser() user?: AuthUser) {
+    const customerId = await this.resolveCustomerId(user);
+    return {
+      data: await this.subscriptionRenewalService.manualRenewForCustomer(
+        id,
+        customerId,
       ),
     };
   }

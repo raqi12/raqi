@@ -1,7 +1,9 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -21,6 +23,7 @@ export class CashTopupsService {
   constructor(
     @InjectModel(CashTopupRequest.name)
     private readonly cashTopupModel: Model<CashTopupRequestDocument>,
+    @Inject(forwardRef(() => CustomersService))
     private readonly customersService: CustomersService,
     private readonly walletsService: WalletsService,
     private readonly usersService: UsersService,
@@ -37,18 +40,31 @@ export class CashTopupsService {
       throw new BadRequestException('Address not found for this customer');
     }
 
+    const lat = Number(address.lat);
+    const lng = Number(address.lng);
+    if (
+      !address.cityId ||
+      !address.areaId ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng)
+    ) {
+      throw new BadRequestException(
+        'Address is incomplete; city, area, and coordinates are required',
+      );
+    }
+
     await this.walletsService.ensureWallet(input.customerId);
 
     const request = await this.cashTopupModel.create({
       customerId: input.customerId,
       addressId: String(address.id),
       amount: input.amount,
-      addressLabel: address.label,
+      addressLabel: address.label?.trim() || 'عنوان',
       addressDetails: address.details ?? '',
-      cityId: address.cityId,
-      areaId: address.areaId,
-      lat: address.lat,
-      lng: address.lng,
+      cityId: String(address.cityId),
+      areaId: String(address.areaId),
+      lat,
+      lng,
       status: 'pending',
       courierName: null,
       courierPhone: null,

@@ -170,6 +170,7 @@ export function CustomersPage({
         ...customer,
         customerName: customerDisplayName(customer, users),
         email: customer.email ?? '—',
+        phone: customer.phone ?? '—',
         cityName: cityNameById(cities, customer.cityId),
         areaName: areaNameById(areas, customer.areaId),
       })),
@@ -416,13 +417,20 @@ export function CustomersPage({
         rows={tableRows}
         loading={loading}
         onSelect={setSelected}
-        searchKeys={['customerName', 'email', 'cityName', 'areaName']}
+        searchKeys={['customerName', 'email', 'phone', 'cityName', 'areaName']}
         columns={[
           { key: 'customerName', label: COMMON.name },
           {
             key: 'email',
             label: COMMON.email,
             render: (row) => <span dir="ltr">{String(row.email ?? '—')}</span>,
+          },
+          {
+            key: 'phone',
+            label: COMMON.phone,
+            render: (row) => (
+              <span dir="ltr">{row.phone ? String(row.phone) : '—'}</span>
+            ),
           },
           { key: 'cityName', label: COMMON.city },
           { key: 'areaName', label: COMMON.area },

@@ -85,6 +85,7 @@ export class CustomersService {
     user?: {
       name: string;
       email: string;
+      phone?: string;
       status?: string;
       deletedAt?: Date | null;
     } | null,
@@ -93,6 +94,7 @@ export class CustomersService {
     if (user) {
       json.name = user.name;
       json.email = user.email;
+      json.phone = user.phone ?? null;
       if (user.status) {
         json.status = user.status;
       }

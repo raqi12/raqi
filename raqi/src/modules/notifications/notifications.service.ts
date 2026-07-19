@@ -370,7 +370,7 @@ export class NotificationsService implements OnModuleInit {
     if (missingFcmUserIds.length) {
       throw new BadRequestException({
         message:
-          'Cannot send notification: one or more users have no FCM device token',
+          'تعذر إرسال الإشعار: بعض المستخدمين لا يملكون رمز جهاز للإشعارات',
         missingCount: missingFcmUserIds.length,
         missingFcmUserIds,
       });

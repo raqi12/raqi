@@ -126,6 +126,7 @@ export type User = {
   _id?: string;
   id?: string;
   email?: string;
+  phone?: string;
   name?: string;
   role?: string;
   status?: 'active' | 'inactive';
@@ -137,6 +138,7 @@ export type Customer = {
   userId?: string;
   name?: string;
   email?: string;
+  phone?: string;
   cityId?: string;
   areaId?: string;
   status?: string;

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  NotFoundException,
   forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -82,6 +83,100 @@ export class SubscriptionRenewalService {
     }
 
     return summary;
+  }
+
+  /**
+   * Customer-initiated renewal: debit wallet, extend period, recreate tasks.
+   * Allowed for active, suspended, or expired subscriptions.
+   */
+  async manualRenewForCustomer(
+    subscriptionId: string,
+    customerId: string,
+  ): Promise<SubscriptionDocument> {
+    const subscription = await this.subscriptionModel.findById(subscriptionId).exec();
+    if (!subscription || String(subscription.customerId) !== customerId) {
+      throw new NotFoundException('Subscription not found');
+    }
+
+    const renewableStatuses: SubscriptionStatus[] = [
+      SubscriptionStatus.Active,
+      SubscriptionStatus.Suspended,
+      SubscriptionStatus.Expired,
+    ];
+    if (!renewableStatuses.includes(subscription.status)) {
+      throw new BadRequestException(
+        'Subscription cannot be renewed in its current status',
+      );
+    }
+
+    if (!subscription.planId) {
+      throw new BadRequestException('Subscription has no plan');
+    }
+
+    const plan = await this.plansService.findById(String(subscription.planId));
+    if (!plan || !plan.active) {
+      throw new BadRequestException('Plan is not available');
+    }
+
+    if (
+      subscription.renewedAt &&
+      isSameUtcDay(subscription.renewedAt, new Date())
+    ) {
+      throw new BadRequestException('Subscription was already renewed today');
+    }
+
+    const { transaction } = await this.walletsService.applyMovement({
+      customerId: String(subscription.customerId),
+      type: 'subscription_payment',
+      direction: 'debit',
+      amount: plan.price,
+      referenceType: 'subscription',
+      referenceId: String(subscription.id),
+      description: `تجديد اشتراك - ${plan.name}`,
+    });
+
+    const previousDates = subscription.collectionDates ?? [];
+    const baseExpiry =
+      subscription.expiresAt && subscription.expiresAt > new Date()
+        ? subscription.expiresAt
+        : new Date();
+    const nextDates =
+      previousDates.length > 0
+        ? previousDates.map((date) => shiftDateString(date, plan.durationDays))
+        : [];
+
+    subscription.expiresAt = addDays(baseExpiry, plan.durationDays);
+    subscription.renewedAt = new Date();
+    subscription.renewalGraceUntil = null;
+    subscription.paymentStatus = 'paid';
+    subscription.status = SubscriptionStatus.Active;
+    if (nextDates.length > 0) {
+      subscription.collectionDates = nextDates;
+    }
+    await subscription.save();
+
+    await this.walletTransactionsService.updateReferenceId(
+      String(transaction.id),
+      String(subscription.id),
+    );
+
+    if (nextDates.length > 0 && subscription.areaId) {
+      await this.tasksService.createForSubscription({
+        subscriptionId: String(subscription.id),
+        customerId: String(subscription.customerId),
+        areaId: String(subscription.areaId),
+        collectionDates: nextDates,
+        driverId: subscription.driverId,
+      });
+    }
+
+    await this.notifyCustomer(
+      String(subscription.customerId),
+      'SUBSCRIPTION_ACTIVATED',
+      String(subscription.id),
+    );
+
+    return subscription;
   }
 
   async renewSubscription(
@@ -186,9 +281,21 @@ export class SubscriptionRenewalService {
   }
 
   private isInsufficientBalanceError(error: unknown): boolean {
+    if (!(error instanceof BadRequestException)) {
+      return false;
+    }
+    const response = error.getResponse();
+    const message =
+      typeof response === 'string'
+        ? response
+        : typeof response === 'object' &&
+            response !== null &&
+            'message' in response
+          ? String((response as { message: unknown }).message)
+          : error.message;
     return (
-      error instanceof BadRequestException &&
-      error.message === 'Insufficient wallet balance'
+      message === 'Insufficient wallet balance' ||
+      message === 'رصيد المحفظة غير كافٍ'
     );
   }
 }

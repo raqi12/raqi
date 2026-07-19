@@ -318,9 +318,14 @@ export function AdminPageRoutes() {
         element={
           <DepositRequestsPage
             depositRequests={depositRequests}
-            onApprove={(id) => runMutation(() => AdminApi.depositRequests.approve(id), 'Deposit approved')}
+            customers={customers}
+            users={users}
+            loading={loading}
+            onApprove={(id) =>
+              runMutation(() => AdminApi.depositRequests.approve(id), 'تم اعتماد طلب الإيداع')
+            }
             onReject={(id, reason) =>
-              runMutation(() => AdminApi.depositRequests.reject(id, reason), 'Deposit rejected')
+              runMutation(() => AdminApi.depositRequests.reject(id, reason), 'تم رفض طلب الإيداع')
             }
           />
         }

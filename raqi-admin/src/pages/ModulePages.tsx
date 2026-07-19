@@ -1,8 +1,8 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { DataTable } from '../components/DataTable';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import type { Address, Area, AdditionalCollectionSettings, BankAccountSettings, Bin, City, Complaint, Customer, DepositRequest, Driver, Payment, Plan, Route, Subscription, Task, User, Wallet } from '../types';
-import { API_ORIGIN, areaLabel, customerDisplayName, getId } from './module/shared';
+import type { Address, Area, AdditionalCollectionSettings, BankAccountSettings, Bin, City, Complaint, Customer, Driver, Payment, Plan, Route, Subscription, Task, User, Wallet } from '../types';
+import { areaLabel, customerDisplayName, getId } from './module/shared';
 
 export { UsersPage } from './module/UsersPage';
 export { CustomersPage } from './module/CustomersPage';
@@ -16,6 +16,7 @@ export { SupportPage } from './module/SupportPage';
 export { GalleryPage } from './module/GalleryPage';
 export { ContentPageEditor } from './module/ContentPageEditor';
 export { CashTopupsPage } from './module/CashTopupsPage';
+export { DepositRequestsPage } from './module/DepositRequestsPage';
 
 type PaymentsPageProps = {
   payments: Payment[];
@@ -349,64 +350,5 @@ export function AdditionalCollectionPage({
         <button type="submit">حفظ</button>
       </form>
     </section>
-  );
-}
-
-type DepositRequestsPageProps = {
-  depositRequests: DepositRequest[];
-  onApprove: (id: string) => Promise<void>;
-  onReject: (id: string, rejectionReason?: string) => Promise<void>;
-};
-
-export function DepositRequestsPage({ depositRequests, onApprove, onReject }: DepositRequestsPageProps) {
-  const [selected, setSelected] = useState<DepositRequest | null>(null);
-  const [rejectionReason, setRejectionReason] = useState('');
-
-  return (
-    <>
-      <DataTable
-        title={`طلبات الإيداع (${depositRequests.length})`}
-        rows={depositRequests}
-        onSelect={setSelected}
-        columns={[
-          { key: 'id', label: 'ID', render: (r) => getId(r) },
-          { key: 'customerId', label: 'Customer ID' },
-          { key: 'amount', label: 'Amount', render: (r) => String(r.amount ?? '-') },
-          { key: 'status', label: 'Status' },
-        ]}
-      />
-      {selected ? (
-        <section className="panel">
-          <h3>Deposit Request: {getId(selected)}</h3>
-          <p>Amount: <strong>{selected.amount}</strong></p>
-          <p>Status: <strong>{selected.status}</strong></p>
-          {selected.evidenceImageUrl ? (
-            <p>
-              Evidence:{' '}
-              <a href={`${API_ORIGIN}${selected.evidenceImageUrl}`} target="_blank" rel="noreferrer">
-                View transfer image
-              </a>
-            </p>
-          ) : null}
-          {selected.status === 'pending' ? (
-            <div className="row-form">
-              <input
-                placeholder="Rejection reason (optional)"
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-              />
-              <button type="button" onClick={() => void onApprove(getId(selected))}>Approve</button>
-              <button
-                type="button"
-                className="ghost"
-                onClick={() => void onReject(getId(selected), rejectionReason || undefined)}
-              >
-                Reject
-              </button>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-    </>
   );
 }

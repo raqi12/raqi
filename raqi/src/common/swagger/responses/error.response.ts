@@ -4,41 +4,68 @@ export class ErrorEnvelopeDto {
   @ApiProperty({ example: 400 })
   statusCode: number;
 
-  @ApiProperty({ example: 'Email already exists' })
+  @ApiProperty({ example: 'البريد الإلكتروني مستخدم مسبقاً' })
   message: string | string[];
 
-  @ApiProperty({ example: 'Bad Request' })
+  @ApiProperty({ example: 'طلب غير صالح' })
   error: string;
 }
 
 export class ValidationErrorDto extends ErrorEnvelopeDto {
   @ApiProperty({
     example: {
-      statusCode: 422,
-      message: ['email must be an email', 'password must be longer than or equal to 6 characters'],
-      error: 'Unprocessable Entity',
+      statusCode: 400,
+      message: [
+        'البريد الإلكتروني يجب أن يكون بريداً إلكترونياً صالحاً',
+        'كلمة المرور يجب أن يكون بطول 6 حرفاً على الأقل',
+      ],
+      error: 'طلب غير صالح',
     },
   })
   declare message: string | string[];
 }
 
 export class BadRequestErrorDto extends ErrorEnvelopeDto {
-  @ApiProperty({ example: { statusCode: 400, message: 'Passwords do not match', error: 'Bad Request' } })
+  @ApiProperty({
+    example: {
+      statusCode: 400,
+      message: 'كلمتا المرور غير متطابقتين',
+      error: 'طلب غير صالح',
+    },
+  })
   declare message: string | string[];
 }
 
 export class UnauthorizedErrorDto extends ErrorEnvelopeDto {
-  @ApiProperty({ example: { statusCode: 401, message: 'Invalid credentials', error: 'Unauthorized' } })
+  @ApiProperty({
+    example: {
+      statusCode: 401,
+      message: 'بيانات الدخول غير صحيحة',
+      error: 'غير مصرح',
+    },
+  })
   declare message: string | string[];
 }
 
 export class ForbiddenErrorDto extends ErrorEnvelopeDto {
-  @ApiProperty({ example: { statusCode: 403, message: 'Forbidden resource', error: 'Forbidden' } })
+  @ApiProperty({
+    example: {
+      statusCode: 403,
+      message: 'مورد محظور',
+      error: 'محظور',
+    },
+  })
   declare message: string | string[];
 }
 
 export class NotFoundErrorDto extends ErrorEnvelopeDto {
-  @ApiProperty({ example: { statusCode: 404, message: 'User not found', error: 'Not Found' } })
+  @ApiProperty({
+    example: {
+      statusCode: 404,
+      message: 'المستخدم غير موجود',
+      error: 'غير موجود',
+    },
+  })
   declare message: string | string[];
 }
 
@@ -67,21 +94,24 @@ export class OtpSentDataDto {
   @ApiProperty({ example: true })
   otpSent: boolean;
 
-  @ApiProperty({ example: 300, description: 'OTP validity in seconds' })
+  @ApiProperty({ example: 300, description: 'مدة صلاحية رمز التحقق بالثواني' })
   expiresIn: number;
 
   @ApiPropertyOptional({
     example: '+218912345678',
-    description: 'Phone number the OTP was issued for',
+    description: 'رقم الهاتف الذي أُرسل إليه رمز التحقق',
   })
   phone?: string;
 
   @ApiPropertyOptional({
     example: '123456',
-    description: 'Dev/test OTP returned in API response until SMS is integrated',
+    description: 'رمز تحقق للاختطوير حتى يتم دمج الرسائل النصية',
   })
   otp?: string;
 
-  @ApiPropertyOptional({ example: '123456', description: 'Alias of otp during dev/testing' })
+  @ApiPropertyOptional({
+    example: '123456',
+    description: 'اسم بديل لرمز التحقق أثناء التطوير',
+  })
   debugOtp?: string;
 }

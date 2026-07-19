@@ -72,7 +72,7 @@ export class SubscribePlanDto {
   @ArrayMinSize(1)
   @Matches(/^\d{4}-\d{2}-\d{2}$/, {
     each: true,
-    message: 'each collectionDate must be YYYY-MM-DD',
+    message: 'يجب أن يكون كل تاريخ جمع بصيغة YYYY-MM-DD',
   })
   collectionDates: string[];
 }
@@ -129,7 +129,7 @@ export class RequestAdditionalCollectionDto {
       'Additional collection date (YYYY-MM-DD) within the active subscription period',
   })
   @Matches(/^\d{4}-\d{2}-\d{2}$/, {
-    message: 'collectionDate must be YYYY-MM-DD',
+    message: 'يجب أن يكون تاريخ الجمع بصيغة YYYY-MM-DD',
   })
   collectionDate: string;
 }

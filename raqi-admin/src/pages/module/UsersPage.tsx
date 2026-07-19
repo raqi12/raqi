@@ -99,10 +99,17 @@ export function UsersPage({ users, onCreate, onUpdate, onSetStatus, loading = fa
         rows={users}
         loading={loading}
         onSelect={setSelected}
-        searchKeys={['email', 'name', 'role', 'status']}
+        searchKeys={['email', 'name', 'phone', 'role', 'status']}
         columns={[
           { key: 'name', label: COMMON.name },
           { key: 'email', label: COMMON.email },
+          {
+            key: 'phone',
+            label: COMMON.phone,
+            render: (r) => (
+              <span dir="ltr">{r.phone ? String(r.phone) : '—'}</span>
+            ),
+          },
           {
             key: 'role',
             label: COMMON.role,
