@@ -49,7 +49,8 @@ type CustomersPageProps = {
   areas: Area[];
   loading?: boolean;
   onCreate: (body: {
-    email: string;
+    email?: string;
+    phone: string;
     name: string;
     password: string;
     cityId: string;
@@ -72,6 +73,7 @@ type CustomersPageProps = {
 
 const emptyForm = {
   email: '',
+  phone: '',
   name: '',
   password: '',
   cityId: '',
@@ -230,7 +232,8 @@ export function CustomersPage({
     setSaving(true);
     try {
       await onCreate({
-        email: form.email,
+        ...(form.email.trim() ? { email: form.email.trim() } : {}),
+        phone: form.phone.trim(),
         name: form.name,
         password: form.password,
         cityId: form.cityId,
@@ -343,6 +346,13 @@ export function CustomersPage({
             dir="ltr"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
+          <Input
+            label={COMMON.phone}
+            type="tel"
+            dir="ltr"
+            value={form.phone}
+            onChange={(e) => setForm({ ...form, phone: e.target.value })}
             required
           />
           <Input

@@ -24,7 +24,8 @@ type DriversPageProps = {
   areas: Area[];
   loading?: boolean;
   onCreate: (body: {
-    email: string;
+    email?: string;
+    phone: string;
     name: string;
     password: string;
     vehicleNumber: string;
@@ -41,6 +42,7 @@ type DriversPageProps = {
 
 const emptyForm = {
   email: '',
+  phone: '',
   name: '',
   password: '',
   vehicleNumber: '',
@@ -98,7 +100,15 @@ export function DriversPage({
     if (!form.cityId || !form.areaId) return;
     setSaving(true);
     try {
-      await onCreate(form);
+      await onCreate({
+        ...(form.email.trim() ? { email: form.email.trim() } : {}),
+        phone: form.phone.trim(),
+        name: form.name,
+        password: form.password,
+        vehicleNumber: form.vehicleNumber,
+        cityId: form.cityId,
+        areaId: form.areaId,
+      });
       setForm(emptyForm);
     } finally {
       setSaving(false);
@@ -136,6 +146,13 @@ export function DriversPage({
             dir="ltr"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
+          <Input
+            label={COMMON.phone}
+            type="tel"
+            dir="ltr"
+            value={form.phone}
+            onChange={(e) => setForm({ ...form, phone: e.target.value })}
             required
           />
           <Input

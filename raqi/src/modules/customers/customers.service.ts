@@ -84,7 +84,7 @@ export class CustomersService {
     customer: CustomerDocument,
     user?: {
       name: string;
-      email: string;
+      email?: string;
       phone?: string;
       status?: string;
       deletedAt?: Date | null;
@@ -93,7 +93,7 @@ export class CustomersService {
     const json = customer.toJSON() as unknown as Record<string, unknown>;
     if (user) {
       json.name = user.name;
-      json.email = user.email;
+      json.email = user.email ?? null;
       json.phone = user.phone ?? null;
       if (user.status) {
         json.status = user.status;

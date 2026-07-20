@@ -59,15 +59,24 @@ export class DriversController {
   @ApiBody({ type: CreateDriverDto })
   @ApiOkDataResponse(DriverDto, 'Driver created', { status: 201 })
   async create(@Body() body: CreateDriverDto) {
-    const existing = await this.usersService.findByEmail(body.email);
-    if (existing) {
-      throw new BadRequestException('Email already exists');
+    const email = body.email?.trim();
+    if (email) {
+      const existingEmail = await this.usersService.findByEmail(email);
+      if (existingEmail) {
+        throw new BadRequestException('Email already exists');
+      }
+    }
+    const existingPhone = await this.usersService.findByPhone(body.phone);
+    if (existingPhone) {
+      throw new BadRequestException('Phone already registered');
     }
     const user = await this.usersService.create({
-      email: body.email,
+      email,
+      phone: body.phone,
       name: body.name,
       password: body.password,
       role: Role.Driver,
+      phoneVerified: true,
     });
     const driver = await this.driversService.create({
       userId: String(user.id),

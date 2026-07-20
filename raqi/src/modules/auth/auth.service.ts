@@ -182,7 +182,7 @@ export class AuthService {
     const accessToken = await this.signAccessToken({
       sub: payload.sub,
       role: payload.role,
-      email: payload.email,
+      ...(user.email ? { email: user.email } : {}),
     });
     return { accessToken };
   }
@@ -205,10 +205,21 @@ export class AuthService {
     body: UpdateMeDto,
     avatarUrl?: string | null,
   ) {
-    const patch: Partial<{ name: string; email: string; avatarUrl: string }> =
-      {};
+    const patch: Partial<{ name: string; avatarUrl: string }> & {
+      email?: string | null;
+    } = {};
     if (body.name !== undefined) patch.name = body.name;
-    if (body.email !== undefined) patch.email = body.email;
+    if (body.email !== undefined) {
+      if (body.email) {
+        const existing = await this.usersService.findByEmail(body.email);
+        if (existing && String(existing.id) !== userId) {
+          throw new BadRequestException('Email already exists');
+        }
+        patch.email = body.email;
+      } else {
+        patch.email = null;
+      }
+    }
     if (avatarUrl !== undefined && avatarUrl !== null) {
       patch.avatarUrl = avatarUrl;
     }
@@ -406,7 +417,7 @@ export class AuthService {
     const payload: AuthUser = {
       sub: String(user.id),
       role: user.role,
-      email: user.email,
+      ...(user.email ? { email: user.email } : {}),
     };
     const accessToken = await this.signAccessToken(payload);
     const refreshToken = await this.signRefreshToken(payload);

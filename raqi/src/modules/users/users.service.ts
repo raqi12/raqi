@@ -1,9 +1,14 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { Role } from '../../common/roles.enum';
-import { phoneToEmail, normalizePhone } from '../auth/phone.util';
+import { normalizePhone } from '../auth/phone.util';
 import { User, UserDocument } from './schemas/user.schema';
 
 export const DEFAULT_ADMIN = {
@@ -70,20 +75,27 @@ export class UsersService implements OnModuleInit {
   }
 
   async create(input: {
-    email: string;
+    email?: string;
     name: string;
     password: string;
     role: Role;
     phone?: string;
     phoneVerified?: boolean;
   }): Promise<UserDocument> {
+    const email = input.email?.trim();
+    const phone = input.phone ? normalizePhone(input.phone) : undefined;
+
+    if (!email && !phone) {
+      throw new BadRequestException('Email or phone is required');
+    }
+
     return this.userModel.create({
-      email: input.email,
       name: input.name,
       passwordHash: await bcrypt.hash(input.password, 10),
       role: input.role,
-      phone: input.phone ? normalizePhone(input.phone) : undefined,
+      phone,
       phoneVerified: input.phoneVerified ?? false,
+      ...(email ? { email } : {}),
     });
   }
 
@@ -91,11 +103,12 @@ export class UsersService implements OnModuleInit {
     phone: string;
     name: string;
     password: string;
+    email?: string;
     phoneVerified?: boolean;
   }): Promise<UserDocument> {
     const normalizedPhone = normalizePhone(input.phone);
     return this.create({
-      email: phoneToEmail(normalizedPhone),
+      email: input.email,
       phone: normalizedPhone,
       name: input.name,
       password: input.password,
@@ -128,15 +141,38 @@ export class UsersService implements OnModuleInit {
   }
 
   findByEmail(email: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ email }).exec();
+    const normalized = email.trim();
+    if (!normalized) {
+      return Promise.resolve(null);
+    }
+    return this.userModel.findOne({ email: normalized }).exec();
   }
 
   findByPhone(phone: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ phone: normalizePhone(phone) }).exec();
   }
 
-  update(id: string, patch: Partial<User>): Promise<UserDocument | null> {
-    return this.userModel.findByIdAndUpdate(id, patch, { new: true }).exec();
+  update(
+    id: string,
+    patch: Omit<Partial<User>, 'email'> & { email?: string | null },
+  ): Promise<UserDocument | null> {
+    const { email, ...rest } = patch;
+    const updateOps: Record<string, unknown> = {};
+
+    if (Object.keys(rest).length > 0) {
+      updateOps.$set = rest;
+    }
+    if (email === null) {
+      updateOps.$unset = { email: 1 };
+    } else if (email !== undefined) {
+      updateOps.$set = { ...(updateOps.$set as object | undefined), email };
+    }
+
+    if (!updateOps.$set && !updateOps.$unset) {
+      return this.findById(id);
+    }
+
+    return this.userModel.findByIdAndUpdate(id, updateOps, { new: true }).exec();
   }
 
   updateStatus(

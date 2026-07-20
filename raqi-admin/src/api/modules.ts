@@ -137,7 +137,8 @@ export const AdminApi = {
   customers: {
     list: () => apiRequest<Customer[]>('/admin/customers'),
     create: (body: {
-      email: string;
+      email?: string;
+      phone: string;
       name: string;
       password: string;
       cityId: string;
@@ -169,7 +170,8 @@ export const AdminApi = {
   drivers: {
     list: () => apiRequest<Driver[]>('/admin/drivers'),
     create: (body: {
-      email: string;
+      email?: string;
+      phone: string;
       name: string;
       password: string;
       vehicleNumber: string;

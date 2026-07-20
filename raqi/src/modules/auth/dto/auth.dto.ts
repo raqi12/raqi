@@ -122,13 +122,16 @@ export class UpdateMeDto {
   @IsString()
   name?: string;
 
-  @ApiPropertyOptional({ example: 'user@example.com' })
+  @ApiPropertyOptional({ example: 'user@example.com', nullable: true })
   @IsOptional()
-  @Transform(({ value }) =>
-    value === '' || value === null || value === undefined ? undefined : value,
-  )
+  @Transform(({ value }) => {
+    if (value === '' || value === null) return null;
+    if (value === undefined) return undefined;
+    return value;
+  })
+  @ValidateIf((_, value) => value !== null)
   @IsEmail()
-  email?: string;
+  email?: string | null;
 }
 
 export class ChangePasswordDto {

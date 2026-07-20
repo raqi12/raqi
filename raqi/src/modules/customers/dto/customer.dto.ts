@@ -11,9 +11,21 @@ import {
 } from 'class-validator';
 
 export class CreateCustomerDto {
-  @ApiProperty({ example: 'customer@example.com', format: 'email', description: 'Customer login email' })
+  @ApiPropertyOptional({
+    example: 'customer@example.com',
+    format: 'email',
+    description: 'Optional login email',
+  })
+  @IsOptional()
   @IsEmail()
-  email: string;
+  email?: string;
+
+  @ApiProperty({
+    example: '+218912345678',
+    description: 'Customer phone number (required for login)',
+  })
+  @IsString()
+  phone: string;
 
   @ApiProperty({ example: 'أحمد الزاوي', description: 'Customer full name' })
   @IsString()

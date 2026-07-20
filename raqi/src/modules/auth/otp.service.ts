@@ -19,8 +19,7 @@ import { SmsService } from './sms.service';
 
 const OTP_EXPIRES_SECONDS = 300;
 const MAX_OTP_ATTEMPTS = 5;
-/** Fixed OTP used for all send/verify flows. */
-const FIXED_OTP_CODE = '1111';
+const DEFAULT_FIXED_OTP_CODE = '1111';
 
 @Injectable()
 export class OtpService {
@@ -32,12 +31,28 @@ export class OtpService {
     private readonly configService: ConfigService,
   ) {}
 
+  /** Fixed OTP code when set (default 1111). SMS is not required in this mode. */
+  private fixedOtpCode(): string {
+    const configured = this.configService.get<string>('OTP_FIXED_CODE');
+    if (configured === 'false' || configured === 'random') {
+      return this.generateRandomCode();
+    }
+    return configured?.trim() || DEFAULT_FIXED_OTP_CODE;
+  }
+
+  private usesFixedOtp(): boolean {
+    const configured = this.configService.get<string>('OTP_FIXED_CODE');
+    if (configured === 'false' || configured === 'random') {
+      return false;
+    }
+    return true;
+  }
+
   private useDevOtp(): boolean {
     const flag = this.configService.get<string>('OTP_DEV_MODE');
     if (flag === 'true') return true;
     if (flag === 'false') return false;
-    // Default: allow OTP flow when SMS is not enabled
-    return !this.smsService.isEnabled();
+    return !this.smsService.isEnabled() || this.usesFixedOtp();
   }
 
   async createOtp(
@@ -46,7 +61,8 @@ export class OtpService {
     payload: RegisterOtpPayload | null = null,
   ) {
     const normalizedPhone = normalizePhone(phone);
-    const code = FIXED_OTP_CODE;
+    const code = this.fixedOtpCode();
+    const skipSms = this.usesFixedOtp();
     const expiresAt = new Date(Date.now() + OTP_EXPIRES_SECONDS * 1000);
 
     await this.otpModel.deleteMany({ phone: normalizedPhone, purpose }).exec();
@@ -59,7 +75,11 @@ export class OtpService {
       attempts: 0,
     });
 
-    if (this.smsService.isEnabled()) {
+    if (skipSms) {
+      this.logger.log(
+        `[OTP] fixed code mode (${code}); SMS skipped for ${normalizedPhone}`,
+      );
+    } else if (this.smsService.isEnabled()) {
       try {
         await this.smsService.sendOtp(normalizedPhone, purpose, code);
       } catch (error) {
@@ -118,6 +138,10 @@ export class OtpService {
     return payload as RegisterOtpPayload | null;
   }
 
+  private generateRandomCode(): string {
+    return String(Math.floor(100000 + Math.random() * 900000));
+  }
+
   private buildOtpResponse(
     code: string,
     expiresIn: number,
@@ -131,9 +155,12 @@ export class OtpService {
     } = {
       otpSent: true,
       expiresIn,
-      otp: code,
-      debugOtp: code,
     };
+
+    if (this.useDevOtp() || this.usesFixedOtp()) {
+      response.otp = code;
+      response.debugOtp = code;
+    }
 
     this.logger.log(
       `[OTP] purpose=${purpose ?? 'unknown'} code=${code} expiresIn=${expiresIn}s`,

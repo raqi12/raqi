@@ -6,7 +6,7 @@ export type Session = {
   accessToken: string;
   refreshToken: string;
   user: {
-    email: string;
+    email?: string;
     role: string;
     name: string;
   };

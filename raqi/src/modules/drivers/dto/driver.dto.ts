@@ -14,9 +14,21 @@ import {
 } from 'class-validator';
 
 export class CreateDriverDto {
-  @ApiProperty({ example: 'driver@raqi.local', format: 'email', description: 'Driver login email' })
+  @ApiPropertyOptional({
+    example: 'driver@raqi.local',
+    format: 'email',
+    description: 'Optional login email',
+  })
+  @IsOptional()
   @IsEmail()
-  email: string;
+  email?: string;
+
+  @ApiProperty({
+    example: '+218912345678',
+    description: 'Driver phone number (required for login when email is omitted)',
+  })
+  @IsString()
+  phone: string;
 
   @ApiProperty({ example: 'محمد السائق', description: 'Driver full name' })
   @IsString()
