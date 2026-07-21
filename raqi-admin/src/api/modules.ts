@@ -5,6 +5,7 @@ import type {
   BankAccountSettings,
   AdditionalCollectionSettings,
   Bin,
+  BinAssignment,
   BinStats,
   City,
   Complaint,
@@ -48,14 +49,19 @@ export const AdminApi = {
   bins: {
     list: () => apiRequest<Bin[]>('/admin/bins'),
     stats: () => apiRequest<BinStats>('/admin/bins/stats'),
-    create: (body: { code: string; qr: string; capacity?: number; fee?: number }) =>
-      apiRequest<Bin>('/admin/bins', { method: 'POST', body: JSON.stringify(body) }),
+    create: (body: {
+      code: string;
+      capacity?: number;
+      fee?: number;
+      totalCount: number;
+    }) => apiRequest<Bin>('/admin/bins', { method: 'POST', body: JSON.stringify(body) }),
     update: (
       id: string,
       body: {
         capacity?: number;
         fee?: number;
-        status?: 'available' | 'assigned' | 'maintenance';
+        totalCount?: number;
+        active?: boolean;
       },
     ) =>
       apiRequest<Bin>(`/admin/bins/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
@@ -66,6 +72,12 @@ export const AdminApi = {
       }),
     unassign: (id: string) =>
       apiRequest<Bin>(`/admin/bins/${id}/unassign`, { method: 'POST' }),
+    assignments: (id: string) =>
+      apiRequest<BinAssignment[]>(`/admin/bins/${id}/assignments`),
+    releaseAssignment: (assignmentId: string) =>
+      apiRequest<BinAssignment>(`/admin/bins/assignments/${assignmentId}/release`, {
+        method: 'POST',
+      }),
   },
   areas: {
     list: (cityId?: string) =>
@@ -170,7 +182,6 @@ export const AdminApi = {
   drivers: {
     list: () => apiRequest<Driver[]>('/admin/drivers'),
     create: (body: {
-      email?: string;
       phone: string;
       name: string;
       password: string;

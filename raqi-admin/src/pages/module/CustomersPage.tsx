@@ -157,7 +157,7 @@ export function CustomersPage({
   const formAreas = useMemo(() => areasForCity(areas, form.cityId), [areas, form.cityId]);
   const hasLocations = cities.length > 0 && areas.length > 0;
   const availableBins = useMemo(
-    () => bins.filter((bin) => bin.status === 'available'),
+    () => bins.filter((bin) => (bin.availableCount ?? 0) > 0 && bin.active !== false),
     [bins],
   );
   const selectedPlan = useMemo(
@@ -638,7 +638,7 @@ export function CustomersPage({
                     {availableBins.map((bin) => (
                       <option key={getId(bin)} value={getId(bin)}>
                         {bin.code ?? getId(bin)} ({bin.capacity ?? 0} لتر
-                        {bin.fee ? ` — ${bin.fee} د.ل` : ''})
+                        {bin.fee ? ` — ${bin.fee} د.ل` : ''} — {bin.availableCount ?? 0} متاح)
                       </option>
                     ))}
                   </Select>
@@ -768,13 +768,12 @@ export function CustomersPage({
                         <li key={getId(bin)} className="record-list__item">
                           <div className="record-list__header">
                             <strong>{bin.code ?? getId(bin)}</strong>
-                            <StatusBadge status={String(bin.status)} />
+                            <StatusBadge status="assigned" />
                           </div>
                           <div className="record-list__meta">
                             <span>السعة: {bin.capacity ?? 0} لتر</span>
                             <span>الرسوم: {formatMoney(bin.fee)}</span>
                             <span>التوصيل: {bin.deliveryDate ?? '—'}</span>
-                            <span>{bin.active ? 'نشط' : 'غير نشط'}</span>
                           </div>
                         </li>
                       ))

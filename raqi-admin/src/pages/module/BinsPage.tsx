@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { DataTable } from '../../components/DataTable';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { DetailPanel } from '../../components/forms/DetailPanel';
@@ -8,37 +8,35 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { COMMON } from '../../i18n/ar';
-import type { Bin, Customer, User } from '../../types';
+import type { Bin, BinAssignment, Customer, User } from '../../types';
 import { getId, customerDisplayName } from './shared';
-
-type BinStatus = 'available' | 'assigned' | 'maintenance';
 
 type BinsPageProps = {
   bins: Bin[];
   customers: Customer[];
   users: User[];
   loading?: boolean;
-  onCreate: (body: { code: string; qr: string; capacity?: number; fee?: number }) => Promise<void>;
+  onCreate: (body: {
+    code: string;
+    capacity?: number;
+    fee?: number;
+    totalCount: number;
+  }) => Promise<void>;
   onUpdate: (
     id: string,
-    body: { capacity?: number; fee?: number; status?: BinStatus },
+    body: { capacity?: number; fee?: number; totalCount?: number; active?: boolean },
   ) => Promise<void>;
   onAssign: (id: string, customerId: string) => Promise<void>;
-  onUnassign: (id: string) => Promise<void>;
+  onLoadAssignments: (binId: string) => Promise<BinAssignment[]>;
+  onReleaseAssignment: (assignmentId: string) => Promise<void>;
 };
 
 const emptyForm = {
   code: '',
-  qr: '',
   capacity: '',
   fee: '',
+  totalCount: '',
 };
-
-const BIN_STATUS_OPTIONS: { value: BinStatus; label: string }[] = [
-  { value: 'available', label: 'متاح' },
-  { value: 'assigned', label: 'مخصص' },
-  { value: 'maintenance', label: 'صيانة' },
-];
 
 function customerOptionLabel(customer: Customer, users: User[]) {
   return customerDisplayName(customer, users);
@@ -63,38 +61,81 @@ export function BinsPage({
   onCreate,
   onUpdate,
   onAssign,
-  onUnassign,
+  onLoadAssignments,
+  onReleaseAssignment,
 }: BinsPageProps) {
   const [form, setForm] = useState(emptyForm);
   const [selected, setSelected] = useState<Bin | null>(null);
   const [assignCustomerId, setAssignCustomerId] = useState('');
-  const [confirmUnassign, setConfirmUnassign] = useState(false);
+  const [assignments, setAssignments] = useState<BinAssignment[]>([]);
+  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
+  const [confirmReleaseId, setConfirmReleaseId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const tableRows = useMemo(
     () =>
-      bins.map((bin) => ({
-        ...bin,
-        capacityLabel: bin.capacity != null ? `${bin.capacity} لتر` : '—',
-        feeLabel: bin.fee != null ? `${bin.fee.toLocaleString('ar-LY')} د.ل` : '0 د.ل',
-        customerName: customerNameById(customers, users, bin.customerId),
-        deliveryDateLabel: bin.deliveryDate ?? '—',
-        activeLabel: bin.active ? 'نشط' : 'غير نشط',
-        activeKey: bin.active ? 'active' : 'inactive',
-      })),
-    [bins, customers, users],
+      bins.map((bin) => {
+        const total = bin.totalCount ?? 0;
+        const available = bin.availableCount ?? 0;
+        const assigned = Math.max(0, total - available);
+        return {
+          ...bin,
+          capacityLabel: bin.capacity != null ? `${bin.capacity} لتر` : '—',
+          feeLabel: bin.fee != null ? `${bin.fee.toLocaleString('ar-LY')} د.ل` : '0 د.ل',
+          totalLabel: String(total),
+          availableLabel: String(available),
+          assignedLabel: String(assigned),
+          activeLabel: bin.active !== false ? 'نشط' : 'غير نشط',
+          activeKey: bin.active !== false ? 'active' : 'inactive',
+        };
+      }),
+    [bins],
   );
+
+  const selectedId = selected ? getId(selected) : '';
+
+  useEffect(() => {
+    if (!selectedId) return;
+    const fresh = bins.find((bin) => getId(bin) === selectedId);
+    if (fresh) {
+      setSelected(fresh);
+    }
+  }, [bins, selectedId]);
+
+  useEffect(() => {
+    if (!selectedId) {
+      setAssignments([]);
+      return;
+    }
+    let cancelled = false;
+    setAssignmentsLoading(true);
+    void onLoadAssignments(selectedId)
+      .then((rows) => {
+        if (!cancelled) setAssignments(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setAssignments([]);
+      })
+      .finally(() => {
+        if (!cancelled) setAssignmentsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // Reload when stock changes after assign/release (bins refresh)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, bins]);
 
   async function submitCreate(e: FormEvent) {
     e.preventDefault();
-    if (!form.code.trim() || !form.qr.trim()) return;
+    if (!form.code.trim() || form.totalCount === '') return;
     setSaving(true);
     try {
       await onCreate({
         code: form.code.trim(),
-        qr: form.qr.trim(),
         capacity: form.capacity ? Number(form.capacity) : undefined,
         fee: form.fee ? Number(form.fee) : undefined,
+        totalCount: Number(form.totalCount),
       });
       setForm(emptyForm);
     } finally {
@@ -110,7 +151,8 @@ export function BinsPage({
       await onUpdate(getId(selected), {
         capacity: selected.capacity,
         fee: selected.fee,
-        status: selected.status,
+        totalCount: selected.totalCount,
+        active: selected.active,
       });
     } finally {
       setSaving(false);
@@ -124,29 +166,37 @@ export function BinsPage({
     try {
       await onAssign(getId(selected), assignCustomerId);
       setAssignCustomerId('');
-      setSelected(null);
+      const rows = await onLoadAssignments(getId(selected));
+      setAssignments(rows);
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleUnassign() {
-    if (!selected) return;
+  async function handleRelease() {
+    if (!confirmReleaseId) return;
     setSaving(true);
     try {
-      await onUnassign(getId(selected));
-      setConfirmUnassign(false);
-      setSelected(null);
+      await onReleaseAssignment(confirmReleaseId);
+      setConfirmReleaseId(null);
+      if (selected) {
+        const rows = await onLoadAssignments(getId(selected));
+        setAssignments(rows);
+      }
     } finally {
       setSaving(false);
     }
   }
+
+  const available = selected?.availableCount ?? 0;
+  const total = selected?.totalCount ?? 0;
+  const assignedCount = Math.max(0, total - available);
 
   return (
     <div className={`module-page ${selected ? 'module-page--with-detail' : ''}`}>
       <FormCard
-        title="إضافة صندوق"
-        description="سجّل صندوقًا جديدًا برمز تعريف ورمز QR وسعة التخزين"
+        title="إضافة نوع صندوق"
+        description="سجّل نوع صندوق مع الكمية الإجمالية المتاحة في المخزون"
         onSubmit={submitCreate}
         submitLabel={COMMON.create}
         loading={saving}
@@ -156,15 +206,7 @@ export function BinsPage({
             label="رمز الصندوق"
             value={form.code}
             onChange={(e) => setForm({ ...form, code: e.target.value })}
-            placeholder="مثال: BIN-001"
-            dir="ltr"
-            required
-          />
-          <Input
-            label="رمز QR"
-            value={form.qr}
-            onChange={(e) => setForm({ ...form, qr: e.target.value })}
-            placeholder="مثال: QR-BIN-001"
+            placeholder="مثال: BIN-240L"
             dir="ltr"
             required
           />
@@ -175,7 +217,7 @@ export function BinsPage({
             dir="ltr"
             value={form.capacity}
             onChange={(e) => setForm({ ...form, capacity: e.target.value })}
-            placeholder="120"
+            placeholder="240"
           />
           <Input
             label="الرسوم (د.ل)"
@@ -186,28 +228,33 @@ export function BinsPage({
             onChange={(e) => setForm({ ...form, fee: e.target.value })}
             placeholder="50"
           />
+          <Input
+            label="الكمية الإجمالية"
+            type="number"
+            min={0}
+            dir="ltr"
+            value={form.totalCount}
+            onChange={(e) => setForm({ ...form, totalCount: e.target.value })}
+            placeholder="50"
+            required
+          />
         </div>
       </FormCard>
 
       <DataTable
         title="الصناديق"
-        description="إدارة مخزون الصناديق وتخصيصها للعملاء"
+        description="إدارة مخزون أنواع الصناديق وتخصيصها للعملاء"
         rows={tableRows}
         loading={loading}
         onSelect={setSelected}
-        searchKeys={['code', 'capacityLabel', 'status', 'customerName', 'activeLabel', 'deliveryDateLabel']}
+        searchKeys={['code', 'capacityLabel', 'totalLabel', 'availableLabel', 'assignedLabel', 'activeLabel']}
         columns={[
           { key: 'code', label: 'الرمز' },
           { key: 'capacityLabel', label: 'السعة' },
           { key: 'feeLabel', label: 'الرسوم' },
-          {
-            key: 'status',
-            label: COMMON.status,
-            render: (row) => <StatusBadge status={String(row.status)} />,
-            sortable: false,
-          },
-          { key: 'customerName', label: 'العميل' },
-          { key: 'deliveryDateLabel', label: 'تاريخ التوصيل' },
+          { key: 'totalLabel', label: 'الإجمالي' },
+          { key: 'availableLabel', label: 'المتاح' },
+          { key: 'assignedLabel', label: 'المخصص' },
           {
             key: 'activeKey',
             label: 'التفعيل',
@@ -224,36 +271,25 @@ export function BinsPage({
           onClose={() => {
             setSelected(null);
             setAssignCustomerId('');
-            setConfirmUnassign(false);
+            setConfirmReleaseId(null);
+            setAssignments([]);
           }}
-          footer={
-            selected.customerId ? (
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setConfirmUnassign(true)}
-                disabled={saving}
-              >
-                إلغاء التخصيص
-              </Button>
-            ) : null
-          }
         >
           <div className="detail-stack">
             <section className="detail-block">
-              <h4 className="detail-block__title">معلومات الصندوق</h4>
+              <h4 className="detail-block__title">المخزون</h4>
               <dl className="info-list">
                 <div className="info-list__row">
-                  <dt>رمز QR</dt>
-                  <dd>{selected.qr ?? '—'}</dd>
+                  <dt>الإجمالي</dt>
+                  <dd>{total}</dd>
                 </div>
                 <div className="info-list__row">
-                  <dt>العميل الحالي</dt>
-                  <dd>{customerNameById(customers, users, selected.customerId)}</dd>
+                  <dt>المتاح</dt>
+                  <dd>{available}</dd>
                 </div>
                 <div className="info-list__row">
-                  <dt>تاريخ التوصيل</dt>
-                  <dd dir="ltr">{selected.deliveryDate ?? '—'}</dd>
+                  <dt>المخصص</dt>
+                  <dd>{assignedCount}</dd>
                 </div>
               </dl>
             </section>
@@ -281,18 +317,25 @@ export function BinsPage({
                     setSelected({ ...selected, fee: Number(e.target.value) })
                   }
                 />
-                <Select
-                  label={COMMON.status}
-                  value={selected.status ?? 'available'}
+                <Input
+                  label="الكمية الإجمالية"
+                  type="number"
+                  min={assignedCount}
+                  dir="ltr"
+                  value={selected.totalCount ?? 0}
                   onChange={(e) =>
-                    setSelected({ ...selected, status: e.target.value as BinStatus })
+                    setSelected({ ...selected, totalCount: Number(e.target.value) })
+                  }
+                />
+                <Select
+                  label="التفعيل"
+                  value={selected.active !== false ? 'true' : 'false'}
+                  onChange={(e) =>
+                    setSelected({ ...selected, active: e.target.value === 'true' })
                   }
                 >
-                  {BIN_STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
+                  <option value="true">نشط</option>
+                  <option value="false">غير نشط</option>
                 </Select>
                 <div className="form-grid__actions">
                   <Button type="submit" disabled={saving}>
@@ -302,7 +345,7 @@ export function BinsPage({
               </form>
             </section>
 
-            {!selected.customerId ? (
+            {available > 0 ? (
               <section className="detail-block">
                 <h4 className="detail-block__title">تخصيص لعميل</h4>
                 <form className="form-grid" onSubmit={submitAssign}>
@@ -329,17 +372,60 @@ export function BinsPage({
                   <p className="field__hint">أضف عملاء أولًا من صفحة العملاء.</p>
                 ) : null}
               </section>
-            ) : null}
+            ) : (
+              <section className="detail-block">
+                <p className="field__hint">لا توجد وحدات متاحة للتخصيص.</p>
+              </section>
+            )}
+
+            <section className="detail-block">
+              <h4 className="detail-block__title">
+                العملاء الذين أخذوا هذا الصندوق ({assignments.length})
+              </h4>
+              {assignmentsLoading ? (
+                <p className="field__hint">جاري التحميل...</p>
+              ) : assignments.length === 0 ? (
+                <p className="field__hint">لم يأخذ أي عميل هذا الصندوق بعد.</p>
+              ) : (
+                <ul className="record-list">
+                  {assignments.map((assignment) => (
+                    <li key={getId(assignment)} className="record-list__item">
+                      <div className="record-list__header">
+                        <strong>
+                          {customerNameById(customers, users, assignment.customerId)}
+                        </strong>
+                        <StatusBadge
+                          status={assignment.active ? 'assigned' : 'inactive'}
+                        />
+                      </div>
+                      <div className="record-list__meta">
+                        <span>التوصيل: {assignment.deliveryDate ?? '—'}</span>
+                        {assignment.active ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setConfirmReleaseId(getId(assignment))}
+                            disabled={saving}
+                          >
+                            إلغاء التخصيص
+                          </Button>
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </div>
         </DetailPanel>
       ) : null}
 
       <ConfirmDialog
-        open={confirmUnassign}
+        open={Boolean(confirmReleaseId)}
         title="إلغاء تخصيص الصندوق"
-        description="هل تريد إلغاء تخصيص هذا الصندوق من العميل الحالي؟"
-        onCancel={() => setConfirmUnassign(false)}
-        onConfirm={() => void handleUnassign()}
+        description="هل تريد إلغاء تخصيص هذا الصندوق من العميل وإرجاع وحدة إلى المخزون؟"
+        onCancel={() => setConfirmReleaseId(null)}
+        onConfirm={() => void handleRelease()}
       />
     </div>
   );

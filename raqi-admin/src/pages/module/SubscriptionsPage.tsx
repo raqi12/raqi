@@ -173,7 +173,10 @@ export function SubscriptionsPage({
   const [editCost, setEditCost] = useState<SubscriptionCost | null>(null);
 
   const activePlans = useMemo(() => plans.filter((plan) => plan.active !== false), [plans]);
-  const availableBins = useMemo(() => bins.filter((bin) => bin.status === 'available'), [bins]);
+  const availableBins = useMemo(
+    () => bins.filter((bin) => (bin.availableCount ?? 0) > 0 && bin.active !== false),
+    [bins],
+  );
   const editBins = useMemo(() => {
     if (!selected?.binId) return availableBins;
     const current = bins.find((bin) => getId(bin) === selected.binId);
@@ -497,7 +500,7 @@ export function SubscriptionsPage({
             {availableBins.map((bin) => (
               <option key={getId(bin)} value={getId(bin)}>
                 {bin.code ?? getId(bin)} ({bin.capacity ?? 0} لتر
-                {bin.fee ? ` — ${bin.fee} د.ل` : ''})
+                {bin.fee ? ` — ${bin.fee} د.ل` : ''} — {bin.availableCount ?? 0} متاح)
               </option>
             ))}
           </Select>
@@ -628,7 +631,7 @@ export function SubscriptionsPage({
                     {editBins.map((bin) => (
                       <option key={getId(bin)} value={getId(bin)}>
                         {bin.code ?? getId(bin)} ({bin.capacity ?? 0} لتر
-                        {bin.fee ? ` — ${bin.fee} د.ل` : ''})
+                        {bin.fee ? ` — ${bin.fee} د.ل` : ''} — {bin.availableCount ?? 0} متاح)
                       </option>
                     ))}
                   </Select>
@@ -809,14 +812,8 @@ export function SubscriptionsPage({
                       <dd>{detailBin.capacity ?? 0} لتر</dd>
                     </div>
                     <div className="info-list__row">
-                      <dt>حالة الصندوق</dt>
-                      <dd>
-                        <StatusBadge status={String(detailBin.status)} />
-                      </dd>
-                    </div>
-                    <div className="info-list__row">
-                      <dt>تاريخ التوصيل</dt>
-                      <dd dir="ltr">{detailBin.deliveryDate ?? '—'}</dd>
+                      <dt>المتاح من النوع</dt>
+                      <dd>{detailBin.availableCount ?? 0} / {detailBin.totalCount ?? 0}</dd>
                     </div>
                   </>
                 ) : null}
@@ -847,7 +844,7 @@ export function SubscriptionsPage({
                     {availableBins.map((bin) => (
                       <option key={getId(bin)} value={getId(bin)}>
                         {bin.code ?? getId(bin)} ({bin.capacity ?? 0} لتر
-                        {bin.fee ? ` — ${bin.fee} د.ل` : ''})
+                        {bin.fee ? ` — ${bin.fee} د.ل` : ''} — {bin.availableCount ?? 0} متاح)
                       </option>
                     ))}
                   </Select>

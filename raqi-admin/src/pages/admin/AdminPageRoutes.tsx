@@ -181,7 +181,16 @@ export function AdminPageRoutes() {
             onAssign={(id, customerId) =>
               runMutation(() => AdminApi.bins.assign(id, { customerId }), 'تم تخصيص الصندوق')
             }
-            onUnassign={(id) => runMutation(() => AdminApi.bins.unassign(id), 'تم إلغاء تخصيص الصندوق')}
+            onLoadAssignments={async (binId) => {
+              const res = await AdminApi.bins.assignments(binId);
+              return res.data;
+            }}
+            onReleaseAssignment={(assignmentId) =>
+              runMutation(
+                () => AdminApi.bins.releaseAssignment(assignmentId),
+                'تم إلغاء تخصيص الصندوق',
+              )
+            }
           />
         }
       />

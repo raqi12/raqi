@@ -19,7 +19,11 @@ import {
   ApiOkDataResponse,
   ApiStandardErrorResponses,
 } from '../../common/swagger/decorators';
-import { BinDto, BinStatsDto } from '../../common/swagger/schemas/entity.schemas';
+import {
+  BinAssignmentDto,
+  BinDto,
+  BinStatsDto,
+} from '../../common/swagger/schemas/entity.schemas';
 import { BinsService } from './bins.service';
 import { AssignBinDto, CreateBinDto, UpdateBinDto } from './dto/bin.dto';
 
@@ -34,7 +38,7 @@ export class BinsController {
   @Get()
   @ApiOperation({
     summary: 'List bins',
-    description: 'Returns the full bin inventory. Admin role required.',
+    description: 'Returns all bin types with stock counts. Admin role required.',
   })
   @ApiOkDataResponse(BinDto, 'Bin list', { isArray: true })
   async list() {
@@ -44,7 +48,7 @@ export class BinsController {
   @Get('stats')
   @ApiOperation({
     summary: 'Bin inventory statistics',
-    description: 'Aggregated counts by bin status (available, assigned, maintenance).',
+    description: 'Aggregated stock totals (total, available, assigned).',
   })
   @ApiOkDataResponse(BinStatsDto, 'Bin statistics')
   async stats() {
@@ -53,13 +57,41 @@ export class BinsController {
 
   @Post()
   @ApiOperation({
-    summary: 'Create bin',
-    description: 'Registers a new bin with code, QR identifier, and optional capacity.',
+    summary: 'Create bin type',
+    description:
+      'Registers a new bin type with code, capacity, fee, and total stock count.',
   })
   @ApiBody({ type: CreateBinDto })
   @ApiOkDataResponse(BinDto, 'Bin created', { status: 201 })
   async create(@Body() body: CreateBinDto) {
     return { data: await this.binsService.create(body) };
+  }
+
+  @Post('assignments/:assignmentId/release')
+  @ApiOperation({
+    summary: 'Release bin assignment',
+    description: 'Deactivates an assignment and restores one unit of available stock.',
+  })
+  @ApiMongoIdParam('assignmentId', 'Bin assignment MongoDB ID')
+  @ApiOkDataResponse(BinAssignmentDto, 'Assignment released')
+  async releaseAssignment(@Param('assignmentId') assignmentId: string) {
+    const { assignment } = await this.binsService.release(assignmentId);
+    return { data: assignment };
+  }
+
+  @Get(':id/assignments')
+  @ApiOperation({
+    summary: 'List assignments for a bin type',
+    description: 'Returns all customers who took this bin type (active and historical).',
+  })
+  @ApiMongoIdParam('id', 'Bin MongoDB ID')
+  @ApiOkDataResponse(BinAssignmentDto, 'Bin assignments', { isArray: true })
+  async listAssignments(@Param('id') id: string) {
+    const bin = await this.binsService.findById(id);
+    if (!bin) {
+      throw new NotFoundException('Bin not found');
+    }
+    return { data: await this.binsService.findAssignments(id) };
   }
 
   @Get(':id')
@@ -75,7 +107,7 @@ export class BinsController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update bin' })
+  @ApiOperation({ summary: 'Update bin type' })
   @ApiMongoIdParam('id', 'Bin MongoDB ID')
   @ApiBody({ type: UpdateBinDto })
   @ApiOkDataResponse(BinDto, 'Bin updated')
@@ -89,28 +121,23 @@ export class BinsController {
 
   @Post(':id/assign')
   @ApiOperation({
-    summary: 'Assign bin to customer',
-    description: 'Links a bin to a customer account and optionally marks it active.',
+    summary: 'Assign bin type to customer',
+    description:
+      'Decrements available stock by 1 and creates an active assignment for the customer.',
   })
   @ApiMongoIdParam('id', 'Bin MongoDB ID')
   @ApiBody({ type: AssignBinDto })
   @ApiOkDataResponse(BinDto, 'Bin assigned')
   async assign(@Param('id') id: string, @Body() body: AssignBinDto) {
-    const bin = await this.binsService.assign(
-      id,
-      body.customerId,
-      body.active ?? true,
-    );
-    if (!bin) {
-      throw new NotFoundException('Bin not found');
-    }
+    const { bin } = await this.binsService.take(id, body.customerId);
     return { data: bin };
   }
 
   @Post(':id/unassign')
   @ApiOperation({
-    summary: 'Unassign bin',
-    description: 'Removes customer assignment and returns bin to available status.',
+    summary: 'Unassign bin (legacy)',
+    description:
+      'Releases the active assignment for this bin type (first active match) and restores stock.',
   })
   @ApiMongoIdParam('id', 'Bin MongoDB ID')
   @ApiOkDataResponse(BinDto, 'Bin unassigned')
@@ -135,7 +162,8 @@ export class CustomerBinsController {
   @Get('available')
   @ApiOperation({
     summary: 'List available bins',
-    description: 'Returns bins that can be selected during subscription setup.',
+    description:
+      'Returns bin types with availableCount > 0 that can be selected during subscription setup.',
   })
   @ApiOkDataResponse(BinDto, 'Available bin list', { isArray: true })
   async listAvailable() {

@@ -1,14 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsIn, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class CreateBinDto {
-  @ApiProperty({ example: 'BIN-001', description: 'Unique bin identifier code' })
+  @ApiProperty({ example: 'BIN-240L', description: 'Unique bin type code' })
   @IsString()
   code: string;
-
-  @ApiProperty({ example: 'QR-BIN-001', description: 'QR code value printed on the bin' })
-  @IsString()
-  qr: string;
 
   @ApiPropertyOptional({ example: 240, minimum: 0, description: 'Bin capacity in liters' })
   @IsOptional()
@@ -16,11 +18,24 @@ export class CreateBinDto {
   @Min(0)
   capacity?: number;
 
-  @ApiPropertyOptional({ example: 50, minimum: 0, description: 'Bin fee in LYD added to subscription cost' })
+  @ApiPropertyOptional({
+    example: 50,
+    minimum: 0,
+    description: 'Bin fee in LYD added to subscription cost',
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
   fee?: number;
+
+  @ApiProperty({
+    example: 50,
+    minimum: 0,
+    description: 'Total stock units for this bin type',
+  })
+  @IsNumber()
+  @Min(0)
+  totalCount: number;
 }
 
 export class UpdateBinDto {
@@ -31,19 +46,32 @@ export class UpdateBinDto {
   capacity?: number;
 
   @ApiPropertyOptional({
-    enum: ['available', 'assigned', 'maintenance'],
-    example: 'available',
-    description: 'Current bin status',
+    example: 50,
+    minimum: 0,
+    description: 'Bin fee in LYD added to subscription cost',
   })
-  @IsOptional()
-  @IsIn(['available', 'assigned', 'maintenance'])
-  status?: 'available' | 'assigned' | 'maintenance';
-
-  @ApiPropertyOptional({ example: 50, minimum: 0, description: 'Bin fee in LYD added to subscription cost' })
   @IsOptional()
   @IsNumber()
   @Min(0)
   fee?: number;
+
+  @ApiPropertyOptional({
+    example: 60,
+    minimum: 0,
+    description: 'Total stock units (must be >= currently assigned count)',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  totalCount?: number;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Whether this bin type can be selected',
+  })
+  @IsOptional()
+  @IsBoolean()
+  active?: boolean;
 }
 
 export class AssignBinDto {

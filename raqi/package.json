@@ -17,6 +17,7 @@
     "seed:admin:prod": "node dist/scripts/seed-admin.js",
     "db:reset-except-admins": "ts-node -r tsconfig-paths/register src/scripts/reset-except-admins.ts",
     "migrate:cities": "ts-node -r tsconfig-paths/register src/scripts/migrate-cities.ts",
+    "migrate:bins-stock": "ts-node -r tsconfig-paths/register src/scripts/migrate-bins-to-stock.ts",
 
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",

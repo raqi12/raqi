@@ -361,10 +361,13 @@ export class SubscriptionsService {
         throw new BadRequestException('Bin not found');
       }
       const isCurrentBin = String(subscription.binId) === input.binId;
-      const isAvailable = bin.status === 'available';
+      const isAvailable = bin.active && bin.availableCount > 0;
+      const activeAssignment =
+        await this.binsService.findActiveAssignmentByCustomer(
+          String(subscription.customerId),
+        );
       const isOwnedByCustomer =
-        bin.customerId &&
-        String(bin.customerId) === String(subscription.customerId);
+        activeAssignment && String(activeAssignment.binId) === input.binId;
       if (!isCurrentBin && !isAvailable && !isOwnedByCustomer) {
         throw new BadRequestException('Bin is not available');
       }
@@ -496,7 +499,7 @@ export class SubscriptionsService {
 
     if (requestedBinId && !reusingBin) {
       const bin = await this.binsService.findById(requestedBinId);
-      if (!bin || bin.status !== 'available') {
+      if (!bin || !bin.active || bin.availableCount < 1) {
         throw new BadRequestException('Bin is not available');
       }
     }
@@ -536,6 +539,7 @@ export class SubscriptionsService {
     let debited = false;
     let debitTransactionId: string | null = null;
     let previousBinUnassigned: string | null = null;
+    let tookNewBin = false;
     const paymentDescription =
       cost.binFee > 0
         ? `دفع اشتراك - ${plan.name} + رسوم حاوية (${cost.binFee} د.ل)`
@@ -558,17 +562,22 @@ export class SubscriptionsService {
 
       if (resolvedBinId) {
         if (reusingBin) {
-          await this.binsService.assign(resolvedBinId, customerId, true, {
+          await this.binsService.updateActiveAssignmentDeliveryDate(
+            customerId,
             deliveryDate,
-          });
+          );
         } else {
           if (oldBinId) {
-            await this.binsService.unassign(oldBinId);
-            previousBinUnassigned = oldBinId;
+            const released =
+              await this.binsService.releaseActiveForCustomer(customerId);
+            if (released) {
+              previousBinUnassigned = oldBinId;
+            }
           }
-          await this.binsService.assign(resolvedBinId, customerId, true, {
+          await this.binsService.take(resolvedBinId, customerId, {
             deliveryDate,
           });
+          tookNewBin = true;
         }
       }
 
@@ -585,6 +594,15 @@ export class SubscriptionsService {
         autoRenew: false,
         expiresAt,
       });
+
+      const activeAssignment =
+        await this.binsService.findActiveAssignmentByCustomer(customerId);
+      if (activeAssignment) {
+        await this.binsService.setAssignmentSubscription(
+          String(activeAssignment.id),
+          String(subscription.id),
+        );
+      }
 
       if (debitTransactionId) {
         await this.walletTransactionsService.updateReferenceId(
@@ -603,12 +621,17 @@ export class SubscriptionsService {
 
       return subscription;
     } catch (error) {
-      if (previousBinUnassigned) {
+      if (tookNewBin) {
         await this.binsService
-          .assign(previousBinUnassigned, customerId, true, {
-            deliveryDate,
-          })
+          .releaseActiveForCustomer(customerId)
           .catch(() => undefined);
+        if (previousBinUnassigned) {
+          await this.binsService
+            .take(previousBinUnassigned, customerId, {
+              deliveryDate,
+            })
+            .catch(() => undefined);
+        }
       }
       if (debited) {
         await this.walletsService.applyMovement({
@@ -766,7 +789,7 @@ export class SubscriptionsService {
     }
 
     const newBin = await this.binsService.findById(newBinId);
-    if (!newBin || newBin.status !== 'available') {
+    if (!newBin || !newBin.active || newBin.availableCount < 1) {
       throw new BadRequestException('Bin is not available');
     }
 
@@ -782,25 +805,31 @@ export class SubscriptionsService {
     );
 
     const oldBinId = subscription.binId ? String(subscription.binId) : null;
+    const oldAssignment =
+      (await this.binsService.findActiveAssignmentBySubscription(
+        String(subscription.id),
+      )) ??
+      (await this.binsService.findActiveAssignmentByCustomer(
+        String(subscription.customerId),
+      ));
 
-    if (oldBinId) {
-      await this.binsService.unassign(oldBinId);
+    if (oldAssignment) {
+      await this.binsService.release(String(oldAssignment.id));
     }
 
     try {
-      await this.binsService.assign(
-        newBinId,
-        subscription.customerId,
-        true,
-        { deliveryDate: startDate },
-      );
+      await this.binsService.take(newBinId, subscription.customerId, {
+        deliveryDate: startDate,
+        subscriptionId: String(subscription.id),
+      });
       subscription.binId = newBinId;
       return subscription.save();
     } catch (error) {
       if (oldBinId) {
         await this.binsService
-          .assign(oldBinId, subscription.customerId, true, {
+          .take(oldBinId, subscription.customerId, {
             deliveryDate: startDate,
+            subscriptionId: String(subscription.id),
           })
           .catch(() => undefined);
       }

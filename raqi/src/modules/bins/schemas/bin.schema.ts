@@ -9,32 +9,22 @@ export class Bin {
   @Prop({ required: true, unique: true, index: true })
   code: string;
 
-  @Prop({ required: true })
-  qr: string;
-
   @Prop({ type: Number, required: true, min: 0, default: 0 })
   capacity: number;
 
   @Prop({ type: Number, required: true, min: 0, default: 0 })
   fee: number;
 
-  @Prop({
-    type: String,
-    required: true,
-    enum: ['available', 'assigned', 'maintenance'],
-    default: 'available',
-  })
-  status: 'available' | 'assigned' | 'maintenance';
+  /** Total stock units for this bin type */
+  @Prop({ type: Number, required: true, min: 0, default: 0 })
+  totalCount: number;
 
-  @Prop({ type: String, default: null, index: true })
-  customerId: string | null;
+  /** Units currently available to assign */
+  @Prop({ type: Number, required: true, min: 0, default: 0 })
+  availableCount: number;
 
-  @Prop({ default: false })
+  @Prop({ default: true })
   active: boolean;
-
-  /** YYYY-MM-DD — delivery date equals subscription start when assigned via subscription */
-  @Prop({ type: String, default: null })
-  deliveryDate: string | null;
 }
 
 export const BinSchema = SchemaFactory.createForClass(Bin);

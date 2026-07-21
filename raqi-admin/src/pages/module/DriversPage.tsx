@@ -24,7 +24,6 @@ type DriversPageProps = {
   areas: Area[];
   loading?: boolean;
   onCreate: (body: {
-    email?: string;
     phone: string;
     name: string;
     password: string;
@@ -41,7 +40,6 @@ type DriversPageProps = {
 };
 
 const emptyForm = {
-  email: '',
   phone: '',
   name: '',
   password: '',
@@ -101,7 +99,6 @@ export function DriversPage({
     setSaving(true);
     try {
       await onCreate({
-        ...(form.email.trim() ? { email: form.email.trim() } : {}),
         phone: form.phone.trim(),
         name: form.name,
         password: form.password,
@@ -140,13 +137,6 @@ export function DriversPage({
         loading={saving}
       >
         <div className="form-grid">
-          <Input
-            label={COMMON.email}
-            type="email"
-            dir="ltr"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-          />
           <Input
             label={COMMON.phone}
             type="tel"

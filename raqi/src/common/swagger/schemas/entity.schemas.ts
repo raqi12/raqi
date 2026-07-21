@@ -362,47 +362,67 @@ export class BinDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439011' })
   id: string;
 
-  @ApiProperty({ example: 'BIN-001' })
+  @ApiProperty({ example: 'BIN-240L' })
   code: string;
 
-  @ApiProperty({ example: 'QR-BIN-001' })
-  qr: string;
-
-  @ApiProperty({ example: 120 })
+  @ApiProperty({ example: 240 })
   capacity: number;
 
   @ApiProperty({ example: 50, description: 'Bin fee in LYD added to subscription cost' })
   fee: number;
 
-  @ApiProperty({ enum: ['available', 'assigned', 'maintenance'], example: 'available' })
-  status: string;
+  @ApiProperty({ example: 50, description: 'Total stock units for this bin type' })
+  totalCount: number;
 
-  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439012' })
-  customerId?: string;
+  @ApiProperty({ example: 42, description: 'Units currently available to assign' })
+  availableCount: number;
+
+  @ApiProperty({ example: true })
+  active: boolean;
+}
+
+export class BinAssignmentDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
+  id: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439012' })
+  binId: string;
+
+  @ApiProperty({ example: '507f1f77bcf86cd799439013' })
+  customerId: string;
+
+  @ApiPropertyOptional({ example: '507f1f77bcf86cd799439014', nullable: true })
+  subscriptionId?: string | null;
+
+  @ApiPropertyOptional({
+    example: '2026-07-18',
+    description: 'Bin delivery date (YYYY-MM-DD)',
+    nullable: true,
+  })
+  deliveryDate?: string | null;
 
   @ApiProperty({ example: true })
   active: boolean;
 
-  @ApiPropertyOptional({
-    example: '2026-07-18',
-    description:
-      'Bin delivery date (YYYY-MM-DD), set to subscription start when assigned via subscription',
-  })
-  deliveryDate?: string | null;
+  @ApiPropertyOptional({ example: '2026-07-18T10:00:00.000Z' })
+  createdAt?: string;
+
+  @ApiPropertyOptional({ example: '2026-07-18T10:00:00.000Z' })
+  updatedAt?: string;
 }
 
 export class BinStatsDto {
-  @ApiProperty({ example: 10 })
+  @ApiProperty({ example: 100, description: 'Sum of totalCount across all bin types' })
   totalBins: number;
 
-  @ApiProperty({ example: 6 })
+  @ApiProperty({ example: 2400, description: 'Sum of capacity across bin types' })
+  totalCapacity: number;
+
+  @ApiProperty({ example: 72, description: 'Sum of availableCount across all bin types' })
   availableBins: number;
 
-  @ApiProperty({ example: 3 })
+  @ApiProperty({ example: 28, description: 'Sum of assigned units (totalCount - availableCount)' })
   assignedBins: number;
-
-  @ApiProperty({ example: 1 })
-  maintenanceBins: number;
 }
 
 export class SubscriptionDto {

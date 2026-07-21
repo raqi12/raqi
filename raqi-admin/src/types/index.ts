@@ -23,6 +23,7 @@ export type BinStats = {
   totalBins: number;
   totalCapacity: number;
   availableBins: number;
+  assignedBins?: number;
 };
 
 export type City = {
@@ -93,13 +94,27 @@ export type Bin = {
   _id?: string;
   id?: string;
   code?: string;
-  qr?: string;
   capacity?: number;
   fee?: number;
-  status?: 'available' | 'assigned' | 'maintenance';
-  customerId?: string | null;
+  totalCount?: number;
+  availableCount?: number;
   active?: boolean;
+  /** Present on customer-detail bin views */
+  assignmentId?: string;
+  customerId?: string | null;
   deliveryDate?: string | null;
+};
+
+export type BinAssignment = {
+  _id?: string;
+  id?: string;
+  binId?: string;
+  customerId?: string;
+  subscriptionId?: string | null;
+  deliveryDate?: string | null;
+  active?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type SubscriptionCost = {
