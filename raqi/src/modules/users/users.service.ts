@@ -8,7 +8,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { Role } from '../../common/roles.enum';
-import { normalizePhone, phoneToEmail } from '../auth/phone.util';
+import { normalizePhone, phoneLookupVariants, phoneToEmail } from '../auth/phone.util';
 import { User, UserDocument } from './schemas/user.schema';
 
 export const DEFAULT_ADMIN = {
@@ -220,8 +220,19 @@ export class UsersService implements OnModuleInit {
     return this.userModel.findOne({ email: normalized }).exec();
   }
 
-  findByPhone(phone: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ phone: normalizePhone(phone) }).exec();
+  async findByPhone(phone: string): Promise<UserDocument | null> {
+    const variants = phoneLookupVariants(phone);
+    const active = await this.userModel
+      .findOne({
+        phone: { $in: variants },
+        $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+      })
+      .exec();
+    if (active) {
+      return active;
+    }
+    // Soft-deleted match (e.g. re-registration / clearPhone flows)
+    return this.userModel.findOne({ phone: { $in: variants } }).exec();
   }
 
   update(
