@@ -113,6 +113,12 @@ export class AddressDto {
 
   @ApiProperty({ example: 13.1913, description: 'Longitude' })
   lng: number;
+
+  @ApiPropertyOptional({ example: 'طرابلس', description: 'Resolved city name' })
+  cityName?: string;
+
+  @ApiPropertyOptional({ example: 'حي الأندلس', description: 'Resolved area name' })
+  areaName?: string;
 }
 
 export class DriverDto {
@@ -694,7 +700,7 @@ export class DriverTaskViewDto extends TaskDto {
   @ApiPropertyOptional({
     type: AddressDto,
     nullable: true,
-    description: 'Full customer address (label, details, lat/lng, city/area)',
+    description: 'Full customer address (label, details, lat/lng, city/area names)',
   })
   address?: AddressDto | null;
 
@@ -704,6 +710,74 @@ export class DriverTaskViewDto extends TaskDto {
     nullable: true,
   })
   binId?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Customer profile (name, phone) — not just customerId',
+    nullable: true,
+    type: 'object',
+    additionalProperties: true,
+    example: {
+      id: '507f1f77bcf86cd799439011',
+      name: 'أحمد الزاوي',
+      phone: '0912345678',
+      email: null,
+      status: 'active',
+    },
+  })
+  customer?: {
+    id: string;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    status: string | null;
+  } | null;
+
+  @ApiPropertyOptional({
+    description: 'Area with city name — not just areaId',
+    nullable: true,
+    type: 'object',
+    additionalProperties: true,
+    example: {
+      id: '507f1f77bcf86cd799439014',
+      name: 'حي الأندلس',
+      cityId: '507f1f77bcf86cd799439013',
+      cityName: 'طرابلس',
+    },
+  })
+  area?: {
+    id: string;
+    name: string;
+    cityId: string;
+    cityName: string;
+  } | null;
+
+  @ApiPropertyOptional({
+    description: 'City object — not just cityId',
+    nullable: true,
+    type: 'object',
+    additionalProperties: true,
+    example: { id: '507f1f77bcf86cd799439013', name: 'طرابلس' },
+  })
+  city?: { id: string; name: string } | null;
+
+  @ApiPropertyOptional({
+    description: 'Bin object — not just binId/binCode',
+    nullable: true,
+    type: 'object',
+    additionalProperties: true,
+    example: {
+      id: '507f1f77bcf86cd799439017',
+      code: 'A-1848',
+      capacity: 240,
+      fee: 50,
+    },
+  })
+  bin?: {
+    id: string;
+    code: string;
+    capacity: number;
+    fee: number;
+  } | null;
 }
 
 export class DriverTodayTaskCountsDto {

@@ -8,6 +8,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AreasService } from '../areas/areas.service';
 import { BinsService } from '../bins/bins.service';
+import { CitiesService } from '../cities/cities.service';
 import { CustomersService } from '../customers/customers.service';
 import { DriversService } from '../drivers/drivers.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -33,11 +34,40 @@ export type DriverUiStatus =
   | 'completed'
   | 'skipped';
 
+export type DriverTaskCustomerView = {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  status: string | null;
+};
+
+export type DriverTaskCityView = {
+  id: string;
+  name: string;
+};
+
+export type DriverTaskAreaView = {
+  id: string;
+  name: string;
+  cityId: string;
+  cityName: string;
+};
+
+export type DriverTaskBinView = {
+  id: string;
+  code: string;
+  capacity: number;
+  fee: number;
+};
+
 export type DriverTaskAddressView = {
   id: string;
   customerId: string;
   cityId: string;
   areaId: string;
+  cityName: string;
+  areaName: string;
   isActive: boolean;
   label: string;
   details: string;
@@ -70,6 +100,10 @@ export type DriverTaskView = {
   addressId: string | null;
   address: DriverTaskAddressView | null;
   binId: string | null;
+  customer: DriverTaskCustomerView | null;
+  area: DriverTaskAreaView | null;
+  city: DriverTaskCityView | null;
+  bin: DriverTaskBinView | null;
 };
 
 export type DriverTodayTaskCounts = {
@@ -131,6 +165,7 @@ export class TasksService {
     private readonly subscriptionsService: SubscriptionsService,
     private readonly driversService: DriversService,
     private readonly areasService: AreasService,
+    private readonly citiesService: CitiesService,
     private readonly customersService: CustomersService,
     private readonly binsService: BinsService,
     private readonly supportSettingsService: SupportSettingsService,
@@ -406,11 +441,21 @@ export class TasksService {
   }
 
   async enrichTask(task: TaskDocument): Promise<DriverTaskView> {
-    const [area, subscription, timeWindow] = await Promise.all([
+    const [area, subscription, timeWindow, customerAdmin] = await Promise.all([
       this.areasService.findById(task.areaId),
       this.subscriptionsService.findById(task.subscriptionId),
       this.resolveTimeWindow(),
+      this.customersService.findByIdForAdmin(String(task.customerId)),
     ]);
+
+    const cityId = area?.cityId
+      ? String(area.cityId)
+      : customerAdmin?.cityId
+        ? String(customerAdmin.cityId)
+        : null;
+    const city = cityId ? await this.citiesService.findById(cityId) : null;
+    const cityName = city?.name ?? '—';
+    const areaName = area?.name ?? '—';
 
     let street = '—';
     let instructions: string | null = null;
@@ -418,6 +463,7 @@ export class TasksService {
     let addressView: DriverTaskAddressView | null = null;
     let binCode: string | null = null;
     let binId: string | null = null;
+    let binView: DriverTaskBinView | null = null;
 
     if (subscription?.addressId) {
       addressId = String(subscription.addressId);
@@ -428,11 +474,25 @@ export class TasksService {
         const details = address.details?.trim() || null;
         instructions =
           details && details !== street ? details : address.label?.trim() ? details : null;
+
+        const addressArea =
+          String(address.areaId) === String(task.areaId)
+            ? area
+            : await this.areasService.findById(String(address.areaId));
+        const addressCity =
+          addressArea && city && String(addressArea.cityId) === String(city.id)
+            ? city
+            : addressArea
+              ? await this.citiesService.findById(String(addressArea.cityId))
+              : city;
+
         addressView = {
           id: String(address.id),
           customerId: String(address.customerId),
           cityId: String(address.cityId),
           areaId: String(address.areaId),
+          cityName: addressCity?.name ?? cityName,
+          areaName: addressArea?.name ?? areaName,
           isActive: Boolean(address.isActive),
           label: address.label ?? '',
           details: address.details ?? '',
@@ -446,7 +506,44 @@ export class TasksService {
       binId = String(subscription.binId);
       const bin = await this.binsService.findById(binId);
       binCode = bin?.code ?? null;
+      if (bin) {
+        binView = {
+          id: String(bin.id),
+          code: bin.code,
+          capacity: bin.capacity,
+          fee: bin.fee,
+        };
+      }
     }
+
+    const customerView: DriverTaskCustomerView | null = customerAdmin
+      ? {
+          id: String(customerAdmin.id),
+          name: String(customerAdmin.name ?? '—'),
+          phone:
+            customerAdmin.phone != null ? String(customerAdmin.phone) : null,
+          email:
+            customerAdmin.email != null ? String(customerAdmin.email) : null,
+          status:
+            customerAdmin.status != null ? String(customerAdmin.status) : null,
+        }
+      : null;
+
+    const areaView: DriverTaskAreaView | null = area
+      ? {
+          id: String(area.id),
+          name: area.name,
+          cityId: String(area.cityId),
+          cityName,
+        }
+      : null;
+
+    const cityView: DriverTaskCityView | null = city
+      ? {
+          id: String(city.id),
+          name: city.name,
+        }
+      : null;
 
     return {
       id: String(task.id),
@@ -465,7 +562,7 @@ export class TasksService {
       skippedAt: task.skippedAt,
       uiStatus: this.toUiStatus(task.status),
       street,
-      areaName: area?.name ?? '—',
+      areaName,
       binCode,
       instructions,
       timeWindowStart: timeWindow.startTime,
@@ -473,6 +570,10 @@ export class TasksService {
       addressId,
       address: addressView,
       binId,
+      customer: customerView,
+      area: areaView,
+      city: cityView,
+      bin: binView,
     };
   }
 

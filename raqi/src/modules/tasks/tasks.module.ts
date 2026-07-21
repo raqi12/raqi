@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AreasModule } from '../areas/areas.module';
 import { BinsModule } from '../bins/bins.module';
+import { CitiesModule } from '../cities/cities.module';
 import { CustomersModule } from '../customers/customers.module';
 import { DriversModule } from '../drivers/drivers.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -22,6 +23,7 @@ import { TasksService } from './tasks.service';
     forwardRef(() => CustomersModule),
     DriversModule,
     AreasModule,
+    CitiesModule,
     BinsModule,
     SupportModule,
     NotificationsModule,
