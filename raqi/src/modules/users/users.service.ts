@@ -8,7 +8,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { Role } from '../../common/roles.enum';
-import { normalizePhone } from '../auth/phone.util';
+import { normalizePhone, phoneToEmail } from '../auth/phone.util';
 import { User, UserDocument } from './schemas/user.schema';
 
 export const DEFAULT_ADMIN = {
@@ -82,8 +82,11 @@ export class UsersService implements OnModuleInit {
     phone?: string;
     phoneVerified?: boolean;
   }): Promise<UserDocument> {
-    const email = input.email?.trim();
     const phone = input.phone ? normalizePhone(input.phone) : undefined;
+    // Prefer explicit email; otherwise derive a unique placeholder from phone.
+    // Avoids Mongo unique-index collisions on missing/null email.
+    const email =
+      input.email?.trim() || (phone ? phoneToEmail(phone) : undefined);
 
     if (!email && !phone) {
       throw new BadRequestException('Email or phone is required');

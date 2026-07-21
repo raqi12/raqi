@@ -59,7 +59,8 @@ export class DriversController {
   @ApiBody({ type: CreateDriverDto })
   @ApiOkDataResponse(DriverDto, 'Driver created', { status: 201 })
   async create(@Body() body: CreateDriverDto) {
-    const email = body.email?.trim();
+    // Email is optional — when omitted, usersService derives a unique phone-based email
+    const email = body.email?.trim() || undefined;
     if (email) {
       const existingEmail = await this.usersService.findByEmail(email);
       if (existingEmail && !existingEmail.deletedAt) {
