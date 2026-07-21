@@ -14,7 +14,9 @@ import {
   areasForCity,
   cityNameById,
   getId,
+  userEmailById,
   userNameById,
+  userPhoneById,
 } from './shared';
 
 type DriversPageProps = {
@@ -76,13 +78,19 @@ export function DriversPage({
       drivers.map((driver) => ({
         ...driver,
         driverName: userNameById(users, driver.userId),
+        phone: userPhoneById(users, driver.userId),
         cityName: cityNameById(cities, driver.cityId),
         areaName: areaNameById(areas, driver.areaId),
+        codeLabel: driver.code ?? '—',
       })),
     [areas, cities, drivers, users],
   );
 
   const hasLocations = cities.length > 0 && areas.length > 0;
+
+  const selectedName = selected ? userNameById(users, selected.userId) : '—';
+  const selectedPhone = selected ? userPhoneById(users, selected.userId) : '—';
+  const selectedEmail = selected ? userEmailById(users, selected.userId) : '—';
 
   function handleCityChange(cityId: string, target: 'form' | 'selected') {
     if (target === 'form') {
@@ -206,9 +214,17 @@ export function DriversPage({
         rows={tableRows}
         loading={loading}
         onSelect={setSelected}
-        searchKeys={['driverName', 'vehicleNumber', 'cityName', 'areaName', 'status']}
+        searchKeys={['driverName', 'phone', 'vehicleNumber', 'cityName', 'areaName', 'codeLabel', 'status']}
         columns={[
           { key: 'driverName', label: COMMON.driver },
+          {
+            key: 'phone',
+            label: COMMON.phone,
+            render: (row) => (
+              <span dir="ltr">{row.phone ? String(row.phone) : '—'}</span>
+            ),
+          },
+          { key: 'codeLabel', label: 'الرمز' },
           { key: 'cityName', label: COMMON.city },
           { key: 'areaName', label: COMMON.area },
           { key: 'vehicleNumber', label: COMMON.vehicleNumber },
@@ -223,8 +239,8 @@ export function DriversPage({
 
       {selected ? (
         <DetailPanel
-          title="تعديل السائق"
-          subtitle={userNameById(users, selected.userId)}
+          title={selectedName}
+          subtitle={selectedPhone !== '—' ? selectedPhone : undefined}
           onClose={() => setSelected(null)}
           footer={
             <>
@@ -246,46 +262,101 @@ export function DriversPage({
             </>
           }
         >
-          <form className="form-grid" onSubmit={submitUpdate}>
-            <Input
-              label={COMMON.vehicleNumber}
-              value={selected.vehicleNumber ?? ''}
-              onChange={(e) => setSelected({ ...selected, vehicleNumber: e.target.value })}
-              required
-            />
-            <Select
-              label={COMMON.city}
-              value={selected.cityId ?? ''}
-              onChange={(e) => handleCityChange(e.target.value, 'selected')}
-              required
-            >
-              <option value="">{COMMON.selectCity}</option>
-              {cities.map((city) => (
-                <option key={getId(city)} value={getId(city)}>
-                  {city.name}
-                </option>
-              ))}
-            </Select>
-            <Select
-              label={COMMON.area}
-              value={selected.areaId ?? ''}
-              onChange={(e) => setSelected({ ...selected, areaId: e.target.value })}
-              required
-              disabled={!selected.cityId}
-            >
-              <option value="">{COMMON.selectArea}</option>
-              {selectedAreas.map((area) => (
-                <option key={getId(area)} value={getId(area)}>
-                  {area.name}
-                </option>
-              ))}
-            </Select>
-            <div className="form-grid__actions">
-              <Button type="submit" disabled={saving || !selected.cityId || !selected.areaId}>
-                {saving ? 'جاري الحفظ...' : COMMON.save}
-              </Button>
-            </div>
-          </form>
+          <div className="detail-stack">
+            <section className="detail-block">
+              <h4 className="detail-block__title">معلومات الحساب</h4>
+              <dl className="info-list">
+                <div className="info-list__row">
+                  <dt>{COMMON.name}</dt>
+                  <dd>{selectedName}</dd>
+                </div>
+                <div className="info-list__row">
+                  <dt>{COMMON.phone}</dt>
+                  <dd dir="ltr">{selectedPhone}</dd>
+                </div>
+                <div className="info-list__row">
+                  <dt>{COMMON.email}</dt>
+                  <dd dir="ltr">{selectedEmail}</dd>
+                </div>
+                <div className="info-list__row">
+                  <dt>رمز السائق</dt>
+                  <dd dir="ltr">{selected.code ?? '—'}</dd>
+                </div>
+                <div className="info-list__row">
+                  <dt>{COMMON.status}</dt>
+                  <dd>
+                    <StatusBadge status={selected.status ?? 'active'} />
+                  </dd>
+                </div>
+                <div className="info-list__row">
+                  <dt>التقييم</dt>
+                  <dd>{selected.rating != null ? selected.rating : '—'}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section className="detail-block">
+              <h4 className="detail-block__title">منطقة العمل</h4>
+              <dl className="info-list">
+                <div className="info-list__row">
+                  <dt>{COMMON.city}</dt>
+                  <dd>{cityNameById(cities, selected.cityId)}</dd>
+                </div>
+                <div className="info-list__row">
+                  <dt>{COMMON.area}</dt>
+                  <dd>{areaNameById(areas, selected.areaId)}</dd>
+                </div>
+                <div className="info-list__row">
+                  <dt>{COMMON.vehicleNumber}</dt>
+                  <dd>{selected.vehicleNumber ?? '—'}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section className="detail-block">
+              <h4 className="detail-block__title">تعديل البيانات</h4>
+              <form className="form-grid" onSubmit={submitUpdate}>
+                <Input
+                  label={COMMON.vehicleNumber}
+                  value={selected.vehicleNumber ?? ''}
+                  onChange={(e) => setSelected({ ...selected, vehicleNumber: e.target.value })}
+                  required
+                />
+                <Select
+                  label={COMMON.city}
+                  value={selected.cityId ?? ''}
+                  onChange={(e) => handleCityChange(e.target.value, 'selected')}
+                  required
+                >
+                  <option value="">{COMMON.selectCity}</option>
+                  {cities.map((city) => (
+                    <option key={getId(city)} value={getId(city)}>
+                      {city.name}
+                    </option>
+                  ))}
+                </Select>
+                <Select
+                  label={COMMON.area}
+                  value={selected.areaId ?? ''}
+                  onChange={(e) => setSelected({ ...selected, areaId: e.target.value })}
+                  required
+                  disabled={!selected.cityId}
+                >
+                  <option value="">{COMMON.selectArea}</option>
+                  {selectedAreas.map((area) => (
+                    <option key={getId(area)} value={getId(area)}>
+                      {area.name}
+                    </option>
+                  ))}
+                </Select>
+                <div className="form-grid__actions">
+                  <Button type="submit" disabled={saving || !selected.cityId || !selected.areaId}>
+                    {saving ? 'جاري الحفظ...' : COMMON.save}
+                  </Button>
+                </div>
+              </form>
+            </section>
+          </div>
         </DetailPanel>
       ) : null}
 

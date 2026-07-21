@@ -31,6 +31,32 @@ export function userNameById(users: { _id?: string; id?: string; name?: string }
   return user?.name ?? '—';
 }
 
+export function userById<T extends { _id?: string; id?: string }>(
+  users: T[],
+  userId?: string,
+): T | undefined {
+  if (!userId) return undefined;
+  return users.find((item) => getId(item) === userId);
+}
+
+export function userPhoneById(
+  users: { _id?: string; id?: string; phone?: string }[],
+  userId?: string,
+) {
+  return userById(users, userId)?.phone ?? '—';
+}
+
+export function userEmailById(
+  users: { _id?: string; id?: string; email?: string }[],
+  userId?: string,
+) {
+  const email = userById(users, userId)?.email;
+  if (!email || email.endsWith('@phone.raqi') || email.endsWith('@deleted.local')) {
+    return '—';
+  }
+  return email;
+}
+
 export function customerDisplayName(
   customer: { userId?: string; name?: string },
   users: { _id?: string; id?: string; name?: string }[] = [],

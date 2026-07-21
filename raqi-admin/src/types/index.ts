@@ -176,9 +176,11 @@ export type Driver = {
   _id?: string;
   id?: string;
   userId?: string;
+  code?: string | null;
   vehicleNumber?: string;
   cityId?: string;
   areaId?: string;
+  rating?: number | null;
   status?: 'active' | 'inactive';
 };
 
