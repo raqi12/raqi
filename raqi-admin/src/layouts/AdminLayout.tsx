@@ -56,7 +56,7 @@ export function AdminLayout({
               onCloseMobileNav();
             }
           }}
-          userEmail={session.user.email}
+          userEmail={session.user.email ?? ''}
           pendingDeposits={pendingDeposits}
           pendingCashTopups={pendingCashTopups}
           collapsed={sidebarCollapsed}
@@ -76,7 +76,7 @@ export function AdminLayout({
             onRefresh={() => void loadAll()}
             theme={theme}
             onToggleTheme={toggleTheme}
-            userEmail={session.user.email}
+            userEmail={session.user.email ?? ''}
             accessToken={session.accessToken}
             onOpenMenu={onOpenMobileNav}
           />
