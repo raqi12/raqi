@@ -221,20 +221,28 @@ export class UsersService implements OnModuleInit {
       .findByIdAndUpdate(
         id,
         {
-          status: 'inactive',
-          deletedAt,
-          deactivatedAt: deletedAt,
-          name: 'محذوف',
-          email: `${tombstone}@deleted.local`,
-          phone: undefined,
-          phoneVerified: false,
-          passwordHash: await bcrypt.hash(
-            `deleted:${id}:${deletedAt.getTime()}`,
-            10,
-          ),
+          $set: {
+            status: 'inactive',
+            deletedAt,
+            deactivatedAt: deletedAt,
+            name: 'محذوف',
+            email: `${tombstone}@deleted.local`,
+            phoneVerified: false,
+            passwordHash: await bcrypt.hash(
+              `deleted:${id}:${deletedAt.getTime()}`,
+              10,
+            ),
+          },
+          $unset: { phone: 1 },
         },
         { new: true },
       )
+      .exec();
+  }
+
+  async clearPhone(id: string): Promise<UserDocument | null> {
+    return this.userModel
+      .findByIdAndUpdate(id, { $unset: { phone: 1 } }, { new: true })
       .exec();
   }
 

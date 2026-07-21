@@ -83,6 +83,24 @@ export class ArabicHttpExceptionFilter implements ExceptionFilter {
       return;
     }
 
+    if (isMongoDuplicateKeyError(exception)) {
+      const field = mongoDuplicateField(exception);
+      const message =
+        field === 'phone'
+          ? translateMessage('Phone already registered')
+          : field === 'email'
+            ? translateMessage('Email already exists')
+            : field === 'code'
+              ? translateMessage('Driver code already in use')
+              : 'البيانات مكررة؛ تحقق من الحقول الفريدة';
+      response.status(HttpStatus.BAD_REQUEST).json({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message,
+        error: httpErrorLabelAr(HttpStatus.BAD_REQUEST),
+      });
+      return;
+    }
+
     const errMessage =
       exception instanceof Error ? exception.message : String(exception);
     this.logger.error(errMessage, exception instanceof Error ? exception.stack : undefined);
@@ -109,4 +127,28 @@ function isMongooseCastError(exception: unknown): boolean {
     exception !== null &&
     (exception as { name?: string }).name === 'CastError'
   );
+}
+
+function isMongoDuplicateKeyError(exception: unknown): boolean {
+  if (typeof exception !== 'object' || exception === null) {
+    return false;
+  }
+  return (exception as { code?: number }).code === 11000;
+}
+
+function mongoDuplicateField(exception: unknown): string | null {
+  if (typeof exception !== 'object' || exception === null) {
+    return null;
+  }
+  const keyPattern = (exception as { keyPattern?: Record<string, unknown> })
+    .keyPattern;
+  if (keyPattern && typeof keyPattern === 'object') {
+    const keys = Object.keys(keyPattern);
+    if (keys.length) {
+      return keys[0];
+    }
+  }
+  const message = String((exception as { message?: string }).message ?? '');
+  const match = message.match(/index:\s+(\w+)_/);
+  return match?.[1] ?? null;
 }

@@ -62,13 +62,17 @@ export class DriversController {
     const email = body.email?.trim();
     if (email) {
       const existingEmail = await this.usersService.findByEmail(email);
-      if (existingEmail) {
+      if (existingEmail && !existingEmail.deletedAt) {
         throw new BadRequestException('Email already exists');
       }
     }
     const existingPhone = await this.usersService.findByPhone(body.phone);
     if (existingPhone) {
-      throw new BadRequestException('Phone already registered');
+      if (!existingPhone.deletedAt) {
+        throw new BadRequestException('Phone already registered');
+      }
+      // Soft-deleted account still holding this phone — free it for re-registration
+      await this.usersService.clearPhone(String(existingPhone.id));
     }
     const user = await this.usersService.create({
       email,
@@ -78,13 +82,18 @@ export class DriversController {
       role: Role.Driver,
       phoneVerified: true,
     });
-    const driver = await this.driversService.create({
-      userId: String(user.id),
-      vehicleNumber: body.vehicleNumber,
-      cityId: body.cityId,
-      areaId: body.areaId,
-    });
-    return { data: driver };
+    try {
+      const driver = await this.driversService.create({
+        userId: String(user.id),
+        vehicleNumber: body.vehicleNumber,
+        cityId: body.cityId,
+        areaId: body.areaId,
+      });
+      return { data: driver };
+    } catch (error) {
+      await this.usersService.softDelete(String(user.id)).catch(() => undefined);
+      throw error;
+    }
   }
 
   @Get(':id')
