@@ -202,6 +202,11 @@ export const AdminApi = {
         method: 'PATCH',
         body: JSON.stringify({ status }),
       }),
+    setPassword: (id: string, password: string) =>
+      apiRequest<Driver>(`/admin/drivers/${id}/password`, {
+        method: 'PATCH',
+        body: JSON.stringify({ password }),
+      }),
     remove: (id: string) =>
       apiRequest<Driver>(`/admin/drivers/${id}`, { method: 'DELETE' }),
   },

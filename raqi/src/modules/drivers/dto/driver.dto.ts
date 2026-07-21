@@ -97,6 +97,17 @@ export class UpdateDriverStatusDto {
   status: 'active' | 'inactive';
 }
 
+export class SetDriverPasswordDto {
+  @ApiProperty({
+    example: 'SecurePass123',
+    minLength: 6,
+    description: 'New account password (admin reset; current password not required)',
+  })
+  @IsString()
+  @MinLength(6)
+  password: string;
+}
+
 export class DriverMonthlyStatsQueryDto {
   @ApiPropertyOptional({ example: 2026, description: 'UTC year (defaults to current)' })
   @IsOptional()

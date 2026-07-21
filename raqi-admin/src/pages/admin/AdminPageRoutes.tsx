@@ -145,6 +145,9 @@ export function AdminPageRoutes() {
             loading={loading}
             onCreate={(body) => runMutation(() => AdminApi.drivers.create(body), 'تم إنشاء السائق')}
             onUpdate={(id, body) => runMutation(() => AdminApi.drivers.update(id, body), 'تم تحديث السائق')}
+            onSetPassword={(id, password) =>
+              runMutation(() => AdminApi.drivers.setPassword(id, password), 'تم تحديث كلمة المرور')
+            }
             onSetStatus={(id, status) =>
               runMutation(
                 () => AdminApi.drivers.setStatus(id, status),

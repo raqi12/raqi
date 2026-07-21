@@ -37,6 +37,7 @@ type DriversPageProps = {
     id: string,
     body: { vehicleNumber?: string; cityId?: string; areaId?: string },
   ) => Promise<void>;
+  onSetPassword: (id: string, password: string) => Promise<void>;
   onSetStatus: (id: string, status: 'active' | 'inactive') => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 };
@@ -58,11 +59,14 @@ export function DriversPage({
   loading = false,
   onCreate,
   onUpdate,
+  onSetPassword,
   onSetStatus,
   onDelete,
 }: DriversPageProps) {
   const [form, setForm] = useState(emptyForm);
   const [selected, setSelected] = useState<Driver | null>(null);
+  const [passwordForm, setPasswordForm] = useState({ password: '', confirm: '' });
+  const [passwordError, setPasswordError] = useState('');
   const [confirm, setConfirm] = useState<{ id: string; status: 'active' | 'inactive' } | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -130,6 +134,27 @@ export function DriversPage({
         cityId: selected.cityId,
         areaId: selected.areaId,
       });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function submitPassword(e: FormEvent) {
+    e.preventDefault();
+    if (!selected) return;
+    setPasswordError('');
+    if (passwordForm.password.length < 6) {
+      setPasswordError('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+      return;
+    }
+    if (passwordForm.password !== passwordForm.confirm) {
+      setPasswordError('كلمتا المرور غير متطابقتين');
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSetPassword(getId(selected), passwordForm.password);
+      setPasswordForm({ password: '', confirm: '' });
     } finally {
       setSaving(false);
     }
@@ -213,7 +238,11 @@ export function DriversPage({
         description="إدارة السائقين ومناطق عملهم"
         rows={tableRows}
         loading={loading}
-        onSelect={setSelected}
+        onSelect={(row) => {
+          setSelected(row);
+          setPasswordForm({ password: '', confirm: '' });
+          setPasswordError('');
+        }}
         searchKeys={['driverName', 'phone', 'vehicleNumber', 'cityName', 'areaName', 'codeLabel', 'status']}
         columns={[
           { key: 'driverName', label: COMMON.driver },
@@ -241,7 +270,11 @@ export function DriversPage({
         <DetailPanel
           title={selectedName}
           subtitle={selectedPhone !== '—' ? selectedPhone : undefined}
-          onClose={() => setSelected(null)}
+          onClose={() => {
+            setSelected(null);
+            setPasswordForm({ password: '', confirm: '' });
+            setPasswordError('');
+          }}
           footer={
             <>
               <Button
@@ -352,6 +385,44 @@ export function DriversPage({
                 <div className="form-grid__actions">
                   <Button type="submit" disabled={saving || !selected.cityId || !selected.areaId}>
                     {saving ? 'جاري الحفظ...' : COMMON.save}
+                  </Button>
+                </div>
+              </form>
+            </section>
+
+            <section className="detail-block">
+              <h4 className="detail-block__title">تغيير كلمة المرور</h4>
+              <form className="form-grid" onSubmit={submitPassword}>
+                <Input
+                  label="كلمة المرور الجديدة"
+                  type="password"
+                  dir="ltr"
+                  autoComplete="new-password"
+                  value={passwordForm.password}
+                  onChange={(e) => {
+                    setPasswordError('');
+                    setPasswordForm({ ...passwordForm, password: e.target.value });
+                  }}
+                  required
+                  minLength={6}
+                />
+                <Input
+                  label="تأكيد كلمة المرور"
+                  type="password"
+                  dir="ltr"
+                  autoComplete="new-password"
+                  value={passwordForm.confirm}
+                  onChange={(e) => {
+                    setPasswordError('');
+                    setPasswordForm({ ...passwordForm, confirm: e.target.value });
+                  }}
+                  required
+                  minLength={6}
+                />
+                {passwordError ? <p className="error">{passwordError}</p> : null}
+                <div className="form-grid__actions">
+                  <Button type="submit" disabled={saving || !passwordForm.password}>
+                    {saving ? 'جاري الحفظ...' : 'تحديث كلمة المرور'}
                   </Button>
                 </div>
               </form>

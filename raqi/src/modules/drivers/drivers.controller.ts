@@ -25,6 +25,7 @@ import { UsersService } from '../users/users.service';
 import { DriversService } from './drivers.service';
 import {
   CreateDriverDto,
+  SetDriverPasswordDto,
   UpdateDriverDto,
   UpdateDriverStatusDto,
 } from './dto/driver.dto';
@@ -138,6 +139,33 @@ export class DriversController {
     if (!driver) {
       throw new NotFoundException('Driver not found');
     }
+    return { data: driver };
+  }
+
+  @Patch(':id/password')
+  @ApiOperation({
+    summary: 'Set driver password',
+    description:
+      'Admin reset of the linked user password. Does not require the current password.',
+  })
+  @ApiMongoIdParam('id', 'Driver MongoDB ID')
+  @ApiBody({ type: SetDriverPasswordDto })
+  @ApiOkDataResponse(DriverDto, 'Driver password updated')
+  async setPassword(
+    @Param('id') id: string,
+    @Body() body: SetDriverPasswordDto,
+  ) {
+    const driver = await this.driversService.findById(id);
+    if (!driver) {
+      throw new NotFoundException('Driver not found');
+    }
+
+    const user = await this.usersService.findById(driver.userId);
+    if (!user || user.deletedAt) {
+      throw new BadRequestException('Driver account is deleted or missing');
+    }
+
+    await this.usersService.setPassword(driver.userId, body.password);
     return { data: driver };
   }
 
