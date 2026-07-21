@@ -26,7 +26,76 @@ export class UsersService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
+    await this.ensureSparseUniqueIndexes();
+    await this.backfillMissingEmailsFromPhone();
     await this.ensureDefaultAdmin();
+  }
+
+  /**
+   * Production DBs may have a non-sparse unique email index from an older schema.
+   * That makes a second user without email fail with E11000 ("email already exists").
+   */
+  private async ensureSparseUniqueIndexes(): Promise<void> {
+    const collection = this.userModel.collection;
+    try {
+      const indexes = await collection.indexes();
+      for (const index of indexes) {
+        const key = index.key as Record<string, number> | undefined;
+        if (!key) continue;
+        const fields = Object.keys(key);
+        if (fields.length !== 1) continue;
+        const field = fields[0];
+        if (field !== 'email' && field !== 'phone') continue;
+        if (index.unique && index.sparse) continue;
+        if (index.name === '_id_') continue;
+        const name = index.name;
+        if (!name) continue;
+        this.logger.warn(
+          `Recreating users.${field} index as unique+sparse (was unique=${Boolean(index.unique)} sparse=${Boolean(index.sparse)})`,
+        );
+        await collection.dropIndex(name);
+      }
+      await this.userModel.syncIndexes();
+    } catch (error) {
+      this.logger.warn(
+        `Could not ensure sparse user indexes: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
+  /** Fill missing emails from phone so unique email index never sees duplicate nulls. */
+  private async backfillMissingEmailsFromPhone(): Promise<void> {
+    try {
+      const users = await this.userModel
+        .find({
+          phone: { $exists: true, $nin: [null, ''] },
+          $or: [{ email: null }, { email: { $exists: false } }, { email: '' }],
+        })
+        .exec();
+      let updated = 0;
+      for (const user of users) {
+        if (!user.phone) continue;
+        const email = phoneToEmail(user.phone);
+        const clash = await this.userModel
+          .findOne({ email, _id: { $ne: user._id } })
+          .exec();
+        if (clash) continue;
+        user.email = email;
+        await user.save();
+        updated += 1;
+      }
+      if (updated > 0) {
+        this.logger.log(`Backfilled email from phone for ${updated} user(s)`);
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Could not backfill missing emails: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
   async ensureDefaultAdmin(options?: { resetPassword?: boolean }): Promise<UserDocument> {
