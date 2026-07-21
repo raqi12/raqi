@@ -33,6 +33,18 @@ export type DriverUiStatus =
   | 'completed'
   | 'skipped';
 
+export type DriverTaskAddressView = {
+  id: string;
+  customerId: string;
+  cityId: string;
+  areaId: string;
+  isActive: boolean;
+  label: string;
+  details: string;
+  lat: number;
+  lng: number;
+};
+
 export type DriverTaskView = {
   id: string;
   subscriptionId: string;
@@ -56,6 +68,7 @@ export type DriverTaskView = {
   timeWindowStart: string;
   timeWindowEnd: string;
   addressId: string | null;
+  address: DriverTaskAddressView | null;
   binId: string | null;
 };
 
@@ -402,6 +415,7 @@ export class TasksService {
     let street = '—';
     let instructions: string | null = null;
     let addressId: string | null = null;
+    let addressView: DriverTaskAddressView | null = null;
     let binCode: string | null = null;
     let binId: string | null = null;
 
@@ -414,6 +428,17 @@ export class TasksService {
         const details = address.details?.trim() || null;
         instructions =
           details && details !== street ? details : address.label?.trim() ? details : null;
+        addressView = {
+          id: String(address.id),
+          customerId: String(address.customerId),
+          cityId: String(address.cityId),
+          areaId: String(address.areaId),
+          isActive: Boolean(address.isActive),
+          label: address.label ?? '',
+          details: address.details ?? '',
+          lat: address.lat,
+          lng: address.lng,
+        };
       }
     }
 
@@ -446,6 +471,7 @@ export class TasksService {
       timeWindowStart: timeWindow.startTime,
       timeWindowEnd: timeWindow.endTime,
       addressId,
+      address: addressView,
       binId,
     };
   }

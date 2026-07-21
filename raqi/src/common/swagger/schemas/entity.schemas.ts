@@ -672,6 +672,13 @@ export class DriverTaskViewDto extends TaskDto {
   addressId?: string | null;
 
   @ApiPropertyOptional({
+    type: AddressDto,
+    nullable: true,
+    description: 'Full customer address (label, details, lat/lng, city/area)',
+  })
+  address?: AddressDto | null;
+
+  @ApiPropertyOptional({
     example: '507f1f77bcf86cd799439017',
     description: 'Bin ID',
     nullable: true,
