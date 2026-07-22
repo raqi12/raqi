@@ -1,12 +1,11 @@
 export const TAB_LABELS = {
   overview: 'نظرة عامة',
-  users: 'المستخدمون',
+  managers: 'المدراء',
   customers: 'العملاء',
   drivers: 'السائقون',
   plans: 'الخطط',
   bins: 'الصناديق',
   locations: 'المدن والمناطق',
-  routes: 'المسارات',
   tasks: 'المهام',
   subscriptions: 'الاشتراكات',
   payments: 'المدفوعات',
@@ -58,10 +57,11 @@ export const COMMON = {
 } as const;
 
 export const ROLES: Record<string, string> = {
-  admin: 'مدير',
+  admin: 'مدير النظام',
+  manager: 'مدير',
+  supervisor: 'مشرف',
   support: 'دعم',
   operations: 'عمليات',
-  manager: 'مشرف',
 };
 
 export const ACTIVITY_TYPES: Record<string, string> = {
@@ -88,8 +88,8 @@ export const STATUS_LABELS: Record<string, string> = {
   available: 'متاح',
   assigned: 'مخصص',
   maintenance: 'صيانة',
-  open: 'مفتوح',
-  closed: 'مغلق',
+  open: 'مفتوحة',
+  closed: 'مغلقة',
   in_progress: 'قيد المعالجة',
   resolved: 'تم الحل',
   low: 'منخفضة',

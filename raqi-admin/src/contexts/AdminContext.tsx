@@ -30,7 +30,6 @@ import type {
   Overview,
   Payment,
   Plan,
-  Route,
   Session,
   Subscription,
   SupportSettings,
@@ -76,7 +75,6 @@ type AdminContextValue = {
   bins: Bin[];
   cities: City[];
   areas: Area[];
-  routes: Route[];
   bankAccount: BankAccountSettings | null;
   additionalCollectionSettings: AdditionalCollectionSettings | null;
   depositRequests: DepositRequest[];
@@ -137,7 +135,6 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
   const [bins, setBins] = useState<Bin[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
-  const [routes, setRoutes] = useState<Route[]>([]);
   const [bankAccount, setBankAccount] = useState<BankAccountSettings | null>(null);
   const [additionalCollectionSettings, setAdditionalCollectionSettings] =
     useState<AdditionalCollectionSettings | null>(null);
@@ -169,9 +166,6 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
 
   const loadAll = useCallback(async () => {
     if (!session.accessToken) return;
-    // #region agent log
-    fetch('http://127.0.0.1:7507/ingest/e05eb89e-9cfa-4057-adc1-4bbb50888184',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1c8176'},body:JSON.stringify({sessionId:'1c8176',location:'AdminContext.tsx:loadAll-start',message:'loadAll started',data:{pathname:window.location.pathname},timestamp:Date.now(),hypothesisId:'A',runId:'post-fix'})}).catch(()=>{});
-    // #endregion
     setLoading(true);
     setError(null);
     try {
@@ -182,7 +176,6 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
         binsRes,
         citiesRes,
         areasRes,
-        routesRes,
         usersRes,
         customersRes,
         driversRes,
@@ -207,7 +200,6 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
         AdminApi.bins.list(),
         AdminApi.cities.list(),
         AdminApi.areas.list(),
-        AdminApi.routes.list(),
         AdminApi.users.list(),
         AdminApi.customers.list(),
         AdminApi.drivers.list(),
@@ -232,7 +224,6 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       setBins(binsRes.data);
       setCities(citiesRes.data);
       setAreas(areasRes.data);
-      setRoutes(routesRes.data);
       setUsers(usersRes.data);
       setCustomers(customersRes.data);
       setDrivers(driversRes.data);
@@ -251,9 +242,6 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       setDepositRequests(depositRequestsRes.data);
       setCashTopups(cashTopupsRes.data);
       setLastSync(new Date().toLocaleTimeString());
-      // #region agent log
-      fetch('http://127.0.0.1:7507/ingest/e05eb89e-9cfa-4057-adc1-4bbb50888184',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1c8176'},body:JSON.stringify({sessionId:'1c8176',location:'AdminContext.tsx:loadAll-done',message:'loadAll completed',data:{pathname:window.location.pathname,customersCount:customersRes.data.length},timestamp:Date.now(),hypothesisId:'A',runId:'post-fix'})}).catch(()=>{});
-      // #endregion
     } catch (e) {
       setError(formatApiError(e instanceof Error ? e.message : 'فشل تحميل اللوحة'));
     } finally {
@@ -283,9 +271,6 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
   }, [refreshAccessToken, session.accessToken, session.refreshToken]);
 
   useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7507/ingest/e05eb89e-9cfa-4057-adc1-4bbb50888184',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1c8176'},body:JSON.stringify({sessionId:'1c8176',location:'AdminContext.tsx:initial-load',message:'initial loadAll triggered (no polling)',data:{pathname:window.location.pathname},timestamp:Date.now(),hypothesisId:'A',runId:'post-fix'})}).catch(()=>{});
-    // #endregion
     void loadAll();
   }, [loadAll]);
 
@@ -331,7 +316,6 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       bins,
       cities,
       areas,
-      routes,
       bankAccount,
       additionalCollectionSettings,
       depositRequests,
@@ -369,7 +353,6 @@ export function AdminProvider({ session, onSessionChange, children }: AdminProvi
       bins,
       cities,
       areas,
-      routes,
       bankAccount,
       additionalCollectionSettings,
       depositRequests,

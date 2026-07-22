@@ -136,9 +136,22 @@ export const AdminApi = {
   },
   users: {
     list: () => apiRequest<User[]>('/admin/users'),
-    create: (body: { email: string; name: string; password: string; role: string }) =>
-      apiRequest<User>('/admin/users', { method: 'POST', body: JSON.stringify(body) }),
-    update: (id: string, body: { email?: string; name?: string }) =>
+    create: (body: {
+      email: string;
+      name: string;
+      password: string;
+      role: string;
+      permissions?: string[];
+    }) => apiRequest<User>('/admin/users', { method: 'POST', body: JSON.stringify(body) }),
+    update: (
+      id: string,
+      body: {
+        email?: string;
+        name?: string;
+        role?: string;
+        permissions?: string[];
+      },
+    ) =>
       apiRequest<User>(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
     setStatus: (id: string, status: 'active' | 'inactive') =>
       apiRequest<User>(`/admin/users/${id}/status`, {

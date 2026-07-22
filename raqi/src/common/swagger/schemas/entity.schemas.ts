@@ -28,6 +28,13 @@ export class UserDto {
   @ApiProperty({ enum: Role, example: Role.Admin })
   role: Role;
 
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['customers', 'subscriptions', 'tasks'],
+    description: 'Dashboard pages this staff user may manage',
+  })
+  permissions?: string[];
+
   @ApiProperty({ enum: ['active', 'inactive'], example: 'active' })
   status: string;
 

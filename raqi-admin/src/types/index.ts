@@ -6,9 +6,11 @@ export type Session = {
   accessToken: string;
   refreshToken: string;
   user: {
+    id?: string;
     email?: string;
     role: string;
     name: string;
+    permissions?: string[];
   };
 };
 
@@ -144,6 +146,7 @@ export type User = {
   phone?: string;
   name?: string;
   role?: string;
+  permissions?: string[];
   status?: 'active' | 'inactive';
 };
 

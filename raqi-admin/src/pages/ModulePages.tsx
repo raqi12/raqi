@@ -1,19 +1,36 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { DataTable } from '../components/DataTable';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import type { Address, Area, AdditionalCollectionSettings, BankAccountSettings, Bin, City, Complaint, Customer, Driver, Payment, Plan, Route, Subscription, Task, User, Wallet } from '../types';
+import type { Address, Area, AdditionalCollectionSettings, BankAccountSettings, Bin, City, Customer, Driver, Payment, Plan, Subscription, Task, User, Wallet } from '../types';
 import { areaLabel, customerDisplayName, getId } from './module/shared';
 
-export { UsersPage } from './module/UsersPage';
+export { ManagersPage } from './module/ManagersPage';
+export { ManagerCreatePage } from './module/ManagerCreatePage';
+export { ManagerDetailPage } from './module/ManagerDetailPage';
 export { CustomersPage } from './module/CustomersPage';
+export { CustomerCreatePage } from './module/CustomerCreatePage';
+export { CustomerDetailPage } from './module/CustomerDetailPage';
+export { DriversPage } from './module/DriversPage';
+export { DriverCreatePage } from './module/DriverCreatePage';
+export { DriverDetailPage } from './module/DriverDetailPage';
 export { SubscriptionsPage } from './module/SubscriptionsPage';
+export { SubscriptionCreatePage } from './module/SubscriptionCreatePage';
+export { SubscriptionDetailPage } from './module/SubscriptionDetailPage';
 export { PlansPage } from './module/PlansPage';
+export { PlanCreatePage } from './module/PlanCreatePage';
+export { PlanDetailPage } from './module/PlanDetailPage';
 export { BinsPage } from './module/BinsPage';
-export { RoutesPage } from './module/RoutesPage';
+export { BinCreatePage } from './module/BinCreatePage';
+export { BinDetailPage } from './module/BinDetailPage';
 export { TasksPage } from './module/TasksPage';
 export { TicketsPage } from './module/TicketsPage';
+export { TicketChatPage } from './module/TicketChatPage';
+export { ComplaintsPage } from './module/ComplaintsPage';
+export { ComplaintDetailPage } from './module/ComplaintDetailPage';
 export { SupportPage } from './module/SupportPage';
 export { GalleryPage } from './module/GalleryPage';
+export { GalleryCreatePage } from './module/GalleryCreatePage';
+export { GalleryDetailPage } from './module/GalleryDetailPage';
 export { ContentPageEditor } from './module/ContentPageEditor';
 export { CashTopupsPage } from './module/CashTopupsPage';
 export { DepositRequestsPage } from './module/DepositRequestsPage';
@@ -188,44 +205,6 @@ export function PaymentsPage({
           },
         ]}
       />
-    </>
-  );
-}
-
-type ComplaintsPageProps = {
-  complaints: Complaint[];
-  onUpdate: (
-    id: string,
-    body: { status?: 'open' | 'in_progress' | 'resolved' | 'closed'; assignee?: string },
-  ) => Promise<void>;
-};
-
-export function ComplaintsPage({ complaints, onUpdate }: ComplaintsPageProps) {
-  const [selected, setSelected] = useState<Complaint | null>(null);
-  return (
-    <>
-      <DataTable title={`الشكاوى (${complaints.length})`} rows={complaints} onSelect={setSelected} columns={[
-        { key: 'id', label: 'ID', render: (r) => getId(r) },
-        { key: 'subject', label: 'Subject' },
-        { key: 'status', label: 'Status' },
-        { key: 'assignee', label: 'Assignee' },
-      ]} />
-      {selected ? <section className="panel">
-        <h3>Update Complaint</h3>
-        <form className="row-form" onSubmit={(e) => {
-          e.preventDefault();
-          void onUpdate(getId(selected), { status: selected.status, assignee: selected.assignee });
-        }}>
-          <select value={selected.status ?? 'open'} onChange={(e) => setSelected({ ...selected, status: e.target.value as Complaint['status'] })}>
-            <option value="open">open</option>
-            <option value="in_progress">in_progress</option>
-            <option value="resolved">resolved</option>
-            <option value="closed">closed</option>
-          </select>
-          <input placeholder="Assignee" value={selected.assignee ?? ''} onChange={(e) => setSelected({ ...selected, assignee: e.target.value })} />
-          <button>Save</button>
-        </form>
-      </section> : null}
     </>
   );
 }

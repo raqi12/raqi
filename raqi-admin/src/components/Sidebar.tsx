@@ -14,7 +14,7 @@ type NavGroup = {
 const NAV_GROUPS: NavGroup[] = [
   { title: 'رئيسي', items: ['overview'] },
   { title: 'العمليات', items: ['customers', 'subscriptions', 'tasks', 'tickets', 'notifications', 'send-notification', 'support', 'privacy', 'instructions', 'gallery', 'complaints'] },
-  { title: 'الموارد', items: ['users', 'drivers', 'plans', 'bins', 'locations', 'routes'] },
+  { title: 'الموارد', items: ['managers', 'drivers', 'plans', 'bins', 'locations'] },
   { title: 'المالية', items: ['payments', 'bank-account', 'additional-collection', 'deposit-requests', 'cash-topups'] },
 ];
 
@@ -22,6 +22,8 @@ type SidebarProps = {
   activeTab: SidebarTab;
   onNavigate: (path: string) => void;
   userEmail: string;
+  userRole?: string;
+  allowedTabs?: SidebarTab[] | null;
   collapsed: boolean;
   onToggleCollapse: () => void;
   onLogout: () => void;
@@ -35,6 +37,8 @@ export function Sidebar({
   activeTab,
   onNavigate,
   userEmail,
+  userRole = 'admin',
+  allowedTabs = null,
   collapsed,
   onToggleCollapse,
   onLogout,
@@ -43,6 +47,19 @@ export function Sidebar({
   mobileOpen,
   onCloseMobile,
 }: SidebarProps) {
+  const roleLabel =
+    userRole === 'admin'
+      ? 'مدير النظام'
+      : userRole === 'manager'
+        ? 'مدير'
+        : userRole === 'supervisor'
+          ? 'مشرف'
+          : 'موظف';
+
+  const visibleGroups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((tab) => !allowedTabs || allowedTabs.includes(tab)),
+  })).filter((group) => group.items.length > 0);
   return (
     <>
       {mobileOpen ? (
@@ -89,7 +106,7 @@ export function Sidebar({
         </div>
 
         <nav className="sidebar__nav">
-          {NAV_GROUPS.map((group) => (
+          {visibleGroups.map((group) => (
             <div key={group.title} className="sidebar__group">
               {!collapsed ? <p className="sidebar__group-title">{group.title}</p> : null}
               <ul>
@@ -143,7 +160,7 @@ export function Sidebar({
               </span>
               <div>
                 <p className="sidebar__user-email">{userEmail}</p>
-                <p className="sidebar__user-role">مدير النظام</p>
+                <p className="sidebar__user-role">{roleLabel}</p>
               </div>
             </div>
           ) : null}

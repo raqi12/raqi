@@ -4,13 +4,12 @@ export type SidebarTab = keyof typeof TAB_LABELS;
 
 export const ROUTE_PATHS: Record<SidebarTab, string> = {
   overview: '/overview',
-  users: '/users',
+  managers: '/managers',
   customers: '/customers',
   drivers: '/drivers',
   plans: '/plans',
   bins: '/bins',
   locations: '/locations',
-  routes: '/routes',
   tasks: '/tasks',
   subscriptions: '/subscriptions',
   payments: '/payments',
@@ -41,6 +40,36 @@ export function tabFromPathname(pathname: string): SidebarTab {
   if (normalized.startsWith('/notifications')) {
     return 'notifications';
   }
+  if (normalized.startsWith('/customers')) {
+    return 'customers';
+  }
+  if (normalized.startsWith('/subscriptions')) {
+    return 'subscriptions';
+  }
+  if (normalized.startsWith('/gallery')) {
+    return 'gallery';
+  }
+  if (normalized.startsWith('/tickets')) {
+    return 'tickets';
+  }
+  if (normalized.startsWith('/managers') || normalized.startsWith('/users')) {
+    return 'managers';
+  }
+  if (normalized.startsWith('/drivers')) {
+    return 'drivers';
+  }
+  if (normalized.startsWith('/plans')) {
+    return 'plans';
+  }
+  if (normalized.startsWith('/bins')) {
+    return 'bins';
+  }
+  if (normalized.startsWith('/locations') || normalized.startsWith('/areas')) {
+    return 'locations';
+  }
+  if (normalized.startsWith('/complaints')) {
+    return 'complaints';
+  }
   return pathToTab.get(normalized) ?? 'overview';
 }
 
@@ -57,12 +86,11 @@ const TAB_NAV_GROUPS: Record<SidebarTab, string> = {
   gallery: 'العمليات',
   privacy: 'العمليات',
   instructions: 'العمليات',
-  users: 'الموارد',
+  managers: 'الموارد',
   drivers: 'الموارد',
   plans: 'الموارد',
   bins: 'الموارد',
   locations: 'الموارد',
-  routes: 'الموارد',
   payments: 'المالية',
   'bank-account': 'المالية',
   'additional-collection': 'المالية',

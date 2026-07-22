@@ -1,0 +1,738 @@
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { AdminApi } from '../../api/modules';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
+import { StatusBadge } from '../../components/ui/StatusBadge';
+import { COMMON } from '../../i18n/ar';
+import type {
+  Address,
+  Area,
+  Bin,
+  City,
+  Customer,
+  Driver,
+  Payment,
+  Plan,
+  Subscription,
+  SubscriptionCost,
+  Task,
+  User,
+} from '../../types';
+import {
+  addressLocationLabel,
+  areaNameById,
+  binCodeById,
+  cityNameById,
+  customerDisplayName,
+  getId,
+  planNameById,
+  userNameById,
+} from './shared';
+import {
+  CONFIRM_COPY,
+  PLAN_FREQUENCY,
+  RecordList,
+  displayOrMissing,
+  driverNameById,
+  formatDateTime,
+  formatMoney,
+  subscriptionActivationReadiness,
+  taskDate,
+  type PendingSubscriptionAction,
+} from './subscriptionUi';
+
+type SubscriptionDetailPageProps = {
+  subscriptions: Subscription[];
+  plans: Plan[];
+  bins: Bin[];
+  customers: Customer[];
+  users: User[];
+  drivers: Driver[];
+  tasks: Task[];
+  payments: Payment[];
+  areas: Area[];
+  cities: City[];
+  onLoadAddresses: (customerId: string) => Promise<Address[]>;
+  onAssignDriver: (id: string, driverId: string) => Promise<void>;
+  onUpdate: (
+    id: string,
+    body: {
+      planId?: string;
+      addressId?: string;
+      binId?: string;
+      paymentStatus?: 'paid' | 'unpaid';
+    },
+  ) => Promise<void>;
+  onActivate: (id: string) => Promise<void>;
+  onSuspend: (id: string) => Promise<void>;
+  onRenew: (id: string) => Promise<void>;
+  onReplaceBin: (id: string, newBinId: string) => Promise<void>;
+};
+
+export function SubscriptionDetailPage({
+  subscriptions,
+  plans,
+  bins,
+  customers,
+  users,
+  drivers,
+  tasks,
+  payments,
+  areas,
+  cities,
+  onLoadAddresses,
+  onAssignDriver,
+  onUpdate,
+  onActivate,
+  onSuspend,
+  onRenew,
+  onReplaceBin,
+}: SubscriptionDetailPageProps) {
+  const { id = '' } = useParams();
+  const navigate = useNavigate();
+
+  const selected = useMemo(
+    () => subscriptions.find((item) => getId(item) === id) ?? null,
+    [id, subscriptions],
+  );
+
+  const [detailAddress, setDetailAddress] = useState<Address | null>(null);
+  const [detailAddresses, setDetailAddresses] = useState<Address[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [editForm, setEditForm] = useState({
+    planId: '',
+    addressId: '',
+    binId: '',
+    paymentStatus: 'unpaid' as 'paid' | 'unpaid',
+  });
+  const [assignDriverId, setAssignDriverId] = useState('');
+  const [replaceBinId, setReplaceBinId] = useState('');
+  const [confirm, setConfirm] = useState<{ id: string; action: PendingSubscriptionAction } | null>(
+    null,
+  );
+  const [saving, setSaving] = useState(false);
+  const [editCost, setEditCost] = useState<SubscriptionCost | null>(null);
+
+  const activePlans = useMemo(() => plans.filter((plan) => plan.active !== false), [plans]);
+  const availableBins = useMemo(
+    () => bins.filter((bin) => (bin.availableCount ?? 0) > 0 && bin.active !== false),
+    [bins],
+  );
+  const editBins = useMemo(() => {
+    if (!selected?.binId) return availableBins;
+    const current = bins.find((bin) => getId(bin) === selected.binId);
+    if (!current || availableBins.some((bin) => getId(bin) === getId(current))) {
+      return availableBins;
+    }
+    return [current, ...availableBins];
+  }, [availableBins, bins, selected?.binId]);
+
+  const selectedDrivers = useMemo(() => {
+    if (!selected?.cityId || !selected?.areaId) return [];
+    return drivers.filter(
+      (driver) =>
+        driver.status === 'active' &&
+        driver.cityId === selected.cityId &&
+        driver.areaId === selected.areaId,
+    );
+  }, [drivers, selected?.areaId, selected?.cityId]);
+
+  const detailCustomer = useMemo(
+    () =>
+      selected
+        ? customers.find((customer) => getId(customer) === selected.customerId)
+        : undefined,
+    [customers, selected],
+  );
+
+  const detailPlan = useMemo(
+    () => (selected ? plans.find((plan) => getId(plan) === selected.planId) : undefined),
+    [plans, selected],
+  );
+
+  const detailBin = useMemo(
+    () => (selected ? bins.find((bin) => getId(bin) === selected.binId) : undefined),
+    [bins, selected],
+  );
+
+  const relatedTasks = useMemo(() => {
+    if (!selected) return [];
+    const subscriptionId = getId(selected);
+    return tasks.filter((task) => task.subscriptionId === subscriptionId);
+  }, [selected, tasks]);
+
+  const relatedPayments = useMemo(() => {
+    if (!selected) return [];
+    const subscriptionId = getId(selected);
+    return payments.filter((payment) => payment.subscriptionId === subscriptionId);
+  }, [payments, selected]);
+
+  useEffect(() => {
+    if (!selected) {
+      setDetailAddress(null);
+      setDetailAddresses([]);
+      setEditForm({ planId: '', addressId: '', binId: '', paymentStatus: 'unpaid' });
+      setAssignDriverId('');
+      setReplaceBinId('');
+      return;
+    }
+    setAssignDriverId(selected.driverId ?? '');
+    setEditForm({
+      planId: selected.planId ?? '',
+      addressId: selected.addressId ?? '',
+      binId: selected.binId ?? '',
+      paymentStatus: selected.paymentStatus === 'paid' ? 'paid' : 'unpaid',
+    });
+  }, [selected?.id, selected?._id, selected?.driverId, selected?.planId, selected?.addressId, selected?.binId, selected?.paymentStatus]);
+
+  useEffect(() => {
+    if (!selected?.customerId) {
+      setDetailAddress(null);
+      return;
+    }
+
+    setDetailLoading(true);
+    void onLoadAddresses(selected.customerId)
+      .then((items) => {
+        setDetailAddresses(items);
+        const address = items.find((item) => getId(item) === selected.addressId) ?? null;
+        setDetailAddress(address);
+      })
+      .finally(() => setDetailLoading(false));
+  }, [onLoadAddresses, selected?.addressId, selected?.customerId]);
+
+  useEffect(() => {
+    if (!editForm.planId) {
+      setEditCost(null);
+      return;
+    }
+    void AdminApi.plans
+      .cost(editForm.planId, editForm.binId || undefined)
+      .then((response) => setEditCost(response.data))
+      .catch(() => setEditCost(null));
+  }, [editForm.planId, editForm.binId]);
+
+  async function submitAssignDriver(e: FormEvent) {
+    e.preventDefault();
+    if (!selected || !assignDriverId) return;
+    setSaving(true);
+    try {
+      await onAssignDriver(getId(selected), assignDriverId);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function submitReplaceBin(e: FormEvent) {
+    e.preventDefault();
+    if (!selected || !replaceBinId) return;
+    setSaving(true);
+    try {
+      await onReplaceBin(getId(selected), replaceBinId);
+      setReplaceBinId('');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function submitUpdate(e: FormEvent) {
+    e.preventDefault();
+    if (!selected || !editForm.planId || !editForm.addressId) return;
+    setSaving(true);
+    try {
+      await onUpdate(getId(selected), {
+        planId: editForm.planId,
+        addressId: editForm.addressId,
+        binId: editForm.binId || undefined,
+        paymentStatus: editForm.paymentStatus,
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function runConfirmedAction() {
+    if (!confirm) return;
+    setSaving(true);
+    try {
+      if (confirm.action === 'activate') await onActivate(confirm.id);
+      if (confirm.action === 'suspend') await onSuspend(confirm.id);
+      if (confirm.action === 'renew') await onRenew(confirm.id);
+      setConfirm(null);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!selected) {
+    return (
+      <div className="module-page customer-detail-page">
+        <Button type="button" variant="ghost" onClick={() => navigate('/subscriptions')}>
+          ← العودة إلى الاشتراكات
+        </Button>
+        <div className="customer-empty">
+          <h2>الاشتراك غير موجود</h2>
+          <p>تعذر العثور على هذا الاشتراك أو تم حذفه.</p>
+          <Button type="button" onClick={() => navigate('/subscriptions')}>
+            العودة للقائمة
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const readiness = subscriptionActivationReadiness(selected);
+  const canActivate = readiness.plan && readiness.address && readiness.payment;
+  const title = selected.planId
+    ? planNameById(plans, selected.planId)
+    : `اشتراك ${selected.status === 'draft' ? 'مسودة' : selected.status ?? '—'}`;
+  const subtitle = detailCustomer ? customerDisplayName(detailCustomer, users) : undefined;
+
+  return (
+    <div className="module-page customer-detail-page">
+      <header className="customer-detail-hero">
+        <div className="customer-detail-hero__top">
+          <Button type="button" variant="ghost" onClick={() => navigate('/subscriptions')}>
+            ← العودة إلى الاشتراكات
+          </Button>
+          <div className="detail-actions">
+            <Button
+              type="button"
+              onClick={() => setConfirm({ id: getId(selected), action: 'activate' })}
+              disabled={saving || selected.status === 'active' || !canActivate}
+            >
+              تفعيل
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setConfirm({ id: getId(selected), action: 'suspend' })}
+              disabled={saving || selected.status === 'suspended'}
+            >
+              إيقاف
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setConfirm({ id: getId(selected), action: 'renew' })}
+              disabled={saving}
+            >
+              تجديد
+            </Button>
+          </div>
+        </div>
+        <div className="customer-detail-hero__body">
+          <div>
+            <p className="customer-detail-hero__eyebrow">تفاصيل الاشتراك</p>
+            <h2 className="customer-detail-hero__title">{title}</h2>
+            <div className="customer-detail-hero__meta">
+              {subtitle ? <span>{subtitle}</span> : null}
+              <StatusBadge status={selected.status ?? 'draft'} />
+              <StatusBadge status={selected.paymentStatus ?? 'unpaid'} />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="customer-detail-grid">
+        {selected.status !== 'active' ? (
+          <section className="detail-block customer-detail-card customer-detail-card--wide">
+            <h4 className="detail-block__title">جاهزية التفعيل</h4>
+            <ul className="readiness-list">
+              <li className={readiness.plan ? 'readiness-list__item--ok' : 'readiness-list__item--missing'}>
+                الخطة {readiness.plan ? '✓' : '— مطلوبة'}
+              </li>
+              <li
+                className={
+                  readiness.address ? 'readiness-list__item--ok' : 'readiness-list__item--missing'
+                }
+              >
+                العنوان والموقع {readiness.address ? '✓' : '— مطلوب'}
+              </li>
+              <li
+                className={
+                  readiness.payment ? 'readiness-list__item--ok' : 'readiness-list__item--missing'
+                }
+              >
+                الدفع {readiness.payment ? '✓' : '— يجب أن يكون مدفوعًا'}
+              </li>
+            </ul>
+            {!canActivate ? (
+              <p className="field__hint">
+                أكمل العناصر الناقصة أدناه أو من صفحة العميل (تعيين اشتراك).
+              </p>
+            ) : null}
+          </section>
+        ) : null}
+
+        {selected.status === 'draft' || selected.status === 'requested' ? (
+          <section className="detail-block customer-detail-card customer-detail-card--wide">
+            <h4 className="detail-block__title">إكمال الاشتراك</h4>
+            <form className="detail-form customer-assign-form" onSubmit={submitUpdate}>
+              <div className="form-grid">
+                <Select
+                  label="الخطة"
+                  value={editForm.planId}
+                  onChange={(e) => setEditForm({ ...editForm, planId: e.target.value })}
+                  required
+                >
+                  <option value="">اختر الخطة</option>
+                  {activePlans.map((plan) => (
+                    <option key={getId(plan)} value={getId(plan)}>
+                      {plan.name} — {plan.price} د.ل ({plan.numberOfCollections ?? 0} جمع)
+                    </option>
+                  ))}
+                </Select>
+                <Select
+                  label="العنوان"
+                  value={editForm.addressId}
+                  onChange={(e) => setEditForm({ ...editForm, addressId: e.target.value })}
+                  disabled={detailLoading || !detailAddresses.length}
+                  required
+                >
+                  <option value="">{detailLoading ? COMMON.loading : 'اختر العنوان'}</option>
+                  {detailAddresses.map((address) => (
+                    <option key={getId(address)} value={getId(address)}>
+                      {address.label} — {addressLocationLabel(address, cities, areas)}
+                      {address.isActive ? ' (نشط)' : ''}
+                    </option>
+                  ))}
+                </Select>
+                <Select
+                  label="الصندوق"
+                  value={editForm.binId}
+                  onChange={(e) => setEditForm({ ...editForm, binId: e.target.value })}
+                >
+                  <option value="">بدون حاوية</option>
+                  {editBins.map((bin) => (
+                    <option key={getId(bin)} value={getId(bin)}>
+                      {bin.code ?? getId(bin)} ({bin.capacity ?? 0} لتر
+                      {bin.fee ? ` — ${bin.fee} د.ل` : ''} — {bin.availableCount ?? 0} متاح)
+                    </option>
+                  ))}
+                </Select>
+                <Select
+                  label="حالة الدفع"
+                  value={editForm.paymentStatus}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      paymentStatus: e.target.value as 'paid' | 'unpaid',
+                    })
+                  }
+                >
+                  <option value="unpaid">غير مدفوع</option>
+                  <option value="paid">مدفوع</option>
+                </Select>
+              </div>
+              {editCost ? (
+                <p className="field__hint">
+                  التكلفة: {formatMoney(editCost.planPrice)} خطة
+                  {editCost.binFee > 0 ? ` + ${formatMoney(editCost.binFee)} حاوية` : ''}
+                  {' '}
+                  = {formatMoney(editCost.total)}
+                </p>
+              ) : null}
+              <Button
+                type="submit"
+                disabled={saving || detailLoading || !editForm.planId || !editForm.addressId}
+              >
+                حفظ التعديلات
+              </Button>
+            </form>
+          </section>
+        ) : null}
+
+        <section className="detail-block customer-detail-card">
+          <h4 className="detail-block__title">معلومات العميل</h4>
+          {detailCustomer ? (
+            <dl className="info-list">
+              <div className="info-list__row">
+                <dt>{COMMON.name}</dt>
+                <dd>{customerDisplayName(detailCustomer, users)}</dd>
+              </div>
+              <div className="info-list__row">
+                <dt>{COMMON.phone}</dt>
+                <dd dir="ltr">{detailCustomer.phone ?? '—'}</dd>
+              </div>
+              <div className="info-list__row">
+                <dt>{COMMON.email}</dt>
+                <dd dir="ltr">{detailCustomer.email ?? '—'}</dd>
+              </div>
+              <div className="info-list__row">
+                <dt>صفحة العميل</dt>
+                <dd>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => navigate(`/customers/${getId(detailCustomer)}`)}
+                  >
+                    فتح التفاصيل
+                  </Button>
+                </dd>
+              </div>
+            </dl>
+          ) : (
+            <p className="detail-block__muted">—</p>
+          )}
+        </section>
+
+        <section className="detail-block customer-detail-card">
+          <h4 className="detail-block__title">معلومات الاشتراك</h4>
+          <dl className="info-list">
+            <div className="info-list__row">
+              <dt>{COMMON.status}</dt>
+              <dd>
+                <StatusBadge status={selected.status ?? 'draft'} />
+              </dd>
+            </div>
+            <div className="info-list__row">
+              <dt>الدفع</dt>
+              <dd>
+                <StatusBadge status={selected.paymentStatus ?? 'unpaid'} />
+              </dd>
+            </div>
+            <div className="info-list__row">
+              <dt>التجديد التلقائي</dt>
+              <dd>{selected.autoRenew ? 'مفعّل' : 'معطّل'}</dd>
+            </div>
+            <div className="info-list__row">
+              <dt>تاريخ الانتهاء</dt>
+              <dd>{formatDateTime(selected.expiresAt)}</dd>
+            </div>
+            <div className="info-list__row">
+              <dt>آخر تجديد</dt>
+              <dd>{formatDateTime(selected.renewedAt)}</dd>
+            </div>
+            {selected.renewalGraceUntil ? (
+              <div className="info-list__row">
+                <dt>فترة السماح</dt>
+                <dd>{formatDateTime(selected.renewalGraceUntil)}</dd>
+              </div>
+            ) : null}
+            <div className="info-list__row">
+              <dt>الخطة</dt>
+              <dd>{displayOrMissing(planNameById(plans, selected.planId))}</dd>
+            </div>
+            {detailPlan ? (
+              <>
+                <div className="info-list__row">
+                  <dt>سعر الخطة</dt>
+                  <dd>{formatMoney(detailPlan.price)}</dd>
+                </div>
+                <div className="info-list__row">
+                  <dt>التكرار</dt>
+                  <dd>
+                    {PLAN_FREQUENCY[detailPlan.frequency ?? ''] ?? detailPlan.frequency ?? '—'}
+                  </dd>
+                </div>
+                <div className="info-list__row">
+                  <dt>عدد الجمعات</dt>
+                  <dd>{detailPlan.numberOfCollections ?? '—'}</dd>
+                </div>
+                <div className="info-list__row">
+                  <dt>مدة الاشتراك</dt>
+                  <dd>{detailPlan.durationDays ? `${detailPlan.durationDays} يوم` : '—'}</dd>
+                </div>
+              </>
+            ) : null}
+            <div className="info-list__row">
+              <dt>مواعيد الجمع</dt>
+              <dd dir="ltr">
+                {selected.collectionDates?.length
+                  ? selected.collectionDates.join(', ')
+                  : '—'}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section className="detail-block customer-detail-card">
+          <h4 className="detail-block__title">الموقع والعنوان</h4>
+          {detailLoading ? (
+            <p className="detail-block__muted">{COMMON.loading}</p>
+          ) : (
+            <dl className="info-list">
+              <div className="info-list__row">
+                <dt>{COMMON.city}</dt>
+                <dd>{cityNameById(cities, selected.cityId)}</dd>
+              </div>
+              <div className="info-list__row">
+                <dt>{COMMON.area}</dt>
+                <dd>{areaNameById(areas, selected.areaId)}</dd>
+              </div>
+              <div className="info-list__row">
+                <dt>العنوان</dt>
+                <dd>
+                  {detailAddress ? (
+                    <>
+                      {detailAddress.label}
+                      {detailAddress.isActive ? ' (نشط)' : ''}
+                    </>
+                  ) : (
+                    '—'
+                  )}
+                </dd>
+              </div>
+              {detailAddress ? (
+                <div className="info-list__row">
+                  <dt>تفاصيل العنوان</dt>
+                  <dd>
+                    {addressLocationLabel(detailAddress, cities, areas)}
+                    {detailAddress.details ? ` — ${detailAddress.details}` : ''}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          )}
+        </section>
+
+        <section className="detail-block customer-detail-card">
+          <h4 className="detail-block__title">الصندوق والسائق</h4>
+          <dl className="info-list">
+            <div className="info-list__row">
+              <dt>الصندوق</dt>
+              <dd>{displayOrMissing(binCodeById(bins, selected.binId))}</dd>
+            </div>
+            {detailBin ? (
+              <>
+                <div className="info-list__row">
+                  <dt>سعة الصندوق</dt>
+                  <dd>{detailBin.capacity ?? 0} لتر</dd>
+                </div>
+                <div className="info-list__row">
+                  <dt>المتاح من النوع</dt>
+                  <dd>
+                    {detailBin.availableCount ?? 0} / {detailBin.totalCount ?? 0}
+                  </dd>
+                </div>
+              </>
+            ) : null}
+            <div className="info-list__row">
+              <dt>السائق المعيّن</dt>
+              <dd>
+                {selected.driverId
+                  ? driverNameById(drivers, users, selected.driverId)
+                  : 'غير معيّن (اختياري)'}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section className="detail-block customer-detail-card">
+          <h4 className="detail-block__title">استبدال الصندوق</h4>
+          {selected.status !== 'active' ? (
+            <p className="field__hint">يمكن استبدال الصندوق للاشتراكات النشطة فقط.</p>
+          ) : (
+            <form className="detail-form" onSubmit={(e) => void submitReplaceBin(e)}>
+              <Select
+                label="صندوق جديد"
+                value={replaceBinId}
+                onChange={(e) => setReplaceBinId(e.target.value)}
+                required
+              >
+                <option value="">اختر صندوقاً متاحاً</option>
+                {availableBins.map((bin) => (
+                  <option key={getId(bin)} value={getId(bin)}>
+                    {bin.code ?? getId(bin)} ({bin.capacity ?? 0} لتر
+                    {bin.fee ? ` — ${bin.fee} د.ل` : ''} — {bin.availableCount ?? 0} متاح)
+                  </option>
+                ))}
+              </Select>
+              {!availableBins.length ? (
+                <p className="field__hint">لا توجد صناديق متاحة للاستبدال.</p>
+              ) : (
+                <p className="field__hint">
+                  تاريخ التوصيل يبقى تاريخ بداية الاشتراك. لا يتم خصم رسوم إضافية.
+                </p>
+              )}
+              <Button type="submit" disabled={saving || !replaceBinId || !availableBins.length}>
+                استبدال الصندوق
+              </Button>
+            </form>
+          )}
+        </section>
+
+        <section className="detail-block customer-detail-card">
+          <h4 className="detail-block__title">تعيين السائق</h4>
+          {!selected.cityId || !selected.areaId ? (
+            <p className="field__hint">
+              يجب ربط الاشتراك بعنوان له مدينة ومنطقة قبل تعيين سائق.
+            </p>
+          ) : (
+            <form className="detail-form" onSubmit={submitAssignDriver}>
+              <Select
+                label="السائق"
+                value={assignDriverId}
+                onChange={(e) => setAssignDriverId(e.target.value)}
+                required
+              >
+                <option value="">اختر السائق</option>
+                {selectedDrivers.map((driver) => (
+                  <option key={getId(driver)} value={getId(driver)}>
+                    {userNameById(users, driver.userId)} — {driver.vehicleNumber ?? '—'}
+                  </option>
+                ))}
+              </Select>
+              {!selectedDrivers.length ? (
+                <p className="field__hint">لا يوجد سائقون نشطون يخدمون هذه المنطقة.</p>
+              ) : null}
+              <Button type="submit" disabled={saving || !assignDriverId}>
+                تعيين السائق
+              </Button>
+            </form>
+          )}
+        </section>
+
+        <section className="detail-block customer-detail-card">
+          <h4 className="detail-block__title">مهام الجمع ({relatedTasks.length})</h4>
+          <RecordList empty="لا توجد مهام مرتبطة بهذا الاشتراك.">
+            {relatedTasks.length > 0
+              ? relatedTasks.map((task) => (
+                  <li key={getId(task)} className="record-list__item">
+                    <div className="record-list__header">
+                      <strong>{taskDate(task)}</strong>
+                      <StatusBadge status={String(task.status)} />
+                    </div>
+                    <div className="record-list__meta">
+                      <span>{areaNameById(areas, task.areaId)}</span>
+                      <span>السائق: {driverNameById(drivers, users, task.driverId)}</span>
+                    </div>
+                  </li>
+                ))
+              : null}
+          </RecordList>
+        </section>
+
+        <section className="detail-block customer-detail-card">
+          <h4 className="detail-block__title">المدفوعات ({relatedPayments.length})</h4>
+          <RecordList empty="لا توجد مدفوعات مرتبطة بهذا الاشتراك.">
+            {relatedPayments.length > 0
+              ? relatedPayments.map((payment) => (
+                  <li key={getId(payment)} className="record-list__item">
+                    <div className="record-list__header">
+                      <strong>{formatMoney(payment.amount)}</strong>
+                      <StatusBadge status={String(payment.status ?? 'pending')} />
+                    </div>
+                    <div className="record-list__meta">
+                      <span>الطريقة: {payment.method ?? '—'}</span>
+                    </div>
+                  </li>
+                ))
+              : null}
+          </RecordList>
+        </section>
+      </div>
+
+      <ConfirmDialog
+        open={Boolean(confirm)}
+        title={confirm ? CONFIRM_COPY[confirm.action].title : ''}
+        description={confirm ? CONFIRM_COPY[confirm.action].description : ''}
+        onCancel={() => setConfirm(null)}
+        onConfirm={() => void runConfirmedAction()}
+      />
+    </div>
+  );
+}

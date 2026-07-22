@@ -39,32 +39,61 @@ const SUB_NAV: Array<{ to: string; label: string; end?: boolean }> = [
   { to: '/notifications/settings', label: 'الإعدادات' },
 ];
 
-const TYPE_OPTIONS = [
-  'system',
-  'announcement',
-  'ticket',
-  'task',
-  'subscription',
-  'payment',
-  'user',
-  'message',
-  'custom',
+const TYPE_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'system', label: 'نظام' },
+  { value: 'announcement', label: 'إعلان' },
+  { value: 'ticket', label: 'تذكرة' },
+  { value: 'task', label: 'مهمة' },
+  { value: 'subscription', label: 'اشتراك' },
+  { value: 'payment', label: 'دفع' },
+  { value: 'user', label: 'مستخدم' },
+  { value: 'message', label: 'رسالة' },
+  { value: 'custom', label: 'مخصص' },
 ];
 
-const CATEGORY_OPTIONS = [
-  'general',
-  'operations',
-  'billing',
-  'support',
-  'security',
-  'marketing',
+const CATEGORY_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'general', label: 'عام' },
+  { value: 'operations', label: 'عمليات' },
+  { value: 'billing', label: 'فوترة' },
+  { value: 'support', label: 'دعم' },
+  { value: 'security', label: 'أمان' },
+  { value: 'marketing', label: 'تسويق' },
 ];
 
-const PRIORITY_OPTIONS = ['low', 'medium', 'high', 'critical'];
+const PRIORITY_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'low', label: 'منخفضة' },
+  { value: 'medium', label: 'متوسطة' },
+  { value: 'high', label: 'عالية' },
+  { value: 'critical', label: 'حرجة' },
+];
+
+const SCHEDULED_STATUS_LABELS: Record<string, string> = {
+  scheduled: 'مجدول',
+  sent: 'مُرسل',
+  cancelled: 'ملغى',
+  failed: 'فشل',
+};
+
+function labelFor(
+  options: Array<{ value: string; label: string }>,
+  value?: string | null,
+) {
+  if (!value) return '—';
+  return options.find((opt) => opt.value === value)?.label ?? value;
+}
 
 function formatDateTime(value?: string | null) {
   if (!value) return '—';
   return new Date(value).toLocaleString('ar-LY');
+}
+
+function roleLabel(role?: string) {
+  if (role === 'admin') return 'مدير';
+  if (role === 'manager') return 'مشرف إداري';
+  if (role === 'supervisor') return 'مشرف';
+  if (role === 'driver') return 'سائق';
+  if (role === 'customer') return 'عميل';
+  return role ?? '—';
 }
 
 function NotificationsSubNav() {
@@ -152,19 +181,44 @@ function ListView({ onToast }: { onToast: (message: string) => void }) {
               setSearch(e.target.value);
             }}
           />
-          <Select value={type} onChange={(e) => { setPage(1); setType(e.target.value); }}>
+          <Select
+            label="النوع"
+            value={type}
+            onChange={(e) => {
+              setPage(1);
+              setType(e.target.value);
+            }}
+          >
             <option value="">كل الأنواع</option>
             {TYPE_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
             ))}
           </Select>
-          <Select value={category} onChange={(e) => { setPage(1); setCategory(e.target.value); }}>
+          <Select
+            label="الفئة"
+            value={category}
+            onChange={(e) => {
+              setPage(1);
+              setCategory(e.target.value);
+            }}
+          >
             <option value="">كل الفئات</option>
             {CATEGORY_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
             ))}
           </Select>
-          <Select value={isRead} onChange={(e) => { setPage(1); setIsRead(e.target.value); }}>
+          <Select
+            label="القراءة"
+            value={isRead}
+            onChange={(e) => {
+              setPage(1);
+              setIsRead(e.target.value);
+            }}
+          >
             <option value="">الكل</option>
             <option value="false">غير مقروء</option>
             <option value="true">مقروء</option>
@@ -205,8 +259,16 @@ function ListView({ onToast }: { onToast: (message: string) => void }) {
             ),
           },
           { key: 'title', label: 'العنوان' },
-          { key: 'type', label: 'النوع' },
-          { key: 'category', label: 'الفئة' },
+          {
+            key: 'type',
+            label: 'النوع',
+            render: (row) => labelFor(TYPE_OPTIONS, row.type),
+          },
+          {
+            key: 'category',
+            label: 'الفئة',
+            render: (row) => labelFor(CATEGORY_OPTIONS, row.category),
+          },
           {
             key: 'readLabel',
             label: 'الحالة',
@@ -294,9 +356,9 @@ function DetailView({ onToast }: { onToast: (message: string) => void }) {
       <dl className="detail-grid">
         <div><dt>العنوان</dt><dd>{notification.title}</dd></div>
         <div><dt>النص</dt><dd>{notification.body}</dd></div>
-        <div><dt>النوع</dt><dd>{notification.type ?? '—'}</dd></div>
-        <div><dt>الفئة</dt><dd>{notification.category ?? '—'}</dd></div>
-        <div><dt>الأولوية</dt><dd>{notification.priority ?? '—'}</dd></div>
+        <div><dt>النوع</dt><dd>{labelFor(TYPE_OPTIONS, notification.type)}</dd></div>
+        <div><dt>الفئة</dt><dd>{labelFor(CATEGORY_OPTIONS, notification.category)}</dd></div>
+        <div><dt>الأولوية</dt><dd>{labelFor(PRIORITY_OPTIONS, notification.priority)}</dd></div>
         <div><dt>المستخدم</dt><dd>{notification.userId ?? '—'}</dd></div>
         <div><dt>مقروء</dt><dd>{notification.isRead ? 'نعم' : 'لا'}</dd></div>
         <div><dt>رابط الإجراء</dt><dd>{notification.actionUrl ?? '—'}</dd></div>
@@ -497,17 +559,13 @@ function ComposerForm({
     }));
   };
 
-  const roleLabel = (role?: string) => {
-    if (role === 'admin') return 'مدير';
-    if (role === 'driver') return 'سائق';
-    if (role === 'customer') return 'عميل';
-    return role ?? '—';
-  };
-
   return (
     <form className="stack-form send-composer" onSubmit={onFormSubmit}>
-      <div>
-        <h3 className="send-composer__section-title">المستلمون</h3>
+      <section className="send-composer__section">
+        <header className="send-composer__section-head">
+          <h3 className="send-composer__section-title">1. المستلمون</h3>
+          <p className="send-composer__section-hint">اختر من سيستلم الإشعار</p>
+        </header>
         <div className="send-targets" role="radiogroup" aria-label="اختيار المستلمين">
           {TARGET_OPTIONS.map((opt) => (
             <button
@@ -531,146 +589,189 @@ function ComposerForm({
         <p className="send-composer__estimate">
           المستلمون المتوقعون: <strong>{estimatedCount}</strong>
         </p>
-      </div>
 
-      {form.targetMode === 'one' ? (
-        <Select
-          label="المستخدم"
-          value={form.userId}
-          onChange={(e) => setForm({ ...form, userId: e.target.value })}
-          required
-        >
-          <option value="">اختر مستخدماً</option>
-          {activeUsers.map((user) => (
-            <option key={getId(user)} value={getId(user)}>
-              {user.name ?? user.email} — {roleLabel(user.role)}
-            </option>
-          ))}
-        </Select>
-      ) : null}
+        {form.targetMode === 'one' ? (
+          <Select
+            label="المستخدم"
+            value={form.userId}
+            onChange={(e) => setForm({ ...form, userId: e.target.value })}
+            required
+          >
+            <option value="">اختر مستخدماً</option>
+            {activeUsers.map((user) => (
+              <option key={getId(user)} value={getId(user)}>
+                {user.name ?? user.email} — {roleLabel(user.role)}
+              </option>
+            ))}
+          </Select>
+        ) : null}
 
-      {form.targetMode === 'some' ? (
-        <div className="send-user-picker panel panel--muted">
-          <div className="row-form">
-            <Input
-              placeholder="بحث بالاسم أو البريد..."
-              value={form.userFilter}
-              onChange={(e) => setForm({ ...form, userFilter: e.target.value })}
-            />
-            <Select
-              value={form.filterRole}
-              onChange={(e) => setForm({ ...form, filterRole: e.target.value })}
-            >
-              <option value="all">كل الأدوار</option>
-              <option value="admin">مدراء</option>
-              <option value="driver">سائقون</option>
-              <option value="customer">عملاء</option>
-            </Select>
+        {form.targetMode === 'some' ? (
+          <div className="send-user-picker panel panel--muted">
+            <div className="row-form">
+              <Input
+                label="بحث"
+                placeholder="بحث بالاسم أو البريد..."
+                value={form.userFilter}
+                onChange={(e) => setForm({ ...form, userFilter: e.target.value })}
+              />
+              <Select
+                label="الدور"
+                value={form.filterRole}
+                onChange={(e) => setForm({ ...form, filterRole: e.target.value })}
+              >
+                <option value="all">كل الأدوار</option>
+                <option value="admin">مدراء</option>
+                <option value="manager">مشرفون إداريون</option>
+                <option value="supervisor">مشرفون</option>
+                <option value="driver">سائقون</option>
+                <option value="customer">عملاء</option>
+              </Select>
+            </div>
+            <div className="send-user-picker__list">
+              {selectableUsers.length === 0 ? (
+                <p className="muted">لا يوجد مستخدمون</p>
+              ) : (
+                selectableUsers.map((user) => {
+                  const id = getId(user);
+                  return (
+                    <label key={id} className="checkbox-row send-user-picker__row">
+                      <input
+                        type="checkbox"
+                        checked={form.selectedIds.includes(id)}
+                        onChange={() => toggleUser(id)}
+                      />
+                      <span>
+                        {user.name ?? user.email}
+                        <small> · {roleLabel(user.role)}</small>
+                      </span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+            <p className="muted">محدّد: {form.selectedIds.length}</p>
           </div>
-          <div className="send-user-picker__list">
-            {selectableUsers.length === 0 ? (
-              <p className="muted">لا يوجد مستخدمون</p>
-            ) : (
-              selectableUsers.map((user) => {
-                const id = getId(user);
-                return (
-                  <label key={id} className="checkbox-row send-user-picker__row">
-                    <input
-                      type="checkbox"
-                      checked={form.selectedIds.includes(id)}
-                      onChange={() => toggleUser(id)}
-                    />
-                    <span>
-                      {user.name ?? user.email}
-                      <small> · {roleLabel(user.role)}</small>
-                    </span>
-                  </label>
-                );
-              })
-            )}
-          </div>
-          <p className="muted">محدّد: {form.selectedIds.length}</p>
-        </div>
-      ) : null}
+        ) : null}
+      </section>
 
-      <h3 className="send-composer__section-title">محتوى الإشعار</h3>
-      <Input
-        required
-        label="العنوان"
-        placeholder="عنوان الإشعار"
-        value={form.title}
-        onChange={(e) => setForm({ ...form, title: e.target.value })}
-      />
-      <label className="field">
-        <span className="field__label">النص</span>
-        <textarea
-          required
-          className="input"
-          rows={4}
-          placeholder="نص الإشعار"
-          value={form.body}
-          onChange={(e) => setForm({ ...form, body: e.target.value })}
-        />
-      </label>
-      <Input
-        label="رابط الصورة (اختياري)"
-        placeholder="https://..."
-        value={form.image}
-        onChange={(e) => setForm({ ...form, image: e.target.value })}
-      />
-      <div className="row-form">
-        <Select
-          label="النوع"
-          value={form.type}
-          onChange={(e) => setForm({ ...form, type: e.target.value })}
-        >
-          {TYPE_OPTIONS.map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </Select>
-        <Select
-          label="الفئة"
-          value={form.category}
-          onChange={(e) => setForm({ ...form, category: e.target.value })}
-        >
-          {CATEGORY_OPTIONS.map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </Select>
-        <Select
-          label="الأولوية"
-          value={form.priority}
-          onChange={(e) => setForm({ ...form, priority: e.target.value })}
-        >
-          {PRIORITY_OPTIONS.map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </Select>
-      </div>
-      <Input
-        label="رابط الإجراء (اختياري)"
-        placeholder="/notifications أو مسار داخل التطبيق"
-        value={form.actionUrl}
-        onChange={(e) => setForm({ ...form, actionUrl: e.target.value })}
-      />
-      {initialScheduledAt ? (
+      <section className="send-composer__section">
+        <header className="send-composer__section-head">
+          <h3 className="send-composer__section-title">2. محتوى الإشعار</h3>
+          <p className="send-composer__section-hint">العنوان والنص الظاهر للمستلم</p>
+        </header>
         <Input
           required
-          label="موعد الإرسال"
-          type="datetime-local"
-          value={form.scheduledAt}
-          onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })}
+          label="العنوان"
+          placeholder="عنوان الإشعار"
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
         />
+        <label className="field">
+          <span className="field__label">النص</span>
+          <textarea
+            required
+            className="input"
+            rows={4}
+            placeholder="نص الإشعار"
+            value={form.body}
+            onChange={(e) => setForm({ ...form, body: e.target.value })}
+          />
+        </label>
+        <Input
+          label="رابط الصورة (اختياري)"
+          placeholder="https://..."
+          value={form.image}
+          onChange={(e) => setForm({ ...form, image: e.target.value })}
+        />
+        <Input
+          label="رابط الإجراء (اختياري)"
+          placeholder="/notifications أو مسار داخل التطبيق"
+          value={form.actionUrl}
+          onChange={(e) => setForm({ ...form, actionUrl: e.target.value })}
+        />
+      </section>
+
+      <section className="send-composer__section">
+        <header className="send-composer__section-head">
+          <h3 className="send-composer__section-title">3. التصنيف</h3>
+          <p className="send-composer__section-hint">يساعد في الفلترة والتحليلات</p>
+        </header>
+        <div className="row-form send-composer__meta">
+          <Select
+            label="النوع"
+            value={form.type}
+            onChange={(e) => setForm({ ...form, type: e.target.value })}
+          >
+            {TYPE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="الفئة"
+            value={form.category}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
+          >
+            {CATEGORY_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="الأولوية"
+            value={form.priority}
+            onChange={(e) => setForm({ ...form, priority: e.target.value })}
+          >
+            {PRIORITY_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </Select>
+        </div>
+      </section>
+
+      {initialScheduledAt ? (
+        <section className="send-composer__section">
+          <header className="send-composer__section-head">
+            <h3 className="send-composer__section-title">4. موعد الإرسال</h3>
+            <p className="send-composer__section-hint">متى يُرسل الإشعار تلقائياً</p>
+          </header>
+          <Input
+            required
+            label="التاريخ والوقت"
+            type="datetime-local"
+            value={form.scheduledAt}
+            onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })}
+          />
+        </section>
       ) : null}
-      <div className="panel panel--muted send-preview">
+
+      <section className="panel panel--muted send-preview">
         <strong>معاينة</strong>
         <p className="send-preview__title">{form.title || 'العنوان'}</p>
         <p>{form.body || 'النص'}</p>
-        <p className="muted">سيصل إلى {estimatedCount} مستلم · يشمل لوحة التحكم إن كان المستلم مديراً</p>
+        <div className="send-preview__meta">
+          <span>{labelFor(TYPE_OPTIONS, form.type)}</span>
+          <span>{labelFor(CATEGORY_OPTIONS, form.category)}</span>
+          <span>{labelFor(PRIORITY_OPTIONS, form.priority)}</span>
+        </div>
+        <p className="muted">
+          سيصل إلى {estimatedCount} مستلم
+          {initialScheduledAt && form.scheduledAt
+            ? ` · مجدول: ${formatDateTime(form.scheduledAt)}`
+            : ''}
+        </p>
+      </section>
+
+      <div className="send-composer__actions">
+        <Button type="submit" disabled={saving || estimatedCount === 0}>
+          {submitLabel}
+        </Button>
       </div>
-      <Button type="submit" disabled={saving || estimatedCount === 0}>
-        {submitLabel}
-      </Button>
     </form>
   );
 }
@@ -733,11 +834,18 @@ function ScheduledView({
 
   return (
     <>
-      <section className="panel">
-        <h2>جدولة إشعار</h2>
+      <section className="panel send-page">
+        <header className="send-page__header">
+          <div>
+            <h2>جدولة إشعار</h2>
+            <p className="muted">
+              حدد المستلمين والمحتوى والموعد، وسيُرسل الإشعار تلقائياً في الوقت المحدد.
+            </p>
+          </div>
+        </header>
         <ComposerForm
           users={users}
-          submitLabel="جدولة"
+          submitLabel="جدولة الإشعار"
           initialScheduledAt
           onSubmit={async (body) => {
             if (!body.scheduledAt) throw new Error('موعد الجدولة مطلوب');
@@ -755,7 +863,22 @@ function ScheduledView({
         loading={loading}
         columns={[
           { key: 'title', label: 'العنوان' },
-          { key: 'status', label: 'الحالة' },
+          {
+            key: 'type',
+            label: 'النوع',
+            render: (r) => labelFor(TYPE_OPTIONS, r.type),
+          },
+          {
+            key: 'priority',
+            label: 'الأولوية',
+            render: (r) => labelFor(PRIORITY_OPTIONS, r.priority),
+          },
+          {
+            key: 'status',
+            label: 'الحالة',
+            render: (r) =>
+              SCHEDULED_STATUS_LABELS[r.status ?? ''] ?? r.status ?? '—',
+          },
           {
             key: 'scheduledAt',
             label: 'الموعد',
@@ -917,17 +1040,26 @@ function TemplatesView({ onToast }: { onToast: (message: string) => void }) {
             onChange={(e) => setForm({ ...form, variables: e.target.value })}
           />
           <div className="row-form">
-            <Select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+            <Select
+              label="النوع"
+              value={form.type}
+              onChange={(e) => setForm({ ...form, type: e.target.value })}
+            >
               {TYPE_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
               ))}
             </Select>
             <Select
+              label="الفئة"
               value={form.category}
               onChange={(e) => setForm({ ...form, category: e.target.value })}
             >
               {CATEGORY_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
               ))}
             </Select>
             <label className="checkbox-row">
@@ -957,7 +1089,16 @@ function TemplatesView({ onToast }: { onToast: (message: string) => void }) {
         columns={[
           { key: 'code', label: 'الرمز' },
           { key: 'name', label: 'الاسم' },
-          { key: 'type', label: 'النوع' },
+          {
+            key: 'type',
+            label: 'النوع',
+            render: (r) => labelFor(TYPE_OPTIONS, r.type),
+          },
+          {
+            key: 'category',
+            label: 'الفئة',
+            render: (r) => labelFor(CATEGORY_OPTIONS, r.category),
+          },
           {
             key: 'isActive',
             label: 'نشط',

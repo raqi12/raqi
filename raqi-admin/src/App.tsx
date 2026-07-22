@@ -69,6 +69,10 @@ function LoginRoute({
     setError(null);
     try {
       const res = await login(email, password);
+      const role = res.data.user.role;
+      if (role !== 'admin' && role !== 'manager' && role !== 'supervisor') {
+        throw new Error('هذا الحساب غير مصرح له بدخول لوحة الإدارة');
+      }
       onSessionChange(res.data);
       storeSession(res.data);
       setSessionTokens(res.data.accessToken, res.data.refreshToken);

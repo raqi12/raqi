@@ -28,6 +28,10 @@ export class User {
   @Prop({ type: String, required: true, enum: Role, index: true })
   role: Role;
 
+  /** Dashboard pages this staff user may access (managers/supervisors). */
+  @Prop({ type: [String], default: [] })
+  permissions: string[];
+
   @Prop({
     type: String,
     required: true,

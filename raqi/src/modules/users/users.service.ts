@@ -150,6 +150,7 @@ export class UsersService implements OnModuleInit {
     role: Role;
     phone?: string;
     phoneVerified?: boolean;
+    permissions?: string[];
   }): Promise<UserDocument> {
     const phone = input.phone ? normalizePhone(input.phone) : undefined;
     // Prefer explicit email; otherwise derive a unique placeholder from phone.
@@ -167,6 +168,7 @@ export class UsersService implements OnModuleInit {
       role: input.role,
       phone,
       phoneVerified: input.phoneVerified ?? false,
+      permissions: input.permissions ?? [],
       ...(email ? { email } : {}),
     });
   }
@@ -190,7 +192,9 @@ export class UsersService implements OnModuleInit {
   }
 
   findStaff(): Promise<UserDocument[]> {
-    return this.userModel.find({ role: { $ne: Role.Customer } }).exec();
+    return this.userModel
+      .find({ role: { $in: [Role.Admin, Role.Manager, Role.Supervisor] } })
+      .exec();
   }
 
   findAll(): Promise<UserDocument[]> {
