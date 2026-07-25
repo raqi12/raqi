@@ -7,9 +7,10 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { RolesGuard } from '../../common/roles.guard';
 import { Roles } from '../../common/roles.decorator';
@@ -33,12 +34,22 @@ export class UsersController {
 
   @Get()
   @ApiOperation({
-    summary: 'List staff users',
-    description: 'Returns all non-customer staff accounts. Admin role required.',
+    summary: 'List users',
+    description:
+      'By default returns staff accounts (admin/manager/supervisor). Pass scope=all to include customers and drivers (e.g. notification recipients).',
   })
-  @ApiOkDataResponse(UserDto, 'Staff user list', { isArray: true })
-  async list() {
-    const users = await this.usersService.findStaff();
+  @ApiQuery({
+    name: 'scope',
+    required: false,
+    enum: ['staff', 'all'],
+    description: 'staff (default) or all active app users',
+  })
+  @ApiOkDataResponse(UserDto, 'User list', { isArray: true })
+  async list(@Query('scope') scope?: string) {
+    const users =
+      scope === 'all'
+        ? await this.usersService.findAll()
+        : await this.usersService.findStaff();
     return { data: users.map((user) => this.usersService.sanitize(user)) };
   }
 

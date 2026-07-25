@@ -96,6 +96,12 @@ function roleLabel(role?: string) {
   return role ?? '—';
 }
 
+function userOptionLabel(user: User) {
+  const name = user.name ?? user.email ?? user.phone ?? '—';
+  const phone = user.phone && user.phone !== name ? ` · ${user.phone}` : '';
+  return `${name}${phone} — ${roleLabel(user.role)}`;
+}
+
 function NotificationsSubNav() {
   const location = useLocation();
   const path = location.pathname.replace(/\/+$/, '');
@@ -428,7 +434,7 @@ function ComposerForm({
     hint: string;
   }> = [
     { id: 'all', label: 'الجميع', hint: 'كل المستخدمين النشطين' },
-    { id: 'dashboard', label: 'لوحة التحكم', hint: 'مدراء النظام فقط' },
+    { id: 'dashboard', label: 'لوحة التحكم', hint: 'مدراء ومشرفو النظام' },
     { id: 'drivers', label: 'السائقون', hint: 'كل السائقين' },
     { id: 'customers', label: 'العملاء', hint: 'كل العملاء' },
     { id: 'both', label: 'سائقون وعملاء', hint: 'بدون المدراء' },
@@ -465,17 +471,21 @@ function ComposerForm({
     return activeUsers.filter((user) => {
       if (form.filterRole !== 'all' && user.role !== form.filterRole) return false;
       if (!q) return true;
-      const hay = `${user.name ?? ''} ${user.email ?? ''} ${user.role ?? ''}`.toLowerCase();
+      const hay =
+        `${user.name ?? ''} ${user.email ?? ''} ${user.phone ?? ''} ${user.role ?? ''}`.toLowerCase();
       return hay.includes(q);
     });
   }, [activeUsers, form.userFilter, form.filterRole]);
+
+  const isDashboardRole = (role?: string) =>
+    role === 'admin' || role === 'manager' || role === 'supervisor';
 
   const estimatedCount = useMemo(() => {
     switch (form.targetMode) {
       case 'all':
         return activeUsers.length;
       case 'dashboard':
-        return activeUsers.filter((u) => u.role === 'admin').length;
+        return activeUsers.filter((u) => isDashboardRole(u.role)).length;
       case 'drivers':
         return activeUsers.filter((u) => u.role === 'driver').length;
       case 'customers':
@@ -508,7 +518,11 @@ function ComposerForm({
       case 'all':
         return { ...base, audience: 'all' };
       case 'dashboard':
-        return { ...base, audience: 'roles', roles: ['admin'] };
+        return {
+          ...base,
+          audience: 'roles',
+          roles: ['admin', 'manager', 'supervisor'],
+        };
       case 'drivers':
         return { ...base, audience: 'roles', roles: ['driver'] };
       case 'customers':
@@ -600,7 +614,7 @@ function ComposerForm({
             <option value="">اختر مستخدماً</option>
             {activeUsers.map((user) => (
               <option key={getId(user)} value={getId(user)}>
-                {user.name ?? user.email} — {roleLabel(user.role)}
+                {userOptionLabel(user)}
               </option>
             ))}
           </Select>
@@ -642,8 +656,12 @@ function ComposerForm({
                         onChange={() => toggleUser(id)}
                       />
                       <span>
-                        {user.name ?? user.email}
-                        <small> · {roleLabel(user.role)}</small>
+                        {user.name ?? user.email ?? user.phone ?? '—'}
+                        <small>
+                          {' '}
+                          · {roleLabel(user.role)}
+                          {user.phone ? ` · ${user.phone}` : ''}
+                        </small>
                       </span>
                     </label>
                   );
@@ -1296,13 +1314,36 @@ type NotificationsPageProps = {
 };
 
 export function NotificationsPage({ users, onToast }: NotificationsPageProps) {
+  const [recipients, setRecipients] = useState<User[]>(users);
+
+  useEffect(() => {
+    let cancelled = false;
+    void AdminApi.users
+      .list({ scope: 'all' })
+      .then((res) => {
+        if (!cancelled) setRecipients(res.data);
+      })
+      .catch(() => {
+        if (!cancelled) setRecipients(users);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [users]);
+
   return (
     <div className="notifications-page">
       <NotificationsSubNav />
       <Routes>
         <Route index element={<ListView onToast={onToast} />} />
-        <Route path="send" element={<SendView users={users} onToast={onToast} />} />
-        <Route path="scheduled" element={<ScheduledView users={users} onToast={onToast} />} />
+        <Route
+          path="send"
+          element={<SendView users={recipients} onToast={onToast} />}
+        />
+        <Route
+          path="scheduled"
+          element={<ScheduledView users={recipients} onToast={onToast} />}
+        />
         <Route path="templates" element={<TemplatesView onToast={onToast} />} />
         <Route path="analytics" element={<AnalyticsView onToast={onToast} />} />
         <Route path="settings" element={<SettingsView onToast={onToast} />} />

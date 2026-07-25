@@ -135,7 +135,11 @@ export const AdminApi = {
     },
   },
   users: {
-    list: () => apiRequest<User[]>('/admin/users'),
+    list: (params?: { scope?: 'staff' | 'all' }) => {
+      const scope = params?.scope;
+      const query = scope ? `?scope=${encodeURIComponent(scope)}` : '';
+      return apiRequest<User[]>(`/admin/users${query}`);
+    },
     create: (body: {
       email: string;
       name: string;
@@ -351,10 +355,12 @@ export const AdminApi = {
         method: 'PATCH',
         body: JSON.stringify(body),
       }),
-    listMessages: (id: string, page = 1, limit = 100) =>
-      apiRequest<TicketMessageList>(
-        `/admin/tickets/${id}/messages?page=${page}&limit=${limit}`,
-      ),
+    listMessages: (id: string, page = 1, limit = 100) => {
+      const safeLimit = Math.min(100, Math.max(1, limit));
+      return apiRequest<TicketMessageList>(
+        `/admin/tickets/${id}/messages?page=${page}&limit=${safeLimit}`,
+      );
+    },
     sendMessage: (id: string, body: string) =>
       apiRequest<TicketMessage>(`/admin/tickets/${id}/messages`, {
         method: 'POST',

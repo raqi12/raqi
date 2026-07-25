@@ -147,10 +147,14 @@ export function TicketChatPage({
 
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
+    setMessages([]);
     setMessagesLoading(true);
+
     void AdminApi.tickets
       .get(id)
       .then((res) => {
+        if (cancelled) return;
         setTicket(res.data);
         setEditForm({
           status: res.data.status ?? 'pending',
@@ -161,9 +165,28 @@ export function TicketChatPage({
       .catch(() => undefined);
 
     void AdminApi.tickets
-      .listMessages(id, 1, 200)
-      .then((res) => setMessages(res.data.items))
-      .finally(() => setMessagesLoading(false));
+      .listMessages(id, 1, 100)
+      .then((res) => {
+        if (cancelled) return;
+        const items = res.data?.items ?? [];
+        setMessages(
+          [...items].sort((a, b) => {
+            const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return aTime - bTime;
+          }),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setMessages([]);
+      })
+      .finally(() => {
+        if (!cancelled) setMessagesLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   useEffect(() => {
