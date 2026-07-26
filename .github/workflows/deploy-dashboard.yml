@@ -109,8 +109,14 @@ jobs:
 
       - name: Upload Nginx config
         run: |
+          # Fresh VPS has no Let's Encrypt certs yet — use HTTP bootstrap until certbot runs.
+          CONF_SRC=deploy/nginx/raqi.conf.example
+          if ! ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "test -f /etc/letsencrypt/live/api.raqii.com.ly/fullchain.pem"; then
+            CONF_SRC=deploy/nginx/raqi.http.conf
+          fi
           scp -i ~/.ssh/id_deploy -P "$DEPLOY_PORT" \
-            deploy/nginx/raqi.conf.example \
+            "$CONF_SRC" \
             "$DEPLOY_USER@$DEPLOY_HOST:/etc/nginx/sites-available/raqi"
 
       - name: Enable Nginx site
