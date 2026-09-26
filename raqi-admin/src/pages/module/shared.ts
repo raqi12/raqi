@@ -87,3 +87,11 @@ export function addressLocationLabel(
 }
 
 export const API_ORIGIN = import.meta.env.VITE_API_ORIGIN ?? '';
+
+/** LYD amounts with comma thousands separator (e.g. 2,247 د.ل). */
+export function formatMoneyLyd(amount?: number | null) {
+  return `${(amount ?? 0).toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })} د.ل`;
+}

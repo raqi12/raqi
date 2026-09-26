@@ -7,6 +7,7 @@ import { KpiStat } from '../../components/ui/KpiStat';
 import { KpiSkeleton } from '../../components/ui/Skeleton';
 import { Select } from '../../components/ui/Select';
 import { formatApiError } from '../../i18n/ar';
+import { formatMoneyLyd } from './shared';
 import type {
   FinanceMovement,
   FinanceMovementType,
@@ -47,10 +48,6 @@ const TYPE_OPTIONS: Array<{ value: '' | FinanceMovementType; label: string }> = 
   { value: 'additional_collection_payment', label: TYPE_LABELS.additional_collection_payment },
   { value: 'refund', label: TYPE_LABELS.refund },
 ];
-
-function formatMoney(amount?: number) {
-  return `${(amount ?? 0).toLocaleString('ar-LY')} د.ل`;
-}
 
 function formatDateTime(value?: string) {
   if (!value) return '—';
@@ -187,12 +184,12 @@ export function FinancePage() {
           <>
             <KpiStat
               label="أموال المحافظ"
-              value={formatMoney(position?.walletFunds)}
+              value={formatMoneyLyd(position?.walletFunds)}
               hint={`${position?.walletCount ?? 0} محفظة`}
             />
             <KpiStat
               label="أموال الاشتراكات النشطة"
-              value={formatMoney(position?.activeSubscriptionFunds)}
+              value={formatMoneyLyd(position?.activeSubscriptionFunds)}
               hint={
                 position?.unpricedCount
                   ? `${position.activeSubscriptionCount} اشتراك نشط، ${position.unpricedCount} بدون سعر خطة`
@@ -249,18 +246,6 @@ export function FinancePage() {
         ) : null}
       </section>
 
-      <section className="kpi-grid kpi-grid--secondary" aria-label="ملخص الفترة">
-        {loadingPeriod ? (
-          Array.from({ length: 3 }).map((_, index) => <KpiSkeleton key={index} />)
-        ) : (
-          <>
-            <KpiStat label="الأموال الداخلة" value={formatMoney(statement?.moneyIn)} />
-            <KpiStat label="الأموال الخارجة" value={formatMoney(statement?.moneyOut)} />
-            <KpiStat label="الصافي" value={formatMoney(statement?.net)} />
-          </>
-        )}
-      </section>
-
       <DataTable
         title="حسب نوع الحركة"
         description="تجميع دفتر المحفظة خلال الفترة"
@@ -274,7 +259,7 @@ export function FinancePage() {
           {
             key: 'total',
             label: 'المبلغ',
-            render: (row) => formatMoney(row.total),
+            render: (row) => formatMoneyLyd(row.total),
           },
         ]}
       />
@@ -313,12 +298,12 @@ export function FinancePage() {
           {
             key: 'amount',
             label: 'المبلغ',
-            render: (row) => formatMoney(Number(row.amount ?? 0)),
+            render: (row) => formatMoneyLyd(Number(row.amount ?? 0)),
           },
           {
             key: 'balanceAfter',
             label: 'الرصيد بعد',
-            render: (row) => formatMoney(Number(row.balanceAfter ?? 0)),
+            render: (row) => formatMoneyLyd(Number(row.balanceAfter ?? 0)),
           },
           {
             key: 'description',
