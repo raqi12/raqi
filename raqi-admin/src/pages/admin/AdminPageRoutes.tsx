@@ -450,6 +450,9 @@ export function AdminPageRoutes() {
             tasks={tasks}
             drivers={drivers}
             users={users}
+            customers={customers}
+            subscriptions={subscriptions}
+            plans={plans}
             cities={cities}
             areas={areas}
             loading={loading}
