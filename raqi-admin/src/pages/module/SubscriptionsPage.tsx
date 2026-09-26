@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { DataTable } from '../../components/DataTable';
 import { Button } from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/StatusBadge';
@@ -34,6 +35,7 @@ type SubscriptionsPageProps = {
   areas: Area[];
   cities: City[];
   loading?: boolean;
+  onDelete: (id: string) => Promise<void>;
 };
 
 export function SubscriptionsPage({
@@ -46,8 +48,10 @@ export function SubscriptionsPage({
   areas,
   cities,
   loading = false,
+  onDelete,
 }: SubscriptionsPageProps) {
   const navigate = useNavigate();
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const tableRows = useMemo(
     () =>
@@ -65,6 +69,12 @@ export function SubscriptionsPage({
       }),
     [areas, bins, cities, customers, drivers, plans, subscriptions, users],
   );
+
+  const deleteLabel = useMemo(() => {
+    if (!deleteId) return '';
+    const row = tableRows.find((item) => getId(item) === deleteId);
+    return row?.customerName ? String(row.customerName) : 'هذا الاشتراك';
+  }, [deleteId, tableRows]);
 
   const activeCount = subscriptions.filter((item) => item.status === 'active').length;
   const unpaidCount = subscriptions.filter((item) => item.paymentStatus !== 'paid').length;
@@ -132,7 +142,36 @@ export function SubscriptionsPage({
             render: (row) => <StatusBadge status={String(row.paymentStatus)} />,
             sortable: false,
           },
+          {
+            key: 'actions',
+            label: COMMON.actions,
+            sortable: false,
+            align: 'end',
+            render: (row) => (
+              <Button
+                type="button"
+                variant="danger"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setDeleteId(getId(row));
+                }}
+              >
+                {COMMON.delete}
+              </Button>
+            ),
+          },
         ]}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteId)}
+        title="حذف الاشتراك"
+        description={`هل أنت متأكد من حذف اشتراك «${deleteLabel}»؟ سيتم حذف مهام الجمع المرتبطة وتحرير الصندوق.`}
+        onCancel={() => setDeleteId(null)}
+        onConfirm={() => {
+          if (!deleteId) return;
+          void onDelete(deleteId).then(() => setDeleteId(null));
+        }}
       />
     </div>
   );

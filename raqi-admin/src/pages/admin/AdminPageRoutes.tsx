@@ -30,6 +30,7 @@ import {
   ManagerDetailPage,
   ManagersPage,
   PaymentsPage,
+  FinancePage,
   PlanCreatePage,
   PlanDetailPage,
   PlansPage,
@@ -39,6 +40,7 @@ import {
   SupportPage,
   ContentPageEditor,
   TasksPage,
+  DriverTrackingPage,
   TicketChatPage,
   TicketsPage,
 } from '../ModulePages';
@@ -442,6 +444,20 @@ export function AdminPageRoutes() {
         }
       />
       <Route
+        path="/driver-tracking"
+        element={
+          <DriverTrackingPage
+            tasks={tasks}
+            drivers={drivers}
+            users={users}
+            cities={cities}
+            areas={areas}
+            loading={loading}
+            onRefresh={() => void loadAll()}
+          />
+        }
+      />
+      <Route
         path="/subscriptions"
         element={
           <SubscriptionsPage
@@ -454,6 +470,9 @@ export function AdminPageRoutes() {
             areas={areas}
             cities={cities}
             loading={loading}
+            onDelete={(id) =>
+              runMutation(() => AdminApi.subscriptions.delete(id), 'تم حذف الاشتراك')
+            }
           />
         }
       />
@@ -519,6 +538,7 @@ export function AdminPageRoutes() {
           />
         }
       />
+      <Route path="/finance" element={<FinancePage />} />
       <Route
         path="/payments"
         element={

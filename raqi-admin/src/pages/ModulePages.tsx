@@ -23,6 +23,7 @@ export { BinsPage } from './module/BinsPage';
 export { BinCreatePage } from './module/BinCreatePage';
 export { BinDetailPage } from './module/BinDetailPage';
 export { TasksPage } from './module/TasksPage';
+export { DriverTrackingPage } from './module/DriverTrackingPage';
 export { TicketsPage } from './module/TicketsPage';
 export { TicketChatPage } from './module/TicketChatPage';
 export { ComplaintsPage } from './module/ComplaintsPage';
@@ -34,6 +35,7 @@ export { GalleryDetailPage } from './module/GalleryDetailPage';
 export { ContentPageEditor } from './module/ContentPageEditor';
 export { CashTopupsPage } from './module/CashTopupsPage';
 export { DepositRequestsPage } from './module/DepositRequestsPage';
+export { FinancePage } from './module/FinancePage';
 
 type PaymentsPageProps = {
   payments: Payment[];

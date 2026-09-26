@@ -109,6 +109,17 @@ export class SubscriptionsService {
     return this.subscriptionModel.findById(id).exec();
   }
 
+  async remove(id: string): Promise<SubscriptionDocument | null> {
+    const subscription = await this.subscriptionModel.findById(id).exec();
+    if (!subscription) {
+      return null;
+    }
+    await this.binsService.releaseBySubscription(id);
+    await this.tasksService.deleteForSubscription(id);
+    await this.subscriptionModel.findByIdAndDelete(id).exec();
+    return subscription;
+  }
+
   async markPaymentPaid(subscriptionId: string): Promise<SubscriptionDocument> {
     const subscription = await this.subscriptionModel.findById(subscriptionId).exec();
     if (!subscription) {

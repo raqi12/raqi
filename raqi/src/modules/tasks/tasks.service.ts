@@ -229,8 +229,161 @@ export class TasksService {
     return result.modifiedCount;
   }
 
+  async deleteForSubscription(subscriptionId: string): Promise<number> {
+    const result = await this.taskModel.deleteMany({ subscriptionId }).exec();
+    return result.deletedCount ?? 0;
+  }
+
   countCompleted(): Promise<number> {
     return this.taskModel.countDocuments({ status: TaskStatus.Completed }).exec();
+  }
+
+  async getDriverTrackingReport(dateInput?: string): Promise<{
+    date: string;
+    drivers: Array<{
+      driverId: string;
+      total: number;
+      pending: number;
+      assigned: number;
+      inProgress: number;
+      completed: number;
+      skipped: number;
+      cancelled: number;
+    }>;
+    unassigned: {
+      total: number;
+      pending: number;
+      assigned: number;
+      inProgress: number;
+      completed: number;
+      skipped: number;
+      cancelled: number;
+    };
+  }> {
+    const scheduledDate = this.normalizeScheduledDate(dateInput);
+    const emptyCounts = () => ({
+      total: 0,
+      pending: 0,
+      assigned: 0,
+      inProgress: 0,
+      completed: 0,
+      skipped: 0,
+      cancelled: 0,
+    });
+
+    type AggRow = {
+      _id: string | null;
+      total: number;
+      pending: number;
+      assigned: number;
+      inProgress: number;
+      completed: number;
+      skipped: number;
+      cancelled: number;
+    };
+
+    const rows = await this.taskModel
+      .aggregate<AggRow>([
+        { $match: { scheduledDate } },
+        {
+          $group: {
+            _id: '$driverId',
+            total: { $sum: 1 },
+            pending: {
+              $sum: {
+                $cond: [{ $eq: ['$status', TaskStatus.Pending] }, 1, 0],
+              },
+            },
+            assigned: {
+              $sum: {
+                $cond: [{ $eq: ['$status', TaskStatus.Assigned] }, 1, 0],
+              },
+            },
+            inProgress: {
+              $sum: {
+                $cond: [{ $eq: ['$status', TaskStatus.InProgress] }, 1, 0],
+              },
+            },
+            completed: {
+              $sum: {
+                $cond: [{ $eq: ['$status', TaskStatus.Completed] }, 1, 0],
+              },
+            },
+            skipped: {
+              $sum: {
+                $cond: [{ $eq: ['$status', TaskStatus.Skipped] }, 1, 0],
+              },
+            },
+            cancelled: {
+              $sum: {
+                $cond: [{ $eq: ['$status', TaskStatus.Cancelled] }, 1, 0],
+              },
+            },
+          },
+        },
+      ])
+      .exec();
+
+    const byDriverId = new Map<string | null, AggRow>();
+    for (const row of rows) {
+      byDriverId.set(row._id ?? null, row);
+    }
+
+    const unassignedRow = byDriverId.get(null);
+    const unassigned = unassignedRow
+      ? {
+          total: unassignedRow.total,
+          pending: unassignedRow.pending,
+          assigned: unassignedRow.assigned,
+          inProgress: unassignedRow.inProgress,
+          completed: unassignedRow.completed,
+          skipped: unassignedRow.skipped,
+          cancelled: unassignedRow.cancelled,
+        }
+      : emptyCounts();
+
+    const allDrivers = await this.driversService.findAllForAdmin();
+    const drivers: Array<{
+      driverId: string;
+      total: number;
+      pending: number;
+      assigned: number;
+      inProgress: number;
+      completed: number;
+      skipped: number;
+      cancelled: number;
+    }> = [];
+
+    for (const driver of allDrivers) {
+      const driverId = String(driver.id);
+      const row = byDriverId.get(driverId);
+      const status = driver.status ?? 'active';
+      if (status !== 'active' && !row) {
+        continue;
+      }
+      drivers.push({
+        driverId,
+        total: row?.total ?? 0,
+        pending: row?.pending ?? 0,
+        assigned: row?.assigned ?? 0,
+        inProgress: row?.inProgress ?? 0,
+        completed: row?.completed ?? 0,
+        skipped: row?.skipped ?? 0,
+        cancelled: row?.cancelled ?? 0,
+      });
+    }
+
+    drivers.sort((a, b) => b.total - a.total);
+
+    return { date: scheduledDate, drivers, unassigned };
+  }
+
+  private normalizeScheduledDate(dateInput?: string): string {
+    const trimmed = dateInput?.trim();
+    if (trimmed) {
+      return trimmed.slice(0, 10);
+    }
+    return toUtcDateString(new Date());
   }
 
   async countByDriver(

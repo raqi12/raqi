@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Param,
@@ -217,6 +218,22 @@ export class AdminSubscriptionsController {
     return {
       data: await this.subscriptionsService.replaceBin(id, body.newBinId),
     };
+  }
+
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Delete subscription',
+    description:
+      'Permanently deletes a subscription, releases its bin assignment, and removes linked collection tasks.',
+  })
+  @ApiMongoIdParam('id', 'Subscription MongoDB ID')
+  @ApiOkDataResponse(SubscriptionDto, 'Subscription deleted')
+  async remove(@Param('id') id: string) {
+    const subscription = await this.subscriptionsService.remove(id);
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+    return { data: subscription };
   }
 }
 

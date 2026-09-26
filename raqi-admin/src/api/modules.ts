@@ -18,6 +18,7 @@ import type {
   CashTopupRequest,
   CashTopupStatus,
   Driver,
+  DriverTaskTrackingReport,
   Faq,
   GalleryItem,
   ContentPage,
@@ -28,6 +29,10 @@ import type {
   NotificationPreference,
   NotificationTemplate,
   Overview,
+  FinanceMovementType,
+  FinanceMovements,
+  FinancePosition,
+  FinanceStatement,
   Payment,
   Plan,
   Route,
@@ -46,6 +51,36 @@ import { apiRequest } from './http';
 
 export const AdminApi = {
   overview: () => apiRequest<Overview>('/admin/reports/overview'),
+  finance: {
+    position: () => apiRequest<FinancePosition>('/admin/finance/position'),
+    statement: (query: { from?: string; to?: string }) => {
+      const params = new URLSearchParams();
+      if (query.from) params.set('from', query.from);
+      if (query.to) params.set('to', query.to);
+      const search = params.toString();
+      return apiRequest<FinanceStatement>(
+        `/admin/finance/statement${search ? `?${search}` : ''}`,
+      );
+    },
+    movements: (query: {
+      from?: string;
+      to?: string;
+      page?: number;
+      limit?: number;
+      type?: FinanceMovementType | '';
+    }) => {
+      const params = new URLSearchParams();
+      if (query.from) params.set('from', query.from);
+      if (query.to) params.set('to', query.to);
+      if (query.page) params.set('page', String(query.page));
+      if (query.limit) params.set('limit', String(query.limit));
+      if (query.type) params.set('type', query.type);
+      const search = params.toString();
+      return apiRequest<FinanceMovements>(
+        `/admin/finance/movements${search ? `?${search}` : ''}`,
+      );
+    },
+  },
   bins: {
     list: () => apiRequest<Bin[]>('/admin/bins'),
     stats: () => apiRequest<BinStats>('/admin/bins/stats'),
@@ -229,6 +264,14 @@ export const AdminApi = {
   },
   tasks: {
     list: () => apiRequest<Task[]>('/admin/tasks'),
+    driverTracking: (date?: string) => {
+      const params = new URLSearchParams();
+      if (date) params.set('date', date);
+      const search = params.toString();
+      return apiRequest<DriverTaskTrackingReport>(
+        `/admin/tasks/driver-tracking${search ? `?${search}` : ''}`,
+      );
+    },
     generate: (date: string, areaId: string) =>
       apiRequest<Task[]>('/admin/tasks/generate', {
         method: 'POST',
@@ -294,6 +337,8 @@ export const AdminApi = {
         method: 'POST',
         body: JSON.stringify({ newBinId }),
       }),
+    delete: (id: string) =>
+      apiRequest<Subscription>(`/admin/subscriptions/${id}`, { method: 'DELETE' }),
   },
   payments: {
     list: () => apiRequest<Payment[]>('/admin/payments'),

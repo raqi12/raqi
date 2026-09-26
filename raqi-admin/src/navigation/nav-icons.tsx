@@ -3,6 +3,7 @@ import {
   LuArchive,
   LuBanknote,
   LuClipboardList,
+  LuRadar,
   LuLandmark,
   LuCalendarPlus,
   LuLayoutDashboard,
@@ -25,6 +26,7 @@ import {
   LuUsers,
   LuWallet,
   LuHandCoins,
+  LuChartColumn,
 } from 'react-icons/lu';
 import type { SidebarTab } from './routes';
 
@@ -33,6 +35,7 @@ export const TAB_ICONS: Record<SidebarTab, IconType> = {
   customers: LuUsers,
   subscriptions: LuRepeat,
   tasks: LuClipboardList,
+  'driver-tracking': LuRadar,
   complaints: LuMessageSquareWarning,
   tickets: LuMessageSquare,
   notifications: LuBell,
@@ -46,6 +49,7 @@ export const TAB_ICONS: Record<SidebarTab, IconType> = {
   plans: LuPackage,
   bins: LuArchive,
   locations: LuMapPinned,
+  finance: LuChartColumn,
   payments: LuBanknote,
   'bank-account': LuLandmark,
   'additional-collection': LuCalendarPlus,

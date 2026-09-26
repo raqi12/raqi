@@ -48,6 +48,15 @@ async function bootstrap() {
   });
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
   app.setGlobalPrefix('api/v1');
+  // Swagger UI assets break when /api/docs is opened without a trailing slash.
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && req.path === '/api/docs') {
+      const query = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+      res.redirect(301, `/api/docs/${query}`);
+      return;
+    }
+    next();
+  });
   app.useGlobalFilters(new ArabicHttpExceptionFilter());
   app.useGlobalPipes(
     new ValidationPipe({

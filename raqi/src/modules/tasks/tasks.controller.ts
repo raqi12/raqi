@@ -34,7 +34,9 @@ import { TasksService } from './tasks.service';
 import {
   AssignTaskDto,
   CompleteTaskDto,
+  DriverTaskTrackingReportDto,
   DriverTodayTasksQueryDto,
+  DriverTrackingQueryDto,
   GenerateTasksDto,
   SkipTaskDto,
 } from './dto/task.dto';
@@ -55,6 +57,17 @@ export class AdminTasksController {
   @ApiOkDataResponse(TaskDto, 'Task list', { isArray: true })
   async list() {
     return { data: await this.tasksService.findAll() };
+  }
+
+  @Get('driver-tracking')
+  @ApiOperation({
+    summary: 'Driver task tracking for a date',
+    description:
+      'Per-driver task counts by status for the given scheduled date, plus unassigned tasks.',
+  })
+  @ApiOkDataResponse(DriverTaskTrackingReportDto, 'Driver task tracking')
+  async driverTracking(@Query() query: DriverTrackingQueryDto) {
+    return { data: await this.tasksService.getDriverTrackingReport(query.date) };
   }
 
   @Get(':id')

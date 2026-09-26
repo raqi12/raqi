@@ -21,6 +21,63 @@ export type Overview = {
   generatedAt: string;
 };
 
+export type FinanceMovementType =
+  | 'deposit'
+  | 'admin_credit'
+  | 'subscription_payment'
+  | 'additional_collection_payment'
+  | 'payment'
+  | 'refund';
+
+export type FinancePosition = {
+  walletFunds: number;
+  walletCount: number;
+  activeSubscriptionFunds: number;
+  activeSubscriptionCount: number;
+  unpricedCount: number;
+  generatedAt: string;
+};
+
+export type FinanceStatementLine = {
+  type: FinanceMovementType | string;
+  direction: 'credit' | 'debit' | string;
+  count: number;
+  total: number;
+};
+
+export type FinanceStatement = {
+  from: string;
+  to: string;
+  moneyIn: number;
+  moneyOut: number;
+  net: number;
+  byType: FinanceStatementLine[];
+};
+
+export type FinanceMovement = {
+  id: string;
+  customerId: string;
+  type: FinanceMovementType | string;
+  direction: 'credit' | 'debit' | string;
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  referenceType: string | null;
+  referenceId: string | null;
+  description: string | null;
+  createdAt: string;
+};
+
+export type FinanceMovements = {
+  from: string;
+  to: string;
+  items: FinanceMovement[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 export type BinStats = {
   totalBins: number;
   totalCapacity: number;
@@ -197,6 +254,26 @@ export type Task = {
   scheduledDate?: string;
   date?: string;
   status?: string;
+};
+
+export type DriverTaskStatusCounts = {
+  total: number;
+  pending: number;
+  assigned: number;
+  inProgress: number;
+  completed: number;
+  skipped: number;
+  cancelled: number;
+};
+
+export type DriverTaskTrackingRow = DriverTaskStatusCounts & {
+  driverId: string;
+};
+
+export type DriverTaskTrackingReport = {
+  date: string;
+  drivers: DriverTaskTrackingRow[];
+  unassigned: DriverTaskStatusCounts;
 };
 
 export type Subscription = {

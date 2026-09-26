@@ -69,6 +69,18 @@ import {
   WalletTransactionListDto,
 } from './schemas/entity.schemas';
 import { SubscriptionCostDto } from '../../modules/plans/dto/plan.dto';
+import {
+  DriverTaskStatusCountsDto,
+  DriverTaskTrackingReportDto,
+  DriverTaskTrackingRowDto,
+} from '../../modules/tasks/dto/task.dto';
+import {
+  FinanceMovementDto,
+  FinanceMovementsDto,
+  FinancePositionDto,
+  FinanceStatementDto,
+  FinanceStatementLineDto,
+} from '../../modules/finance/dto/finance.dto';
 
 const extraModels = [
   BadRequestErrorDto,
@@ -100,6 +112,9 @@ const extraModels = [
   RouteDto,
   PlanDto,
   SubscriptionCostDto,
+  DriverTaskStatusCountsDto,
+  DriverTaskTrackingRowDto,
+  DriverTaskTrackingReportDto,
   BinDto,
   BinAssignmentDto,
   BinStatsDto,
@@ -124,6 +139,11 @@ const extraModels = [
   DepositRequestDto,
   CashTopupRequestDto,
   OverviewReportDto,
+  FinancePositionDto,
+  FinanceStatementDto,
+  FinanceStatementLineDto,
+  FinanceMovementDto,
+  FinanceMovementsDto,
   WorkingHoursRangeDto,
   SupportContactsDto,
   SupportEmergencyDto,
@@ -238,13 +258,32 @@ Deposit evidence: \`multipart/form-data\` with field \`evidence\` (jpg, jpeg, pn
     .build();
 
   const document = SwaggerModule.createDocument(app, config, { extraModels });
+  // Use CDN assets so Swagger UI styles/scripts load correctly behind nginx
+  // and when nested under /api/docs (relative local asset paths often 404).
   SwaggerModule.setup('api/docs', app, document, {
     jsonDocumentUrl: 'api/docs-json',
+    customCssUrl:
+      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.18.2/swagger-ui.min.css',
+    customJs: [
+      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.18.2/swagger-ui-bundle.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.18.2/swagger-ui-standalone-preset.min.js',
+    ],
+    customCss: `
+      .swagger-ui .opblock .opblock-summary-path-description-wrapper {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 10px;
+        padding: 0 10px;
+        width: 100%;
+      }
+    `,
     swaggerOptions: {
       persistAuthorization: true,
       docExpansion: 'none',
       filter: true,
       showRequestDuration: true,
+      url: '/api/docs-json',
     },
   });
 }

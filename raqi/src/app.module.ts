@@ -21,6 +21,7 @@ import { ComplaintsModule } from './modules/complaints/complaints.module';
 import { TicketsModule } from './modules/tickets/tickets.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { FinanceModule } from './modules/finance/finance.module';
 import { WalletsModule } from './modules/wallets/wallets.module';
 import { SupportModule } from './modules/support/support.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
@@ -55,6 +56,7 @@ import { ContentPagesModule } from './modules/content-pages/content-pages.module
     TicketsModule,
     NotificationsModule,
     ReportsModule,
+    FinanceModule,
     WalletsModule,
     SupportModule,
     GalleryModule,

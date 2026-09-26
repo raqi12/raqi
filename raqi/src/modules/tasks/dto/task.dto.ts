@@ -81,3 +81,52 @@ export class DriverTodayTasksQueryDto {
   @IsIn(DRIVER_TODAY_STATUS_FILTERS)
   status?: DriverTodayStatusFilter;
 }
+
+export class DriverTrackingQueryDto {
+  @ApiPropertyOptional({
+    example: '2026-09-26',
+    description: 'Task scheduled date (YYYY-MM-DD). Defaults to today (UTC).',
+  })
+  @IsOptional()
+  @IsString()
+  date?: string;
+}
+
+export class DriverTaskStatusCountsDto {
+  @ApiProperty({ example: 12 })
+  total: number;
+
+  @ApiProperty({ example: 2 })
+  pending: number;
+
+  @ApiProperty({ example: 4 })
+  assigned: number;
+
+  @ApiProperty({ example: 1 })
+  inProgress: number;
+
+  @ApiProperty({ example: 5 })
+  completed: number;
+
+  @ApiProperty({ example: 0 })
+  skipped: number;
+
+  @ApiProperty({ example: 0 })
+  cancelled: number;
+}
+
+export class DriverTaskTrackingRowDto extends DriverTaskStatusCountsDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
+  driverId: string;
+}
+
+export class DriverTaskTrackingReportDto {
+  @ApiProperty({ example: '2026-09-26' })
+  date: string;
+
+  @ApiProperty({ type: DriverTaskTrackingRowDto, isArray: true })
+  drivers: DriverTaskTrackingRowDto[];
+
+  @ApiProperty({ type: DriverTaskStatusCountsDto })
+  unassigned: DriverTaskStatusCountsDto;
+}

@@ -13,9 +13,9 @@ type NavGroup = {
 
 const NAV_GROUPS: NavGroup[] = [
   { title: 'رئيسي', items: ['overview'] },
-  { title: 'العمليات', items: ['customers', 'subscriptions', 'tasks', 'tickets', 'notifications', 'send-notification', 'support', 'privacy', 'instructions', 'gallery', 'complaints'] },
+  { title: 'العمليات', items: ['customers', 'subscriptions', 'tasks', 'driver-tracking', 'tickets', 'notifications', 'send-notification', 'support', 'privacy', 'instructions', 'gallery', 'complaints'] },
   { title: 'الموارد', items: ['managers', 'drivers', 'plans', 'bins', 'locations'] },
-  { title: 'المالية', items: ['payments', 'bank-account', 'additional-collection', 'deposit-requests', 'cash-topups'] },
+  { title: 'المالية', items: ['finance', 'payments', 'bank-account', 'additional-collection', 'deposit-requests', 'cash-topups'] },
 ];
 
 type SidebarProps = {
