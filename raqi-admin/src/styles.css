@@ -1079,6 +1079,74 @@ a:focus-visible,
   font-weight: 600;
 }
 
+.subscriptions-filters__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: start;
+}
+
+.subscriptions-filters__toggle-text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.subscriptions-filters__badge {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--primary-soft, rgba(59, 130, 246, 0.12));
+  color: var(--primary, #2563eb);
+}
+
+.subscriptions-filters__chevron {
+  flex-shrink: 0;
+  transform: rotate(-90deg);
+  transition: transform 0.15s ease;
+}
+
+.subscriptions-filters__chevron--open {
+  transform: rotate(90deg);
+}
+
+.subscriptions-filters__hint {
+  margin: 0 0 var(--space-4);
+}
+
+.collection-dates-modal {
+  max-width: 420px;
+  width: min(100%, 420px);
+}
+
+.collection-dates-list {
+  list-style: none;
+  margin: var(--space-3) 0 var(--space-4);
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.collection-dates-list li {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted, rgba(0, 0, 0, 0.04));
+  font-variant-numeric: tabular-nums;
+}
+
 @media (max-width: 1000px) {
   .ticket-chat-layout {
     grid-template-columns: 1fr;

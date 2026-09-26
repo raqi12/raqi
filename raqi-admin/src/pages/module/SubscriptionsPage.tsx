@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { DataTable } from '../../components/DataTable';
 import { Button } from '../../components/ui/Button';
+import { IconChevron } from '../../components/ui/Icons';
 import { Input } from '../../components/ui/Input';
 import { SearchInput } from '../../components/ui/SearchInput';
 import { Select } from '../../components/ui/Select';
@@ -69,6 +70,11 @@ export function SubscriptionsPage({
 }: SubscriptionsPageProps) {
   const navigate = useNavigate();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [collectionDatesDialog, setCollectionDatesDialog] = useState<{
+    title: string;
+    dates: string[];
+  } | null>(null);
   const [filters, setFilters] = useState<SubscriptionFilterState>(EMPTY_SUBSCRIPTION_FILTERS);
 
   const tableRows = useMemo(
@@ -160,14 +166,38 @@ export function SubscriptionsPage({
         </div>
       </div>
 
-      <section className="panel subscriptions-filters">
+      <section
+        className={[
+          'panel',
+          'subscriptions-filters',
+          filtersOpen ? 'subscriptions-filters--open' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
         <div className="subscriptions-filters__header">
-          <div>
-            <h3 className="subscriptions-filters__title">بحث وتصفية</h3>
-            <p className="muted">
-              ابحث بالعميل أو الخطة أو الهاتف أو المعرف، ثم ضيّق النتائج حسب المدينة والسائق والتاريخ
-            </p>
-          </div>
+          <button
+            type="button"
+            className="subscriptions-filters__toggle"
+            onClick={() => setFiltersOpen((open) => !open)}
+            aria-expanded={filtersOpen}
+          >
+            <span className="subscriptions-filters__toggle-text">
+              <span className="subscriptions-filters__title">بحث وتصفية</span>
+              {filtersActive ? (
+                <span className="subscriptions-filters__badge">مفعّل</span>
+              ) : null}
+            </span>
+            <IconChevron
+              size={16}
+              className={[
+                'subscriptions-filters__chevron',
+                filtersOpen ? 'subscriptions-filters__chevron--open' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            />
+          </button>
           {filtersActive ? (
             <Button type="button" variant="ghost" onClick={resetFilters}>
               مسح التصفية
@@ -175,6 +205,13 @@ export function SubscriptionsPage({
           ) : null}
         </div>
 
+        {filtersOpen ? (
+          <p className="muted subscriptions-filters__hint">
+            ابحث بالعميل أو الخطة أو الهاتف أو المعرف، ثم ضيّق النتائج حسب المدينة والسائق والتاريخ
+          </p>
+        ) : null}
+
+        {filtersOpen ? (
         <div className="form-grid">
           <div className="form-grid__full">
             <SearchInput
@@ -318,6 +355,7 @@ export function SubscriptionsPage({
             onChange={(event) => patchFilters({ dateTo: event.target.value })}
           />
         </div>
+        ) : null}
       </section>
 
       <DataTable
@@ -335,9 +373,29 @@ export function SubscriptionsPage({
           { key: 'driverName', label: 'السائق' },
           { key: 'binCode', label: 'الصندوق' },
           {
-            key: 'collectionSummary',
+            key: 'collectionCount',
             label: 'مواعيد الجمع',
             sortable: false,
+            render: (row) => {
+              const count = Number(row.collectionCount ?? 0);
+              const dates = (row.collectionDates as string[] | undefined) ?? [];
+              if (count <= 0) return '—';
+              return (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setCollectionDatesDialog({
+                      title: String(row.customerName ?? 'الاشتراك'),
+                      dates: [...dates].map(String).sort(),
+                    });
+                  }}
+                >
+                  عرض ({count})
+                </Button>
+              );
+            },
           },
           {
             key: 'status',
@@ -371,6 +429,37 @@ export function SubscriptionsPage({
           },
         ]}
       />
+
+      {collectionDatesDialog ? (
+        <div
+          className="overlay"
+          role="presentation"
+          onClick={() => setCollectionDatesDialog(null)}
+        >
+          <div
+            className="modal collection-dates-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="collection-dates-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 id="collection-dates-title">
+              مواعيد الجمع — {collectionDatesDialog.title}
+            </h3>
+            <p className="muted">{collectionDatesDialog.dates.length} موعد</p>
+            <ul className="collection-dates-list">
+              {collectionDatesDialog.dates.map((date) => (
+                <li key={date}>{date}</li>
+              ))}
+            </ul>
+            <div className="modal-actions">
+              <Button type="button" variant="primary" onClick={() => setCollectionDatesDialog(null)}>
+                إغلاق
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <ConfirmDialog
         open={Boolean(deleteId)}

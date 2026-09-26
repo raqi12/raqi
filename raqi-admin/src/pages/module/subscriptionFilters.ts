@@ -65,6 +65,7 @@ export type SubscriptionTableRow = Subscription & {
   statusLabel: string;
   paymentLabel: string;
   collectionSummary: string;
+  collectionCount: number;
   expiresLabel: string;
   createdLabel: string;
   searchText: string;
@@ -106,6 +107,7 @@ export function buildSubscriptionTableRows(
       STATUS_LABELS[subscription.paymentStatus ?? ''] ?? subscription.paymentStatus ?? '—';
     const collectionDates = (subscription.collectionDates ?? []).map(String).sort();
     const collectionSummary = collectionDates.length ? collectionDates.join('، ') : '—';
+    const collectionCount = collectionDates.length;
     const expiresLabel = datePart(subscription.expiresAt) || '—';
     const createdLabel = datePart(subscription.createdAt) || '—';
     const id = getId(subscription);
@@ -144,6 +146,7 @@ export function buildSubscriptionTableRows(
       statusLabel,
       paymentLabel,
       collectionSummary,
+      collectionCount,
       expiresLabel,
       createdLabel,
       searchText,
