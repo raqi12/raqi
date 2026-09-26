@@ -1060,6 +1060,25 @@ a:focus-visible,
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.subscriptions-filters {
+  margin-bottom: var(--space-4);
+}
+
+.subscriptions-filters__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.subscriptions-filters__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
 @media (max-width: 1000px) {
   .ticket-chat-layout {
     grid-template-columns: 1fr;

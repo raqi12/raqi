@@ -22,6 +22,8 @@ type DataTableProps<T> = {
   }>;
   onSelect?: (row: T) => void;
   searchKeys?: string[];
+  /** When true, only `rows` are shown (page-level filters handle search). */
+  disableGlobalSearch?: boolean;
   loading?: boolean;
 };
 
@@ -36,9 +38,11 @@ export function DataTable<T extends Record<string, unknown>>({
   columns,
   onSelect,
   searchKeys,
+  disableGlobalSearch = false,
   loading = false,
 }: DataTableProps<T>) {
-  const { query } = useSearch();
+  const { query: globalQuery } = useSearch();
+  const query = disableGlobalSearch ? '' : globalQuery;
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [page, setPage] = useState(1);

@@ -293,6 +293,8 @@ export type Subscription = {
   expiresAt?: string;
   renewalGraceUntil?: string | null;
   renewedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type Payment = {
