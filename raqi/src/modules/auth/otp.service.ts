@@ -19,6 +19,7 @@ import { SmsService } from './sms.service';
 
 const OTP_EXPIRES_SECONDS = 300;
 const MAX_OTP_ATTEMPTS = 5;
+const OTP_CODE_LENGTH = 4;
 const DEFAULT_FIXED_OTP_CODE = '1111';
 
 @Injectable()
@@ -139,7 +140,9 @@ export class OtpService {
   }
 
   private generateRandomCode(): string {
-    return String(Math.floor(100000 + Math.random() * 900000));
+    const min = 10 ** (OTP_CODE_LENGTH - 1);
+    const max = 10 ** OTP_CODE_LENGTH;
+    return String(Math.floor(min + Math.random() * (max - min)));
   }
 
   private buildOtpResponse(

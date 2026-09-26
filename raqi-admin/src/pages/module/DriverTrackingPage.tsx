@@ -24,9 +24,7 @@ import {
   customerDisplayName,
   getId,
   planNameById,
-  userEmailById,
   userNameById,
-  userPhoneById,
 } from './shared';
 import { driverNameById, taskDate } from './subscriptionUi';
 
@@ -56,6 +54,13 @@ function driverLabel(drivers: Driver[], users: User[], driverId: string) {
   if (!driver) return '—';
   const name = userNameById(users, driver.userId);
   return driver.vehicleNumber ? `${name} (${driver.vehicleNumber})` : name;
+}
+
+function driverDialogTitle(driver: Driver) {
+  const parts: string[] = [];
+  if (driver.code) parts.push(`رمز ${driver.code}`);
+  if (driver.vehicleNumber) parts.push(driver.vehicleNumber);
+  return parts.length > 0 ? parts.join(' — ') : 'سائق';
 }
 
 export function DriverTrackingPage({
@@ -189,9 +194,7 @@ export function DriverTrackingPage({
       dayTasks,
       linkedSubscriptions,
       assignedSubscriptions,
-      name: userNameById(users, driver.userId),
-      phone: userPhoneById(users, driver.userId),
-      email: userEmailById(users, driver.userId),
+      title: driverDialogTitle(driver),
     };
   }, [
     areas,
@@ -324,7 +327,7 @@ export function DriverTrackingPage({
           >
             <header className="driver-tracking-modal__header">
               <div>
-                <h3 id="driver-tracking-title">{details.name}</h3>
+                <h3 id="driver-tracking-title">{details.title}</h3>
                 <p className="muted">مهام يوم {date}</p>
               </div>
               <Button type="button" variant="ghost" onClick={() => setDetailsDriverId(null)}>
@@ -334,20 +337,8 @@ export function DriverTrackingPage({
 
             <div className="driver-tracking-modal__body">
               <section className="detail-block">
-                <h4 className="detail-block__title">السائق والحساب</h4>
+                <h4 className="detail-block__title">بيانات السائق</h4>
                 <dl className="info-list">
-                  <div className="info-list__row">
-                    <dt>الاسم</dt>
-                    <dd>{details.name}</dd>
-                  </div>
-                  <div className="info-list__row">
-                    <dt>{COMMON.phone}</dt>
-                    <dd dir="ltr">{details.phone}</dd>
-                  </div>
-                  <div className="info-list__row">
-                    <dt>{COMMON.email}</dt>
-                    <dd dir="ltr">{details.email}</dd>
-                  </div>
                   <div className="info-list__row">
                     <dt>رمز السائق</dt>
                     <dd>{details.driver.code ?? '—'}</dd>
